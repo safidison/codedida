@@ -1,0 +1,2126 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ *  field.module 实现表单字段定制
+ */
+
+/**
+ * @Implement of hook_menu()
+ */
+function field_menu(){
+  $items = array();
+  $items['json/field/%'] = array(
+    'load_functions' => array(2 => '%0-9'),
+    'access_callback' => true,
+    'page_callback' => 'field_json',
+    'page_arguments' => array(2),
+    'file' => 'field.page.inc'
+  );
+  $items['fields/%'] = array(
+    'load_functions' => array(1 => array('field_load')),
+    'access_callback' => 'field_access',
+    'access_arguments' => array('view', 1),
+    'page_callback' => 'field_page',
+    'page_arguments' => array(1),
+    'file' => 'field.page.inc'
+  );
+  $items['category/%'] = array(
+    'load_functions' => array(1 => array('field_term_load')),
+    'access_callback' => 'field_term_access',
+    'access_arguments' => array(1),
+    'page_callback' => 'field_term_page',
+    'page_arguments' => array(1),
+    'file' => 'field.page.inc'
+  );
+  $items['category/%/feed'] = array(
+    'load_functions' => array(1 => array('field_term_load')),
+    'access_callback' => 'field_term_access',
+    'access_arguments' => array(1),
+    'page_callback' => 'field_term_feed',
+    'page_arguments' => array(1),
+    'file' => 'field.page.inc'
+  );
+  return $items;
+}
+
+/**
+ * @Implement of hook_perm
+ */
+function field_perm(){
+}
+
+/**
+ * 字段权限验证
+ * @param (string) $op
+ *  默认分两种权限，即：view：浏览，update：填写
+ *  字段依附于节点，故字段首先继承节点权限，如节点不允许浏览，字段也无法浏览
+ * @param (object) $field
+ *  字段数据，即 field_load() 返回的对象
+ * @param (object) $ac
+ *  用户信息，若留空，则取当前用户
+ * @return
+ *  通过验证返回 true，否则返回 false
+ */
+
+function field_access($op, $field, $node = NULL, $ac = NULL){
+  if(!$ac) $ac = $GLOBALS['user'];
+  //if($ac->uid == 1) return true;
+  static $access;
+  if(!isset($access[$ac->uid])){
+    $access[$ac->uid] = array();
+    $access[$ac->uid][$field->field_id] = array();
+  }
+  if(!isset($access[$ac->uid][$field->field_id][$op])){
+    $access[$ac->uid][$field->field_id][$op] = false;
+    if($field->data['access']){
+      $access[$ac->uid][$field->field_id][$op] = module_invoke_all('field_get_node_access', $op, $field, $node, $ac);
+    }else if(!$field->access){
+      $access[$ac->uid][$field->field_id][$op] = true;
+    }else if($field->access[$op] && $ac->roles){
+      foreach($ac->roles as $rid => $k){
+        if(in_array($rid, $field->access[$op])){
+          $access[$ac->uid][$field->field_id][$op] = true;
+        }
+      }
+    }
+  }
+  return $access[$ac->uid][$field->field_id][$op];
+}
+
+/**
+ * 读取字段类型参数，字段类型及参数由 hook_field_call_list() 定义
+ * @param (string) $type
+ *  字段类型系统名称，不传值则获取全部
+ */
+function field_get_call_lists($name = NULL){
+  static $lists;
+  if(!isset($lists)){
+    $lists = array();
+    if($modules = _module_invoke_all('field_call_list')){
+      foreach($modules as $module => $types){
+        foreach($types as $key => $type){
+          $lists[$key] = $type;
+          $lists[$key]['module'] = $module;
+        }
+      }
+    }
+  }
+  return $name ? $lists[$name] : $lists;
+}
+
+/**
+ * 读取所有字段类型，用于表单
+ * @param (string) $name
+ *  字段组名
+ * @param (array) $group
+ *  字段分组信息，根据相关设置过滤指定类型。默认返回全部。
+ */
+function field_get_type_options($name = 0, $group = array()){
+  static $options;
+  if(!isset($options[$name])){
+    $options[$name] = array();
+    if($group){
+      if($group['type'] && is_array($group['type'])){
+        // 指定类型
+        foreach(field_get_call_lists() as $key => $value){
+          if(in_array($key, $group['type'])){
+            $options[$name][$key] = $value['title'];
+          }
+        }
+      }else if($group['term']){
+        $terms = field_get_term_type();
+        foreach(field_get_call_lists() as $key => $value){
+          if(in_array($key, $terms)){
+            $options[$name][$key] = $value['title'];
+          }
+        }
+      }
+    }
+    if(!$options[$name]){
+      foreach(field_get_call_lists() as $key => $value){
+        $options[$name][$key] = $value['title'];
+      }
+    }
+  }
+  return $options[$name];
+}
+/**
+ * @Implement of hook_field_call_list()
+ *  定义字段类型
+ */
+function field_field_call_list(){
+  return array(
+    'tags' => array(
+      'title' => t('field', '标签'),
+      'form_type' => 'textfield',
+    ),
+    'checkbox' => array(
+      'title' => t('field', '复选框'),
+      'form_type' => 'checkbox',
+    ),
+    'radio' => array(
+      'title' => t('field', '选项按钮'),
+      'form_type' => 'radio',
+    ),
+    'select' => array(
+      'title' => t('field', '下拉单选框'),
+      'form_type' => 'select',
+    ),
+    'selects' => array(
+      'title' => t('field', '下拉复选框'),
+      'form_type' => 'selects',
+    ),
+    'textfield' => array(
+      'title' => t('field', '单行文本'),
+      'form_type' => 'textfield',
+    ),
+    'textarea' => array(
+      'title' => t('field', '多行文本'),
+      'form_type' => 'textarea',
+    ),
+    'file' => array(
+      'title' => t('field', '文件上传'),
+      'form_type' => 'file',
+    )
+  );
+}
+
+/**
+ * @Implement of hook_field_call_form()
+ *  在添加/更新表单中增加自定义项目
+ */
+function field_field_call_form($field, &$form){
+  if($field->field_type == 'textarea'){
+    $form['fields']['data']['format'] = filter_form_field($field->data['format']);
+  }else if($field->field_type == 'file'){
+    $form['fields']['data']['multi'] = array(
+      '#type' => 'select',
+      '#title' => t('field', '数量'),
+      '#default_value' => $field->data['multi'],
+      '#options' => array(1 => 1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
+      '#description' => t('field', '可同时上传多个文件，默认为 1 个')
+    );
+    $form['fields']['data']['filetype'] = array(
+      '#type' => 'textfield',
+      '#title' => t('field', '类型'),
+      '#default_value' => $field->data['filetype'] ? implode('|', $field->data['filetype']) : '',
+      '#description' => t('field', '允许的文件类型，留空为不限。以|分隔，如：jpg|gif')
+    );
+    $form['fields']['data']['filesize'] = array(
+      '#type' => 'textfield',
+      '#title' => t('field', '大小'),
+      '#default_value' => $field->data['filesize'],
+      '#description' => t('field', '允许的文件大小，单位KB，留空为不限')
+    );
+    $form['fields']['data']['thumbs']['thumb'] = array(
+      '#type' => 'textfield',
+      '#title' => t('field', '小图'),
+      '#default_value' => $field->data['thumbs']['thumb'] ? $field->data['thumbs']['thumb'] : '85x85',
+      '#description' => t('field', '缩略图尺寸，如：85x85')
+    );
+    $form['fields']['data']['thumbs']['medium'] = array(
+      '#type' => 'textfield',
+      '#title' => t('field', '中图'),
+      '#default_value' => $field->data['thumbs']['medium'] ? $field->data['thumbs']['medium'] : '200x200',
+      '#description' => t('field', '适中图尺寸，如：200x200')
+    );
+    $form['fields']['data']['savepath'] = array(
+      '#type' => 'textfield',
+      '#title' => t('field', '路径'),
+      '#default_value' => $field->data['savepath'],
+      '#description' => t('field', '文件保存路径，留空则使用用户默认文件路径')
+    );
+  }else if($field->field_id){
+    $terms = field_get_term_type();
+    if(in_array($field->field_type, $terms)){
+      /**
+       * 编辑字段，是否允许在不同类型间变更？如把单行文本改为多行文本
+       * 不同字段数据结构、存储方式不同，变更会引发不同的问题
+       * 但传统型字段（即分类）常用类型变更需求，特别是新开设站点
+       * 所以允许在这几个类型间变更，但可能造成未知问题。
+       * 如自由标签变更为单选，若分类下已存在数据，将难以自动转换
+       * 通常在字段下已有数据时，不应该变更它
+       */
+      $form['fields']['field_type'] = array(
+        '#type' => 'select',
+        '#title' => t('field', '类型'),
+        '#required' => 1,
+        '#default_value' => $field->field_type,
+        '#options' => field_get_type_options('___term', array('term' => 1)),
+      );
+      unset($form['fields']['_field_type']);
+    }
+  }
+}
+
+/**
+ * 传统型分类字段类型
+ */
+function field_get_term_type(){
+  return array('tags', 'checkbox', 'select', 'radio', 'selects');
+}
+
+/**
+ * 提供一个可视化的字段添加\编辑表单界面，供模块调用
+ * @param (object) $field
+ *  包含字段参数的对象。若是新增，也必须传递 type、module 两个参数
+ *  即：创建该字段的模块，以及自定义字段分组。分组必须由该模块定义
+ *  即：通过 hook_field_call_group() 可获取分组信息，否则无法操作
+ */
+function field_form($field){
+  if(!$field->type || !$field->module){
+    dd_set_message(t('field', '参数不完整，无法调用表单'), 'error');
+    return;
+  }
+  if(!$group = module_invoke($field->module, 'field_call_group', $field->type)){
+    dd_set_message(t('field', '字段组未定义，无法调用表单'), 'error');
+    return;
+  }
+  
+  /**
+   * 添加时，必须先选择字段类型，以便于回调自定义项目
+   */
+  if(!$field->field_type && $_GET['field_field_type']){
+    $field->field_type = $_GET['field_field_type'];
+  }
+  
+  if(!$field->field_type || !$field_type = field_get_call_lists($field->field_type)){
+    $form['fields']['field_type'] = array(
+      '#type' => 'select',
+      '#title' => t('field', '请选择字段类型'),
+      '#required' => 1,
+      '#default_value' => $field->field_type,
+      '#options' => field_get_type_options($field->type, $group),
+    );
+    $form['fields']['submit'] = array(
+      '#type' => 'submit',
+      '#submit' => 'field_form_select_type'
+    );
+    return $form;
+  }
+  
+  if(!$field_type){
+    dd_set_message(t('field', '请求的字段类型不存在'), 'error');
+    return;
+  }
+  
+  $form['settings'] = array(
+    '#validate' => array('field_form_validate'),
+    '#description' => $group['description'],
+    '#redirect' => $field->redirect,
+    '#ajax_validate' => 1,
+  );
+  $form['fields']['name'] = array(
+    '#type' => 'textfield',
+    '#title' => t('field', '名称'),
+    '#weight' => -100,
+    '#default_value' => $field->name,
+    '#required' => 1,
+  );
+  $form['fields']['weight'] = array(
+    '#default_value' => $field->weight ? $field->weight : 0,
+    '#start' => 20,
+    '#end' => -20,
+    '#title' => t('field', '权重'),
+    '#type' => 'weight'
+  );
+  
+  $form['fields']['_field_type'] = array(
+    '#title' => t('field', '类型'),
+    '#value' => $field_type['title'],
+  );
+  if(!$field->field_id){
+    $form['fields']['_field_type']['#description'] = l(t('field', '返回重新选择'), $_GET['q'], array('query' => dd_query_string_encode($_GET, array_merge(array('q', 'field_field_type'), array_keys($_COOKIE)))));
+  }
+  $form['fields']['field_type'] = array(
+    '#type' => 'hidden',
+    '#constant' => 1,
+    '#default_value' => $field->field_type,
+  );
+  $form['fields']['required'] = array(
+  	'#type' => 'checkbox',
+  	'#title' => t('field', '必需'),
+  	'#default_value' => array($field->required),
+  	'#options' => array(1 => t('field', '是'))
+  );
+  $form['fields']['access'] = array(
+    '#fieldset_prefix' => 'asc',
+    '#fieldset_legend' => t('field', '权限'),
+    '#fieldset_suffix' => 1,
+    '#description' => t('field', '默认与节点权限相同，除非有特殊权限需求， 一般不需要设置以下选项'),
+  );
+  $roles = user_roles_opt();
+  $form['fields']['access']['view'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('field', '浏览'),
+    '#default_value' => $field->access['view'],
+    '#options' => $roles
+  );
+  $form['fields']['access']['update'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('field', '填写'),
+    '#default_value' => $field->access['update'],
+    '#options' => $roles
+  );
+  /*
+  $form['fields']['data'] = array(
+    '#fieldset_prefix' => 'asc',
+    '#fieldset_legend' => t('field', '更多设置'),
+    '#fieldset_suffix' => 1,
+  );
+  */
+  $form['fields']['data']['description'] = array(
+    '#type' => 'textfield',
+    '#title' => t('field', '描述'),
+    '#attributes' => array('size' => 50),
+    '#default_value' => $field->data['description'],
+  );
+  
+  /**
+   * 触发 hook_field_call_form()
+   * 模块可以在表单显示、验证、提交各环节自定义操作
+   */
+  module_alter_all('field_call_form', $field, $form);
+  
+  $form['fields']['type'] = array(
+    '#type' => 'hidden',
+    '#default_value' => $field->type,
+    '#constant' => 1,
+  );
+  $form['fields']['module'] = array(
+    '#type' => 'hidden',
+    '#default_value' => $field->module,
+    '#constant' => 1,
+  );
+  $form['fields']['field_id'] = array(
+    '#type' => 'hidden',
+    '#default_value' => $field->field_id,
+    '#constant' => 1,
+  );
+  
+  $form['fields']['submit']['#type'] = 'submit';
+  
+  return $form;
+}
+
+function field_form_validate($form, $v){
+  $v = (object)$v;
+  return field_save($v);
+}
+
+/**
+ * 添加界面字段类型选择
+ */
+function field_form_select_type($form, $v){
+  if($get = dd_query_string_encode($_GET, array_merge(array('q', 'field_field_type'), array_keys($_COOKIE)))){
+    $get .= '&';
+  }
+  $get .= 'field_field_type='.$v['field_type'];
+  dd_goto($_GET['q'], $get);
+}
+
+/**
+ * 保存一个字段
+ * @param (object) $field
+ *  字段对象，根据不同字段，成员各有不同，参见数据表 fields 结构
+ * @return
+ *  返回 array 或 false。保存不成功，返回带有错误信息，成功，则返回 false
+ */
+function field_save(&$field){
+  if(is_object($field) && $field->type && $field->module && $field->field_type){
+    
+    // 基本验证
+    $function = $field->module.'_field_call_group';
+    if(!function_exists($function) || !$info = $function($field->type)){
+      dd_set_message(t('field', '未定义的字段组'), 'error');
+      $error['module']['#error'][] = t('field', '未定义的字段组');
+    }else if(!$field->module){
+      $error['module']['#error'][] = t('field', '不能为空');
+    }else if(!field_get_call_lists($field->field_type)){
+      dd_set_message(t('field', '未定义的字段类型'), 'error');
+      $error['field_type']['#error'][] = t('field', '未定义的字段类型');
+    }else if(!$field->field_type){
+      $error['field_type']['#error'][] = t('field', '不能为空');
+    }else if(!$field->type){
+      $error['type']['#error'][] = t('field', '不能为空');
+    }else if(mb_strlen($field->type, 'utf-8') > 16){
+      $error['type']['#error'][] = t('field', '长度不超过 %strlen 个字符', array('%strlen' => 16));
+    }else if(mb_strlen($field->field_func, 'utf-8') > 64){
+      $error['field_func']['#error'][] = t('field', '长度不超过 %strlen 个字符', array('%strlen' => 64));
+    }else if($field->name && mb_strlen($field->name, 'utf-8') > 64){
+      $error['name']['#error'][] = t('field', '长度不超过 %strlen 个字符', array('%strlen' => 64));
+    }else if(preg_match('/[^0-9|a-z|_]/i', $field->type)){
+      $error['type']['#error'][] = t('field', '只能是数字、字母与下划线');
+    }else if($field->field_func && preg_match('/[^0-9|a-z|_]/i', $field->field_func)){
+      $error['field_func']['#error'][] = t('field', '只能是数字、字母与下划线');
+    }else{
+      
+      if(!$field->weight) $field->weight = 0;
+      if(!$field->required){
+        $field->required = 0;
+      }else{
+        $field->required = 1;
+      }
+      if(!isset($field->deleted)) $field->deleted = 1;
+      if(!$field->locked) $field->locked = 0;
+      if(!$field->field_func) $field->field_func = '';
+      
+      // 触发 hook_field_call_validate()
+      if(!$error = module_invoke_all('field_call_validate', $field)){
+        // 保存字段数据
+        
+        if($field->field_id){
+          // 更新
+          if(db_exec('UPDATE {fields} SET field_type = ?, field_func = ?, type = ?, module = ?, name = ?, weight = ?, required = ?, access = ?, deleted = ?, locked = ?, data = ? WHERE field_id = ?', array($field->field_type, $field->field_func, $field->type, $field->module, $field->name, $field->weight, $field->required, serialize($field->access), $field->deleted, $field->locked, serialize($field->data), $field->field_id), array('return' => 'return'))){
+            $field->field_id = db_last_insert_id();
+          }else{
+            dd_set_message(t('field', '更新失败'), 'error');
+            return false;
+          }
+        }else{
+          // 添加
+          if($info['sum']){
+            $count = db_query('SELECT COUNT(*) FROM {fields} WHERE module = ? AND type = ?', array($field->module, $field->type), array('return' => 'column'));
+            if($count + 1 > $info['sum']){
+              dd_set_message(t('field', '该组最多添加 %length 个字段', array('%length' => $info['sum'])), 'error');
+              $error['type']['#error'][] = t('field', '该组最多添加 %length 个字段', array('%length' => $info['sum']));
+              return $error;
+            }
+          }
+          
+          if(db_exec('INSERT INTO {fields} (field_type, field_func, type, module, name, weight, required, access, deleted, locked, data) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', array($field->field_type, $field->field_func, $field->type, $field->module, $field->name, $field->weight, $field->required, serialize($field->access), $field->deleted, $field->locked, serialize($field->data)))){
+            $field->field_id = db_last_insert_id();
+          }else{
+            dd_set_message(t('field', '写入失败'), 'error');
+            return false;
+          }
+        }
+        
+        /**
+         * 触发 hook_field_call_save()
+         */
+        module_invoke_all('field_call_save', $field);
+        
+        field_get_cache_field(NULL, 1); // 更新缓存
+        return false;
+      }
+    }
+    
+    return $error;
+  }
+}
+
+/**
+ * 加载字段数据
+ * @param (int) $field_id
+ *  字段 id
+ * @param (bool) $clear
+ *  默认从缓存中读取，若传递 true，则读取数据库，并调用 hook_field_call_load()
+ */
+function field_load($field_id, $clear = NULL){
+  static $fields;
+  $lists = field_get_call_lists();
+  if(!isset($fields[$field_id])){
+    if(!$clear){
+      $fields[$field_id] = field_get_cache_field($field_id);
+    }else if($field = db_query('SELECT * FROM {fields} WHERE field_id = ?', array($field->field_id), array('return' => 'one'))){
+      $field->field_module = $lists[$field->field_type]['name'];
+      module_alter_all('field_call_load', $field);
+      $fields[$field_id] = $field;
+    }
+  }
+  return $fields[$field_id];
+}
+
+/**
+ * 输出字段管理界面。默认获取全部，也可按模块、按分组获取
+ * 函数将占用以 field_ 开头的 _GET、_POST 参数，以便于将基本操作集中
+ * 调用本函数的模块，应避免在相同页面使用上述参数
+ * 默认提供删除、编辑操作，提供一个路径用做自定义界面
+ * $_GET['field_op'] == 'custom' 时，将调用 {module}_field_call_custom()
+ * @param (string) $module
+ *  模块系统名称
+ * @param (string) $group
+ *  字段分组名称
+ */
+function field_lists($module = NULL, $type = NULL){
+  if($_POST['field_field_id']){
+    if(isset($_POST['field_change_weight']) && is_numeric($_POST['field_change_weight'])){
+      if(db_exec('UPDATE {fields} SET weight = ? WHERE field_id = ?', array($_POST['field_change_weight'], $_POST['field_field_id']))){
+        echo 'ok';
+      }
+      exit;
+    }
+    if(isset($_POST['field_change_required']) && is_numeric($_POST['field_change_required'])){
+      if(db_exec('UPDATE {fields} SET required = ? WHERE field_id = ?', array($_POST['field_change_required'], $_POST['field_field_id']))){
+        echo 'ok';
+      }
+      exit;
+    }
+  }
+  
+  if($_GET['field_field_id']){
+    if($field = field_load($_GET['field_field_id'])){
+      switch($_GET['field_op']){
+        case 'custom':
+          /**
+           * 预留路径，由定义字段类型的模块操作
+           * 比如，多级分类可在此提供下级分类管理界面
+           * 注意：仅回调定义当前字段类型的模块的 hook_field_call_custom()
+           */
+          $types = field_get_call_lists();
+          $function = $types[$field->field_type]['module']. '_field_call_custom';
+          if(function_exists($function)){
+            return $function($field);
+          }else{
+            dd_set_message(t('field', '错误的请求'));
+            dd_goto(dd_get_history());
+          }
+        break;
+        case 'update':
+          if(!$field->locked){
+            return dd_get_form('field_form', $field);
+          }else{
+            dd_set_message(t('field', '这个字段不允许编辑'), 'error');
+          }
+        break;
+        case 'delete':
+          /**
+           * 删除字段
+           * 触发 hook_field_call_delete()
+           */
+          if($field->deleted){
+            if(db_exec('DELETE FROM {fields} WHERE field_id = ?', array($field->field_id))){
+              module_invoke_all('field_call_delete', $field);
+              dd_set_message(t('field', '删除成功'));
+              field_get_cache_field(NULL, 1); // 更新缓存
+            }else{
+              dd_set_message(t('field', '删除失败'), 'error');
+            }
+          }else{
+            dd_set_message(t('field', '这个字段不允许删除'), 'error');
+          }
+          dd_goto(dd_get_history());
+        exit;
+      }
+    }else{
+      dd_set_message(t('field', '错误的访问'), 'error');
+      return;
+    }
+  }
+  
+  if($module && $type){
+    $fetch = pager_query('SELECT * FROM {fields} WHERE module = ? AND type = ?', 10, 0, NULL, array($module, $type));
+  }else if($module){
+    $fetch = pager_query('SELECT * FROM {fields} WHERE module = ?', 10, 0, NULL, array($module));
+  }else{
+    $fetch = pager_query('SELECT * FROM {fields}', 10);
+  }
+  
+  if(!$fetch) return system_no_content();
+  
+  $types = field_get_call_lists();
+  
+  $header = array(
+    t('field', '名称'),
+    t('field', '类型'),
+    t('field', '必需'),
+    t('field', '权重'),
+    t('field', '操作')
+  );
+  
+  if($get = dd_query_string_encode($_GET, array_merge(array('q', 'field_field_id'), array_keys($_COOKIE)))){
+    $get .= '&';
+  }
+  
+  foreach($fetch as $field){
+    $links = array();
+    if(!$field->locked){
+      $links[] = l(t('field', '编辑'), $_GET['q'], array('query' => $get.'field_op=update&field_field_id='.$field->field_id.'#redirect='.rawurlencode($_SERVER['REQUEST_URI'])));
+    }
+    if($field->deleted){
+      $links[] = l(t('field', '删除'), $_GET['q'], array('query' => $get.'field_op=delete&field_field_id='.$field->field_id, 'attributes' => array('class' => 'confirm')));
+    }
+    module_alter_all('field_call_links', $field, $links, $get);
+    
+    $table[] = array(
+      $field->name, $types[$field->field_type]['title'],
+      dd_form_select(
+        array(
+          '#name' => 'field_list_required',
+          '#value' => $field->required,
+          '#attributes' => array('alt' => $field->field_id),
+          '#options' => array(t('field', '否'), t('field', '是'))
+        )
+      ),
+      dd_form_weight(
+        array(
+          '#name' => 'field_list_weight',
+          '#value' => $field->weight,
+          '#attributes' => array('alt' => $field->field_id),
+          '#start' => 20,
+          '#end' => -20,
+        )
+      ),
+      dd_imp($links)
+    );
+  }
+  
+  $output = theme('table', $header, $table, array('id' => 'field_admin_list'));
+  return $output;
+}
+
+/**
+ * @Implement of hook_field_call_links()
+ * 自定义字段管理界面链接，
+ */
+function field_field_call_links($field, &$links = NULL, $get = NULL){
+  if(in_array($field->field_type, field_get_term_type())){
+    $links[] = l(t('field', '浏览子级'), $_GET['q'], array('query' => $get.'field_op=custom&field_custom=view&field_field_id='.$field->field_id));
+    $links[] = l(t('field', '添加子级'), $_GET['q'], array('query' => $get.'field_op=custom&field_custom=add&redirect='.rawurlencode($_SERVER['REQUEST_URI']).'&field_field_id='.$field->field_id));
+  }
+}
+
+/**
+ * @Implement of hook_field_call_custom()
+ * field 只提供基本数据的操作接口及管理界面，即对 fields 表的操作
+ * 有些类型可能需要提供界面和操作，故而在字段管理界面预留路径，用做自定义
+ * 在字段管理界面下，当 $_GET['field_op'] == 'custom'，将回调函数
+ * 以下主要为增强传统分类型字段的功能，便于通过界面管理
+ * field_save_term() 等函数也可供模块直接操作上述类型的字段
+ */
+function field_field_call_custom($field){
+  if(in_array($field->field_type, field_get_term_type())){
+    if($_GET['field_term_tid']){
+      $term = field_term_load($_GET['field_term_tid']);
+    }
+    switch($_GET['field_custom']){
+      case 'view':
+      return field_term_lists($field, $term);
+      case 'add':
+      return dd_get_form('field_term_form', $field, $term);
+      case 'update':
+      return dd_get_form('field_term_form', $field, $term);
+      case 'delete':
+        if($term && field_term_delete($term)){
+          dd_set_message(t('field', '%string 及其子级已成功删除', array('%string' => $term->name)));
+        }else{
+          dd_set_message(t('field', '删除失败'), 'error');
+        }
+        dd_goto(dd_get_history());
+    }
+  }
+}
+
+/**
+ * 分类字段为：tags、select、radio、selects、checkbox
+ * 与分类操作相关的接口：
+ * 载入分类：hook_field_call_term_load(&$term)，$field 在 $term->field
+ * 分类表单：hook_field_call_term_form(&$form, &$field, &$term)
+ * 分类验证：hook_field_call_term_validate($field, $term)
+ * 分类保存：hook_field_call_term_save($field, $term)
+ * 分类删除：hook_field_call_term_delete($term)
+ */
+
+/**
+ * 验证层级分类层级，最多不超过 10 级
+ * 检查 {tid} == $pid 的分类是否允许子分类
+ */
+function field_term_is_level($pid, $level){
+  if($level == 1 && $pid){
+    return false;
+  }
+  
+  if(!$pid){
+    return true;
+  }
+  
+  if(!$level || $level > 10){
+    $level = 10;
+  }
+  
+  static $lists;
+  if(!isset($lists[$pid])){
+		$i = 2;
+    $lists[$pid] = true;
+    $_pid = $pid;
+		while($_pid = db_query('SELECT pid FROM {fields_term} WHERE tid = ? AND pid != 0', array($_pid), array('return' => 'column'))){
+			if($level == $i){
+        $lists[$pid] = false;
+        return false;
+      }
+      ++$i;
+		}
+  }
+  return $lists[$pid];
+}
+
+/**
+ * 按 pid 生成树形选择项
+ */
+function field_term_options($field, $level = NULL, $data = 0){
+  if(!$level || $level > 10) $level = 10;
+  
+  $options[0] = $field->name;
+  if($fetch = db_query('SELECT pid, tid, name FROM {fields_term} WHERE field_id = ? ORDER BY pid ASC, weight ASC, tid ASC', array($field->field_id))){
+    $i = '--';
+    $j = 2;
+    $pid = 0;
+    foreach($fetch as $o){
+      if($pid != $o->pid){
+        $pid = $o->pid;
+        $i .= '--';
+        ++$j;
+      }
+      if(!$data){
+        if($j > $level) break;
+        $options[$o->tid] = $i.$o->name;
+      }else{
+        $o->name = $i.$o->name;
+        $options[$o->tid] = $o;
+      }
+    }
+  }
+  return $options;
+}
+
+/**
+ * 分类管理界面
+ */
+function field_term_lists($field, $term = NULL){
+  $group = module_invoke($field->module, 'field_call_group', $field->type);
+  $sub_tabs[] = l(t('field', '返回管理'), $_GET['q']);
+  $get = dd_query_string_encode($_GET, array_merge(array('q', 'field_term_tid', 'field_custom', 'field_term_lists'), array_keys($_COOKIE)));
+  
+  $redirect = '&redirect='.rawurlencode($_SERVER['REQUEST_URI']);
+  
+  if($term->tid){
+    $sub_tabs[] = l(t('field', '返回上级'), $_GET['q'], array('query' => $get.'&field_custom=view&field_term_tid='.$term->pid));
+    $sub_tabs[] = l(t('field', '添加'), $_GET['q'], array('query' => $get.'&field_custom=add&field_term_pid='.$term->tid.$redirect));
+  }else{
+    $term->tid = 0;
+    $sub_tabs[] = l(t('field', '添加'), $_GET['q'], array('query' => $get.'&field_custom=add&'.$redirect));
+    $sub_tabs['level'] = l(t('field', '树形显示全部分类'), $_GET['q'], array('query' => $get.'&field_custom=view&field_term_lists=1'));
+  }
+  
+  dd_set_title(array($term->name, $field->name, $group['title']));
+  
+  if(!$_GET['field_term_lists']){
+    $fetch = pager_query('SELECT * FROM {fields_term} WHERE field_id = ? AND pid = ?', 10, 0, NULL, array($field->field_id, $term->tid));
+  }else if($options = field_term_options($field, $group['level'], 1)){
+    array_shift($options);
+    $fetch = (object) $options;
+    $sub_tabs['level'] = l(t('field', '分页显示分类'), $_GET['q'], array('query' => $get.'&field_custom=view'));
+  }
+  if($fetch){
+    $header = array(
+      t('field', '名称'), t('field', '操作')
+    );
+    
+    foreach($fetch as $o){
+      $links = array(
+        l(t('field', '编辑'), $_GET['q'], array('query' => $get.'&field_custom=update&field_term_tid='.$o->tid.$redirect)),
+        l(t('field', '删除'), $_GET['q'], array('query' => $get.'&field_custom=delete&field_term_tid='.$o->tid, 'attributes' => array('class' => 'confirm'))),
+      );
+      if(field_term_is_level($o->tid, $group['level'])){
+        if(!$_GET['field_term_lists']){
+          $links[] = l(t('field', '浏览子级'), $_GET['q'], array('query' => $get.'&field_custom=view&field_term_tid='.$o->tid));
+        }
+        $links[] = l(t('field', '添加子级'), $_GET['q'], array('query' => $get.'&field_custom=add&field_term_pid='.$o->tid.$redirect));
+      }
+      
+      $table[] = array($o->name, dd_imp($links));
+    }
+    $output = theme('table', $header, $table);
+  }else{
+    $output = system_no_content();
+  }
+  
+  dd_set_sub_tabs($sub_tabs);
+  return $output;
+}
+
+/**
+ * 载入分类
+ */
+function field_term_load($tid){
+	static $terms;
+	if(!isset($term[$tid])){
+		if($term = db_query('SELECT * FROM {fields_term} WHERE tid = ?', array($tid), array('return' => 'one'))){
+		  $field = field_load($term->field_id);
+      $term->field = $field;
+		  module_alter_all('field_call_term_load', $term);
+		}
+		$terms[$tid] = $term;
+	}
+	return $terms[$tid];
+}
+
+/**
+ * 验证分类浏览权限，权限继承自field
+ */
+function field_term_access($term){
+  return field_access('view', $term->field);
+}
+
+/**
+ * 浏览分类，实现 hook_field_term_view()
+ * 浏览页面将回调定义该分类的模块
+ * 由该模块输出内容
+ */
+/*
+function field_field_term_view($term){
+  $output = '内容';
+  return $output;
+}
+*/
+
+/**
+ * 删除分类，同时将删除所有子分类，及 field_node 表中相关数据
+ */
+function field_term_delete($term){
+  if(!$term->field_id) $term = field_term_load($term->tid);
+  if(db_exec('DELETE FROM {fields_term} WHERE field_id = ? AND (pid = ? OR tid = ?)', array($term->field_id, $term->tid, $term->tid))){
+    module_alter_all('field_call_term_delete', $term);
+    return true;
+  }
+}
+
+/**
+ * 分类表单
+ */
+function field_term_form($field = NULL, $term = NULL){
+  if(!$field && $term->field_id){
+    $field = field_load($term->field_id);
+  }
+	if(!$field->field_id){
+		dd_set_message(t('field', '错误的请求'), 'error');
+		return false;
+	}
+  
+	// 读取字段组信息
+	if(!$group = module_invoke($field->module, 'field_call_group', $field->type)){
+    dd_set_message(t('field', '错误的请求'), 'error');
+    return false;
+  }
+  
+  if($_GET['field_term_pid'] && !$term->pid){
+    $term->pid = $_GET['field_term_pid'];
+  }
+  
+  $sub_tabs[] = l(t('field', '返回管理'), $_GET['q']);
+  if($term->pid){
+    if($get = dd_query_string_encode($_GET, array_merge(array('q', 'field_custom', 'field_term_tid', 'field_term_pid', 'redirect'), array_keys($_COOKIE)))){
+      $get .= '&field_custom=view&';
+    }
+    $get .= 'field_term_tid='.$term->pid;
+    $sub_tabs[] = l(t('field', '返回上级'), $_GET['q'], array('query' => $get));
+  }
+  dd_set_sub_tabs($sub_tabs);
+  
+  $form['settings'] = array(
+    '#validate' => array('field_term_form_validate'),
+    '#ajax_validate' => 1,
+  );
+  
+  $form['fields']['pid'] = array(
+    '#title' => t('field', '上级'),
+    '#type' => 'select',
+    '#default_value' => $term->pid,
+    '#options' => field_term_options($field, $group['level'])
+  );
+  
+  $form['fields']['field_id'] = array(
+  	'#type' => 'hidden',
+  	'#default_value' => $field->field_id,
+  	'#constant' => 1
+  );
+  
+  $form['fields']['name'] = array(
+    '#type' => 'textfield',
+    '#title' => t('field', '名称'),
+    '#default_value' => $term->name,
+    '#required' => 1,
+  );
+  $form['fields']['description'] = array(
+    '#type' => 'textarea',
+    '#title' => t('field', '描述'),
+    '#default_value' => $term->description,
+  );
+  $form['fields']['tid'] = array(
+    '#type' => 'hidden',
+    '#default_value' => $term->tid,
+    '#constant' => 1,
+  );
+  $form['fields']['weight'] = array(
+    '#default_value' => $term->weight ? $term->weight : 0,
+    '#start' => 20,
+    '#end' => -20,
+    '#title' => t('field', '权重'),
+    '#type' => 'weight'
+  );
+  
+  module_alter_all('field_call_term_form', $form, $field, $term);
+  
+  $form['fields']['submit']['#type'] = 'submit';
+  return $form;
+}
+
+/**
+ * 分类验证、保存
+ */
+function field_term_form_validate($form, $v){
+  if($field = field_load($v['field_id'])){
+    $term = (object)$v;
+    /**
+     * 1、触发自定义验证 hook_field_call_term_validate()
+     * 2、调用 field_save_term() 保存数据
+     * 3、触发自定义保存 hook_field_call_term_save()
+     */
+    if($term = field_save_term($field, $term)){
+      module_invoke_all('field_call_term_save', $field, $term);
+      field_set_cache_term();
+      dd_set_message(t('field', '操作成功'));
+    }else{
+      return true;
+    }
+    
+  }else{
+    dd_set_message(t('field', '不正确的字段'));
+    return true;
+  }
+}
+
+/**
+ * 保存分类数据，若存在则更新
+ */
+function field_save_term($field, $term, $batch = 0){
+  if($error = module_invoke_all('field_call_term_validate', $field, $term)){
+    dc_set_message(implode('<br />', dd_array_multi2single($error)), 'error');
+    return false;
+  }
+  if(mb_strlen($term->name, 'utf-8') > 64){
+		dc_set_message(t('field', '名称长度不超过 75 个字符'), 'error');
+		return false;
+  }
+	if(!$group = module_invoke($field->module, 'field_call_group', $field->type)){
+    dd_set_message(t('field', '字段组不存在'), 'error');
+    return false;
+  }
+  
+	if(!field_term_is_level($term->pid, $group['level'])){
+		dd_set_message(t('field', '层级深度已超过限制，添加失败'), 'error');
+		return false;
+	}
+  
+  if(!$term->field_id) $term->field_id = $field->field_id;
+  
+  if($term->tid){
+    if(!db_query('SELECT tid FROM {fields_term} WHERE field_id = ? AND name = ? AND tid != ?', array($field->field_id, $term->name, $term->tid), array('return' => 'column'))){
+      return field_update_term($term);
+    }else{
+      dd_set_message(t('field', '%string 已经存在', array('%string' => $term->name)), 'error');
+      return false;
+    }
+  }
+  
+  if($batch){
+    static $data;
+    if(!isset($data[$term->field_id])){
+      $data[$term->field_id] = array($term->pid => array());
+      if($fetch = db_query('SELECT pid, name FROM {fields_term} WHERE field_id = ?', array($term->field_id))){
+        foreach($fetch as $o){
+          $data[$term->field_id][$o->pid][] = $o->name;
+        }
+      }
+    }
+    if($data[$term->field_id] && in_array($term->name, $data[$term->field_id][$term->pid])){
+      return field_update_term($term);
+    }else{
+      return field_insert_term($term);
+    }
+  }else if(!db_query('SELECT tid FROM {fields_term} WHERE field_id = ? AND name = ?', array($field->field_id, $term->name), array('return' => 'column'))){
+    return field_insert_term($term);
+  }else{
+    dd_set_message(t('field', '%string 已经存在', array('%string' => $term->name)), 'error');
+    return false;
+  }
+}
+
+/**
+ * 写入分类数据
+ */
+function field_insert_term($term){
+  if(!$term->weight) $term->weight = 0;
+  if(!$term->pid) $term->pid = 0;
+  if(!$term->description) $term->description = '';
+  if(db_exec('INSERT INTO {fields_term} (pid, field_id, weight, name, description) VALUES (?, ?, ?, ?, ?)', array($term->pid, $term->field_id, $term->weight, $term->name, $term->description))){
+    if($term->tid = db_last_insert_id()) return $term;
+  }
+}
+
+/**
+ * 更新分类数据
+ */
+function field_update_term($term){
+  if(!$term->weight) $term->weight = 0;
+  if(!$term->pid) $term->pid = 0;
+  if(!$term->description) $term->description = '';
+  if(db_exec('UPDATE {fields_term} SET pid = ?, weight = ?, name = ?, description = ? WHERE tid = ?', array($term->pid, $term->weight, $term->name, $term->description, $term->tid), array('return' => 1))){
+    return $term;
+  }
+}
+
+/**
+ * 批量写入传统型分类字段(即 field_get_term_type())
+ */
+function field_batch_save_term(&$field, $pid = 0, $data = array(), $message = 1){
+  if(!$data) return false;
+  foreach($data as $term){
+    if(is_array($term)){
+      if($term['name']){
+        if($t = field_save_term($field, (object)array('pid' => $pid, 'name' => $term['name'], 'weight' => $term['weight']), 1)){
+          if($message) dd_set_message(t('field', '%string 添加成功', array('%string' => $t->name)));
+          if($term['childrens'] && is_array($term['childrens'])){
+            field_batch_save_term($field->field_id, $t->tid, $term['childrens'], $message);
+          }
+        }
+      }
+    }else if(field_save_term($field, (object)array('pid' => $pid, 'name' => $term), 1)){
+      if($message) dd_set_message(t('field', '%string 添加成功', array('%string' => $term)));
+    }
+  }
+  return true;
+}
+
+/**
+ * @Implement of hook_field_call_validate()
+ *  添加\更新字段通过基本验证后回调
+ * @return
+ *  返回 array 或 false。array 包含一组错误信息，阻止操作。false 则表示通过验证
+ */
+
+function field_field_call_validate(&$field){
+  if($field->field_type == 'file'){
+    if(strpos($field->data['filetype'], '|') !== false){
+      $field->data['filetype'] = explode('|', $field->data['filetype']);
+    }else if($field->data['filetype']){
+      $field->data['filetype'] = array($field->data['filetype']);
+    }
+    if($field->data['filesize'] && !is_numeric($field->data['filesize'])){
+      dd_set_message(t('field', '文件大小只能是数字'), 'error');
+      return true;
+    }
+  }
+}
+
+/**
+ * @Implement of hook_field_call_load()
+ *  载入字段
+ */
+/*
+function field_field_call_load(&$field){
+}
+*/
+
+/**
+ * @Implement of hook_field_call_delete()
+ *  删除字段
+ */
+/*
+function field_field_call_delete($field){
+}
+*/
+
+/**
+ * @Implement of hook_field_call_save()
+ *  字段添加\更新成功后回调
+ */
+function field_field_call_save($field){
+  /** 
+   * 字段类型的创建者（模块）可为字段定义多个参数，在字段基本信息存储成功后，自行写入
+   * 如本模块的传统型字段即定义了 $field->children，它包含一个分类树。格式如：
+      $field->children = array(
+        array(
+          'name' => '中国',
+          'weight' => 10,
+          'childrens' => array(
+            array(
+              'name' => '四川',
+              'childrens' => array(
+                array(
+                  'name' => '成都'
+                ),
+              )
+            ),
+          )
+        )
+      );
+   * 或 $field->children = array('中国', '美国', '法国');
+   * 这个分类树，最多不超过 10 级，在定义字段组时，可以设置层级限制
+   * 字段基本信息添加成功后，若有此值，则写入 field_term 表中
+   */
+   if($field->children && in_array($field->field_type, field_get_term_type())){
+     field_batch_save_term($field, 0, $field->children);
+   }
+}
+
+/**
+ * @示例 hook_field_call_group()
+ *  创建模块字段组参数。字段创建是开放的，模块可以允许使用者自行创建字段
+ *  hook_field_call_group() 用来设置创建字段的规范或限制
+ *  每个模块创建的字段应该有不同的标识，对应于 fields 表中的 type 字段，而 module 字段则是模块名称
+ *  type 相当于组，一个组中可以有多个字段。比如：
+ *  模块可以设置一个 comment_field 组，在这个组下创建多个评论字段，再创建一个 user_field 组，用以创建用户字段
+ *  type 只能以英文、数字和下划线命名，且在相同模块中不能重复
+ * @return
+ *  返回以 type 为键名的数组
+ */
+
+/**
+function field_field_call_group($type = NULL){
+  $groups = array(
+    'comment_field' => array(
+    	'title' => '评论字段', // 组名称。如资讯分类、评论字段等
+      'sum' => 0, // 该组下允许添加的字段数量，0 则为不限制
+      'term' => 1, // 只允许添加传统型分类，即 标签、下拉框、单选、复选
+      'type' => array('tags'), // 允许的类型，优先级高于 term
+    	'level' => 0, // 分类层级级数，0 则为不限制(实际最多 10 级)。标签、单\多行文本、文件只有 1 层
+      'fieldset' => false,
+      'description' => '描述', // 描述
+    )
+  );
+  return $type ? $groups[$type] : $groups;
+}
+ */
+
+/**
+ * 写入分类缓存，按字段分组信息
+ */
+function field_set_cache_term($module = NULL, $type = NULL){
+  if($module && $type){
+    $fetch = db_query('SELECT t.*, f.module, f.type, f.field_type FROM {fields_term} t INNER JOIN {fields} f ON t.field_id = f.field_id WHERE f.type = ? AND f.module = ? AND f.field_type != ? ORDER BY t.weight ASC, t.tid ASC', array($type, $module, 'tags'));
+  }else{
+    $fetch = db_query('SELECT t.*, f.module, f.type, f.field_type FROM {fields_term} t INNER JOIN {fields} f ON t.field_id = f.field_id WHERE f.field_type != ? ORDER BY t.weight ASC, t.tid ASC', array('tags'));
+  }
+  
+  if($fetch){
+    global $conf;
+    foreach($fetch as $o){
+      if($o->pid && ($o->field_type == 'select' || $o->field_type == 'selects')){
+        $conf['field_term_children'][$o->field_id] = 1;
+        $children = 1;
+        continue;
+      }
+      $key = $o->module.'_'.$o->type;
+      $p[$key][$o->field_id][$o->tid] = $o;
+    }
+    foreach($p as $k => $data){
+      cache_set('field_term_'.$k, $data);
+    }
+    if($children){
+      var_set('field_term_children', $conf['field_term_children']);
+    }
+    return $p;
+  }
+}
+
+/**
+ * 按字段组获取分类缓存，标签除外
+ */
+function field_get_cache_term($module, $type){
+  static $term;
+  $key = 'field_term_'.$module.'_'.$type;
+  if(!isset($term[$key])){
+    $term[$key] = array();
+    if($cache = cache_get($key)){
+      $term[$key] = $cache->data;
+    }else if($data = field_set_cache_term($module, $type)){
+        $term[$key] = $data[$key];
+    }
+  }
+  return $term[$key];
+}
+
+/**
+ * 获取（清除）所有字段缓存数据
+ */
+function field_get_cache_field($field_id = NULL, $clear = 0){
+  if($clear || !$data = var_get('field_data', 0)){
+    $data = array();
+    if($fetch = db_query('SELECT * FROM {fields}')){
+      $lists = field_get_call_lists();
+      foreach($fetch as $o){
+        if($o->access) $o->access = unserialize($o->access);
+        if($o->data) $o->data = unserialize($o->data);
+        $o->field_module = $lists[$o->field_type]['module'];
+        module_alter_all('field_call_load', $o);
+        $data[$o->field_id] = $o;
+      }
+      var_set('field_data', $data);
+    }
+  }
+  return $field_id ? $data[$field_id] : $data;
+}
+
+/**
+ * 按模块和类型获取字段缓存数据
+ * @param (string) $module
+ *  fields 表中 module 字段
+ * @param (string) $type
+ *  fields 表中 type 字段
+ * @param (bool) $clear
+ *  true 则清空数据，重新生成缓存
+ */
+function field_get_cache_field_group($module, $type = NULL, $clear = 0){
+  if($fields = field_get_cache_field(NULL, $clear)){
+    foreach($fields as $field){
+      $data[$field->module][$field->type][$field->field_id] = $field;
+    }
+  }
+  if($data && $data[$module]){
+    if($type){
+      return $data[$module][$type];
+    }else{
+      return $data[$module];
+    }
+  }
+}
+
+/**
+ * 以下相关函数是字段在节点中的应用接口
+ * 节点可以是任何对象，通过字段组名让字段与其关联，调用相应接口进行操作
+ * 如用户提交、更新、删除节点，同时也将操作关联的字段，以 field_node_ 为前缀
+ * 接口：
+ * 获取字段组表单：hook_field_node_form()
+ * 验证用户输入：hook_field_node_validate()
+ * 保存：hook_field_node_save()
+ * 删除：hook_field_node_delete()
+ * 浏览：hook_field_node_view() - 仅回调定义字段类型的模块
+ * 加载：hook_field_node_load() - 仅回调定义字段类型的模块
+ */
+
+/**
+ * 按类型获取节点下所有字段数据
+ * @param (string) $type
+ *  term：分类，textfield：单行文本，textarea：多行文本，file：上传字段
+ */
+function field_get_node_data($nid, $type = 'term'){
+  static $data;
+  if(!isset($data[$nid])) $data[$nid] = array();
+  if(!isset($data[$nid][$type])){
+    switch($type){
+      case 'term':
+        $data[$nid][$type] = db_query('SELECT t.field_id, t.pid, t.name, t.tid, t.weight FROM {fields_term_node} n INNER JOIN {fields_term} t ON n.tid = t.tid WHERE n.nid = ?', array($nid));
+      break;
+      case 'file':
+        // ext_id：字段id，ext_id2：节点id
+        $data[$nid][$type] = db_query('SELECT fid, ext_id AS field_id, filepath, filename, filesize, filemime, timestamp, filebody FROM {files} WHERE ext_id2 = ? AND ext_type = ?', array($nid, 'field_file'));
+      break;
+      case 'textfield':
+        $data[$nid][$type] = db_query('SELECT text, field_id FROM {fields_small} WHERE nid = ?', array($nid));
+      break;
+      case 'textarea':
+        $data[$nid][$type] = db_query('SELECT text, field_id FROM {fields_long} WHERE nid = ?', array($nid));
+    }
+  }
+  return $data[$nid][$type];
+}
+
+/**
+ * 加载节点下的字段数据
+ * @param (string) $module
+ *  创建字段的模块，即 fields.module
+ * @param (string) $type
+ *  自定义分组标识，即 fields.type
+ * @param (object) $node
+ *  节点对象
+ */
+function field_get_node_load($module, $type, & $node){
+  if(!$datas = field_get_cache_field_group($module, $type)) return;
+  // 分组下可能有 1 个或多个字段
+  $term_type = field_get_term_type();
+  foreach($datas as $data){
+    if(!field_access('view', $data, $node)){
+      // 至少有浏览权限，才能加载数据
+      continue;
+    }
+    
+    /**
+     * (object)$data 字段配置对象，见 fields 表结构说明
+     */
+    if(!$data->field_func){
+      // 没有自定义处理函数的字段
+      if(in_array($data->field_type, $term_type)){
+        // 分类类型
+        if($fetch = field_get_node_data($node->nid, 'term')){
+          foreach($fetch as $o){
+            if($o->field_id == $data->field_id){
+              
+              switch($data->field_type){ // 应用于表单
+                case 'select': case 'radio': // 单选
+                  $node->fields[$o->field_id] = $o;
+                break;
+                case 'checkbox': case 'selects': case 'tags':// 多选
+            	    $node->fields[$o->field_id][$o->tid] = $o;
+              }
+            }
+          }
+        }
+      }else if($data->field_type == 'textfield' || $data->field_type == 'textarea'){ 
+        // 单行文本 和 多行文本
+        if($fetch = field_get_node_data($node->nid, $data->field_type)){
+          foreach($fetch as $o){
+            if($o->field_id == $data->field_id){
+              $node->fields[$o->field_id] = $o;
+              continue;
+            }
+          }
+        }
+      }else if($data->field_type == 'file'){ // 上传字段
+        if($fetch = field_get_node_data($node->nid, 'file')){
+          foreach($fetch as $o){
+            if($o->field_id == $data->field_id){
+              $node->fields[$o->field_id][$o->fid] = $o;
+            }
+          }
+        }
+      }else{
+        /**
+         * 其它模块定义的类型，回调 模块名_字段类型_call_load 函数，传递字段配置对象，引用传递节点对象
+         * 回调函数应该加载字段数据到 $node->fields
+         */
+        $function = $data->field_module.'_'.$data->field_type.'_field_node_load';
+        if(function_exists($function)) $function($data, $node);
+      }
+    }else{
+      /**
+       * 自定义处理函数即 fields 数据表中 field_func 字段
+       * 传递操作参数 load，传递字段配置对象，引用传递节点对象
+       * 操作参数：
+       *  load：节点加载
+       *  form：节点表单
+       *  insert：写入节点
+       *  delete：删除节点
+       *  update：更新节点
+       */
+      $data->field_func('load', $data, $node);
+    }
+  }
+}
+
+/**
+ * 分类表单选择项
+ */
+function field_get_term_options($terms = array(), $required = 0){
+  if(!$required) $options = array("" => t('field', '不限'));
+  $options = array();
+  if($terms){
+    foreach($terms as $term){
+      $options[$term->tid] = $term->name;
+    }
+  }
+  return $options;
+}
+
+/**
+ * 表单分类树
+ */
+function field_get_term_childrens($tid){
+  if($o = db_query('SELECT pid, tid FROM {fields_term} WHERE tid = ?', array($tid), array('return' => 'one'))){
+    if($o->pid){
+      if($fetch = db_query('SELECT pid, tid, name FROM {fields_term} WHERE pid = ?', array($o->pid))){
+        $options = array();
+        foreach($fetch as $term){
+          $options[$term->tid] = $term->name;
+        }
+        $childrens[] = array('option' => $options, 'value' => $tid);
+        if($parent = field_get_term_childrens($o->pid)){
+          $childrens = array_merge($childrens, $parent);
+        }
+      }
+    }else{
+      $childrens[] = $o->tid;
+    }
+  }
+  return $childrens;
+}
+
+/**
+ * 节点回调字段表单
+ */
+function field_get_node_form($module, $type, $node = NULL, &$form = NULL, $fieldset = NULL){
+  if(!$group = module_invoke($module, 'field_call_group', $type)){
+    dd_set_message(t('field', '未定义的字段组'), 'error');
+    return;
+  }
+  
+  if(!$datas = field_get_cache_field_group($module, $type)) return;
+  
+  if($fieldset) {
+    $form['fields']['fields'] = array(
+      '#weight' => -3,
+      '#fieldset_prefix' => 'asc',
+      '#fieldset_legend' => t('field', '字段'),
+      '#fieldset_suffix' => 1,
+      '#fieldset' => true
+    );
+    if(is_array($fieldset)){
+      $form['fields']['fields'] = array_merge($form['fields']['fields'], $fieldset);
+    }
+  }
+  
+  dd_add_js('modules/field/field.js');
+  dd_add_css('modules/field/field.css');
+  global $conf;
+  foreach($datas as $field_id => $data){
+    if(!field_access('update', $data, $node)){
+      continue;
+    }
+    if(!$data->field_func){
+      // 没有自定义处理函数的字段
+      if($data->field_module == 'field'){
+        $options = field_get_cache_term($module, $type);
+        $key = 'field_'.$field_id;
+        $required = $data->required ? true : false;
+        $field_value = NULL;
+        switch($data->field_type){
+          case 'radio':
+            $form['fields']['fields'][$key] = array(
+              '#title' => $data->name,
+              '#type' => $data->field_type,
+              '#default_value' => $node->fields[$field_id] ? $node->fields[$field_id]->tid : '',
+              '#required' => $required,
+              '#options' => field_get_term_options($options[$field_id], $required),
+              '#description' => $data->data['description']
+            );
+          break;
+          case 'checkbox':
+            if($node->fields[$field_id]){
+              foreach($node->fields[$field_id] as $de){
+                $field_value[$de->tid] = $de->tid;
+              }
+            }
+            $form['fields']['fields'][$key] = array(
+              '#title' => $data->name,
+              '#type' => $data->field_type,
+              '#default_value' => $field_value,
+              '#required' => $required,
+              '#options' => field_get_term_options($options[$field_id], 1),
+              '#description' => $data->data['description']
+            );
+          break;
+          case 'select':
+            if($conf['field_term_children'][$field_id]){
+            	dd_add_js(array('fields' => array(
+                $key => array(
+	                'url' => url('json/field/'.$field_id),
+            		)
+            	)), 'setting');
+              $form['fields']['fields']['field_root_'.$key] = array(
+                '#title' => $data->name,
+                '#type' => 'select',
+                '#required' => $required,
+                '#attributes' => array(
+                  'class' => 'field_option_children field_option_children_'.$key,
+                  'alt' => $key
+                ),
+                '#options' => field_get_term_options($options[$field_id]),
+                '#description' => $data->data['description']
+              );
+              $default_value = NULL;
+              if($_POST['fields'][$key]){
+                $default_value = $_POST['fields'][$key];
+              }else if($node->fields[$field_id]){
+                $default_value = $node->fields[$field_id]->tid;
+              }
+              if($default_value && $terms = field_get_term_childrens($default_value)){
+                static $ajaxId;
+                $ajaxId = 0;
+                $terms = array_reverse($terms);
+                $form['fields']['fields']['field_root_'.$key]['#prefix'] = '<div class="form_item form_item_select" id="form_field_root_'.$key.'">';
+                $form['fields']['fields']['field_root_'.$key]['#default_value'] = array_shift($terms);
+                $form['fields']['fields']['field_root_'.$key]['#description'] = '';
+                foreach($terms as $children){
+                  ++$ajaxId;
+                  $form['fields']['fields']['_field_root_'.$key.$ajaxId] = array(
+                    '#type' => 'select',
+                    '#attributes' => array(
+                      'class' => 'field_option_children',
+                      'alt' => $key
+                    ),
+                    '#suffix' => '',
+                    '#default_value' => $children['value'],
+                    '#options' => $children['option'],
+                  );
+                }
+                $form['fields']['fields']['_field_root_'.$key.$ajaxId]['#suffix'] = '</div>';
+                $form['fields']['fields']['_field_root_'.$key.$ajaxId]['#description'] = $data->data['description'];
+              }
+              $form['fields']['fields'][$key] = array(
+                '#type' => 'hidden',
+                '#default_value' => $default_value,
+                '#required' => $required,
+                '#attributes' => array(
+                  'class' => 'field_select_value field_select_value_'.$key,
+                  'alt' => $key
+                )
+              );
+            }else{
+              $form['fields']['fields'][$key] = array(
+                '#title' => $data->name,
+                '#type' => 'select',
+                '#default_value' => $node->fields[$field_id] ? current($node->fields[$field_id])->tid : '',
+                '#required' => $required,
+                '#options' => field_get_term_options($options[$field_id], $required),
+                '#description' => $data->data['description']
+              );
+            }
+          break;
+          case 'selects':
+            if($conf['field_term_children'][$data->field_id]){
+            	dd_add_js(array('fields' => array(
+                $key => array(
+	                'url' => url('json/field/'.$data->field_id)
+            		)
+            	)), 'setting');
+              $form['fields']['fields']['field_root_'.$key] = array(
+                '#title' => $data->name,
+                '#type' => 'select',
+                '#required' => $node->fields[$field_id] ? false : $required,
+                '#attributes' => array(
+                  'class' => 'field_option_children field_option_children_'.$key,
+                  'alt' => $key
+                ),
+                '#prefix' => '<div class="form_item form_item_select form_item_selects" id="user_edit_form_field_field_root_'.$key.'">',
+                '#field_suffix' => '<input type="button" value="'.t('field', '增加').'" class="form_select_multiple_button" alt="'.$key.'" />',
+                '#options' => field_get_term_options($options[$data->field_id]),
+                '#description' => $data->data['description']
+              );
+              
+              $defaults = NULL;
+              if($_POST['fields'][$key]){
+                $defaults = $_POST['fields'][$key];
+              }else if($node->fields[$field_id]){
+                foreach($node->fields[$field_id] as $de){
+                  $defaults[$de->tid] = $de->tid;
+                }
+              }
+              
+              $description = '';
+              
+              if($defaults){
+                foreach($defaults as $default_value){
+                  $form['fields']['fields'][$key][$default_value] = array(
+                    '#type' => 'hidden',
+                    '#default_value' => $default_value,
+                    '#attributes' => array('class' => 'field_form_selects_option_'.$default_value)
+                  );
+                  if($node->fields[$field_id]){
+                    $description .= '<span>'.$node->fields[$field_id][$default_value]->name;
+                    $description .= '<a href="javascript:void(0);" alt="'.$default_value.'" onClick="fields.deleteOption($(this));">('.t('field', '移除').')</a></span>';
+                  }
+                }
+              }
+              
+              $form['fields']['fields']['fiel   d_root_'.$key]['#description'] = $data->data['description'] . '<div class="field_form_selects_view">'.$description.'</div>';
+              $form['fields']['fields']['_multiple_'.$key] = array(
+                '#type' => 'hidden',
+                '#default_value' => $node->fields[$field_id] ? 0 : "",
+                '#required' => $required,
+                '#attributes' => array(
+                  'class' => 'field_select_value field_select_value_'.$key,
+                  'alt' => $key
+                ),
+                '#suffix' => '</div>'
+              );
+            }else{
+              $defaults = NULL;
+              if($node->fields[$field_id]){
+                foreach($node->fields[$field_id] as $de){
+                  $defaults[$de->tid] = $de->tid;
+                }
+              }
+              $form['fields']['fields'][$key] = array(
+                '#title' => $data->name,
+                '#type' => 'selects',
+                '#default_value' => $defaults,
+                '#required' => $required,
+                '#options' => field_get_term_options($options[$field_id], 1),
+                '#description' => $data->data['description']
+              );
+            }
+          break;
+          case 'tags':
+            // 标签
+            if($node->fields[$field_id]){
+              foreach($node->fields[$field_id] as $de){
+                $field_value .= $de->name.',';
+              }
+            }
+            $form['fields']['fields'][$key] = array(
+              '#title' => $data->name,
+              '#type' => 'textfield',
+              '#default_value' => $field_value ? rtrim($field_value, ',') : '',
+              '#required' => $required,
+              '#attributes' => array('size' => 50),
+              '#description' => $data->data['description']
+            );
+          break;
+          case 'textfield': case 'textarea':
+            // 单行文本 和 多行文本
+            $form['fields']['fields'][$key] = array(
+              '#title' => $data->name,
+              '#type' => $data->field_type,
+              '#default_value' => $node->fields[$field_id]->text,
+              '#required' => $required,
+              '#description' => $data->data['description']
+            );
+          break;
+          case 'file': // 文件
+            if($data->data['multi'] > 1){
+              if($node->fields[$field_id]){
+                $multi = $data->data['multi'] - count($node->fields[$field_id]);
+                if($multi < 1){
+                  $disabled = true;
+                }
+              }else{
+                $multi = $data->data['multi'];
+              }
+            }else{
+              $multi = 0;
+            }
+            $form['fields']['fields'][$key] = array(
+              '#title' => $data->name,
+              '#type' => 'file',
+              '#multi' => $multi,
+              '#disabled' => $disabled,
+              '#validate' => array(
+                'filetype' => $data->data['filetype'],
+                'savepath' => $data->data['savepath'],
+                'filesize' => $data->data['filesize']
+              ),
+              '#required' => $node->fields[$field_id] ? false : $required,
+            );
+            $description = '';
+            if($node->fields[$field_id]){
+              if($data->data['multi'] > 1){
+                $description = '<span class="field_file_view field_file_view_multi">';
+              }else{
+                $description = '<span class="field_file_view field_file_view_one">';
+              }
+              foreach($node->fields[$data->field_id] as $files){
+                $description .= '<span class="field_file_list">';
+                if(strpos($files->filemime, 'image') !== false){
+                  $description .= l(img(image_get_thumb($files->fid, $files->filepath, $data['thumbs']['thumb'])), f($files->filepath), array('html' => true, 'attributes' => array('target' => '_blank')));
+                }else{
+                  $description .= l(t('field', '下载'), f($fields->filepath), array('html' => true, 'attributes' => array('target' => '_blank', 'title' => $files->filename)));
+                }
+                if($data->data['multi'] > 1){
+                  $description .= l(t('field', '删除'), 'files/'.$files->fid.'/delete', array('attributes' => array('class' => 'confirmajax', 'level' => 'parent', 'target' => '_blank')));
+                }
+                $description .= '</span>';
+              }
+              $description .= '</span><span class="clear"></span>';
+            }
+            $form['fields']['fields'][$key]['#description'] = $data->data['description']. $description;
+        }
+      }else{
+        /**
+         * 其它模块定义的类型，模块名_字段类型_call_form 函数
+         */
+        $function = $data->field_module.'_'.$data->field_type.'_field_node_form';
+        if(function_exists($function)) $function($data, $node, $form);
+      }
+    }else{
+      /**
+       * 自定义处理函数即 fields 数据表中 field_func 字段
+       * 传递操作参数 load，传递字段配置对象，引用传递节点对象
+       * 操作参数：
+       *  load：节点加载
+       *  form：节点表单
+       *  insert：写入节点
+       *  delete：删除节点
+       *  update：更新节点
+       */
+      $data->field_func('form', $data, $node, $form);
+    }
+  }
+}
+
+/**
+ * 节点回调字段验证
+ */
+function field_get_node_validate($module, $type, $value, $node, $form = NULL){
+  if(!$group = module_invoke($module, 'field_call_group', $type)){
+    return;
+  }
+  
+  if(!$datas = field_get_cache_field_group($module, $type)) return;
+  
+  global $conf;
+  foreach($datas as $data){
+    if(!$data->field_func){
+      // 没有自定义处理函数的字段
+      if($data->field_module == 'field'){
+        $key = 'field_'.$data->field_id;
+        switch($data->field_type){
+          case 'select': // 单选
+            if($value->fields[$key] && $conf['field_term_children'][$data->field_id] && !db_query('SELECT COUNT(field_id) FROM {fields_term} WHERE field_id = ? AND tid = ?', array($data->field_id, $value->fields[$key]), array('return' => 'column'))){
+              dd_set_message(t('field', '%string 出现非法选择', array('%string' => $data->name)), 'error');
+              return true;
+            }
+          break;
+          case 'selects':
+            if($data->required && !$value->fields[$key]){
+              dd_set_message(t('field', '%string 不能为空', array('%string' => $data->name)), 'error');
+              return true;
+            }else if($value->fields[$key] && $conf['field_term_children'][$data->field_id] && db_query('SELECT COUNT(field_id) FROM {fields_term} WHERE field_id != ? AND tid IN ('.db_get_placeholder($value->fields[$key]).')', array_merge(array($data->field_id), $value->fields[$key]), array('return' => 'column'))){
+              dd_set_message(t('field', '%string 出现非法选择', array('%string' => $data->name)), 'error');
+              return true;
+            }
+          break;
+          case 'tags':
+            // 标签
+            if($tags = field_get_string_tags($data->field_id, $value->fields[$key])){
+            	foreach($tags as $tag){
+            		if(mb_strlen($tag, 'utf-8') > 64){
+            			$t['field'][$key]['#error'][] = t('field', '%string 的长度不超过 %length 字符', array('%string' => $tag, '%length' => 64));
+            			break;
+            		}
+            	}
+            }
+          break;
+          case 'textfield':
+            // 单行文本
+        		if($value->fields[$key] && mb_strlen($value->fields[$key], 'utf-8') > 255){
+        			$t['field'][$key]['#error'][] = t('field', '%string 的长度不超过 %length 字符', array('%string' => $data->name, '%length' => 255));
+        		}
+          break;
+          case 'textarea':
+            // 多行文本
+            if($data->data['maxlength'] && $value->fields[$key] && mb_strlen($value->fields[$key], 'utf-8') > $data->data['maxlength']){
+        			$t['field'][$key]['#error'][] = t('field', '%string 的长度不超过 %length 字符', array('%string' => $data->name, '%length' => $data->data['maxlength']));
+        		}
+          break;
+          //case 'file': // 上传文件在 submit 环节处理
+        }
+      }else{
+        /**
+         * 其它模块定义的类型，模块名_字段类型_call_validate 函数
+         */
+        $function = $data->field_module.'_'.$data->field_type.'_field_node_validate';
+        if(function_exists($function)) $t = $function($data, $value, $node, $form);
+      }
+    }else{
+      $t = $data->field_func('validate', $data, $node, $form, $value);
+    }
+  }
+  return $t;
+}
+
+/**
+ * 节点回调显示
+ */
+function field_get_node_view($module, $type, &$node){
+  if(!$datas = field_get_cache_field_group($module, $type)) return;
+  
+  global $conf;
+  foreach($datas as $data){
+    
+    if(!$node->fields[$data->field_id]) continue;
+    
+    if(!$data->field_func){
+      // 没有自定义处理函数的字段
+      if($data->field_module == 'field'){
+        switch($data->field_type){
+          case 'select':  case 'radio':
+            $node->field_view['category'][$data->field_id] = array(
+              '#content' => l($node->fields[$data->field_id]->name, 'category/'.$node->fields[$data->field_id]->tid),
+              '#name' => $data->name
+            );
+          break;
+          case 'checkbox': case 'selects':
+            $term = $content = NULL;
+            foreach($node->fields[$data->field_id] as $term){
+              $content .= l($term->name, 'category/'.$term->tid);
+            }
+            $node->field_view['category'][$data->field_id] = array(
+              '#content' => $content,
+              '#name' => $data->name
+            );
+          break;
+          case 'tags':
+            $term = $content = NULL;
+            foreach($node->fields[$data->field_id] as $term){
+              $content .= l($term->name, 'category/'.$term->tid);
+            }
+            $node->field_view['tags'][$data->field_id] = array(
+              '#content' => $content,
+              '#name' => $data->name
+            );
+          break;
+          case 'textfield':
+            $node->field_view['textfield'][$data->field_id] = array(
+              '#content' => check_pain($node->fields[$data->field_id]->text),
+              '#name' => $data->name
+            );
+          break;
+          case 'textarea':
+            $node->field_view['textarea'][$data->field_id] = array(
+              '#content' => filter_view($node->fields[$data->field_id]->text, $data->data['format']),
+              '#name' => $data->name
+            );
+          break;
+          case 'file':
+            $content = NULL;
+            foreach($node->fields[$data->field_id] as $file){
+              $content .= l(img(image_get_thumb($file->fid, $file->filepath, $data->data['thumbs']['medium'])), f($file->filepath), array('html' => 1, 'attributes' => array('target' => '_blank')));
+            }
+            $node->field_view['file'][$data->field_id] = array(
+              '#content' => $content, '#name' => $data->name
+            );
+        }
+      }else{
+        /**
+         * 其它模块定义的类型，模块名_字段类型_call_view 函数
+         */
+        $function = $data->field_module.'_'.$data->field_type.'_field_node_view';
+        if(function_exists($function)) $t = $function($data, $node);
+      }
+    }else{
+      $data->field_func('view', $data, $node);
+    }
+  }
+}
+
+/**
+ * 节点回调字段保存
+ */
+function field_get_node_save($module, $type, $value, $node = NULL, $form = NULL){
+  if(!$value->nid) return false;
+  if(!$group = module_invoke($module, 'field_call_group', $type)){
+    return;
+  }
+  
+  if(!$datas = field_get_cache_field_group($module, $type)) return;
+  
+  global $conf;
+  $cids = $tids = array();
+  foreach($datas as $data){
+    
+    if(!field_access('update', $data, $node)){
+      continue;
+    }
+    if(!$data->field_func){
+      $key = 'field_'.$data->field_id;
+      // 没有自定义处理函数的字段
+      if($data->field_module == 'field'){
+        switch($data->field_type){
+          case 'radio': case 'select':
+            $field_ids[$data->field_id] = $data->field_id;
+            
+            if($value->fields[$key]) $cids[] = $value->fields[$key];
+          break;
+          case 'checkbox': case 'selects':
+            $field_ids[$data->field_id] = $data->field_id;
+            if($value->fields[$key]) $cids = array_merge($cids, $value->fields[$key]);
+          break;
+          case 'tags':
+            $field_ids[$data->field_id] = $data->field_id;
+            
+            if($tags = field_get_string_tags($data->field_id, $value->fields[$key])){
+          		foreach($tags as $tag){
+                if($node->fields[$data->field_id]){
+                  if(in_array($tag, $node->fields[$data->field_id])){
+                    $tids[] = $tid;
+                    continue;
+                  }
+                }
+          			if($tid = db_query('SELECT tid FROM {fields_term} WHERE name = ? AND field_id = ?', array($tag, $data->field_id), array('return' => 'column'))){
+          				$tids[] = $tid;
+          			}else if(db_exec('INSERT INTO {fields_term} (field_id, name, pid, weight) VALUES (?, ?, 0, 0)', array($data->field_id, $tag))){
+          				$tid = db_last_insert_id();
+          				$tids[] = $tid;
+          			}
+          		}
+            }
+          break;
+          case 'textfield':
+            db_exec('DELETE FROM {fields_small} WHERE nid = ? AND field_id = ?', array($value->nid, $data->field_id));
+            if($value->fields[$key]){
+              db_exec('INSERT INTO {fields_small} (nid, field_id, text) VALUES (?, ?, ?)', array($value->nid, $data->field_id, $value->fields[$key]));
+            }
+          break;
+          case 'textarea':
+            db_exec('DELETE FROM {fields_long} WHERE nid = ? AND field_id = ?', array($value->nid, $data->field_id));
+            if($value->fields[$key]){
+              db_exec('INSERT INTO {fields_long} (nid, field_id, text) VALUES (?, ?, ?)', array($value->nid, $data->field_id, $value->fields[$key]));
+            }
+          break;
+          case 'file':
+            if($_FILES['fields'] && $_FILES['fields']['name'][$key]){
+              $validate = array(
+                'filetype' => $data->data['filetype'],
+                'savepath' => $data->data['savepath'],
+                'filesize' => $data->data['filesize']
+              );
+              if(is_array($_FILES['fields']['name'][$key])){
+                $files = 0;
+                foreach($_FILES['fields']['name'][$key] as $i => $name){
+                  if($i > $data->data['multi']) break;
+                  if(!$message = file_validate_error($_FILES['fields']['error'][$key][$i])){
+                    $file = array(
+                      'name' => $name,
+                      'type' => $_FILES['fields']['type'][$key][$i],
+                      'size' => $_FILES['fields']['size'][$key][$i],
+                      'tmp_name' => $_FILES['fields']['tmp_name'][$key][$i],
+                      'ext_id' => $data->field_id, // 字段id
+                      'ext_id2' => $value->nid, // 节点id
+                      'ext_type' => 'field_file' // 扩展标记
+                    );
+                    if(file_save_upload($file, $validate)){
+                      ++$files;
+                    }
+                  }else if($message !== 4){
+                    dd_set_message($message, 'error');
+                  }
+                }
+                if($node->fields[$data->field_id]){
+                  $k = $files + count($node->fields[$data->field_id]) - $data->data['multi'];
+                  if($k > 0){
+                    foreach($node->fields[$data->field_id] as $file){
+                      if($k == 0) break;
+                      file_delete($file->fid, 1, $file->filepath);
+                      --$k;
+                    }
+                  }
+                }
+              }else{
+                if($node->fields[$data->field_id]){
+                  foreach($node->fields[$data->field_id] as $file){
+                    file_delete($file->fid, 1, $file->filepath);
+                  }
+                }
+                if(!$message = file_validate_error($_FILES['fields']['error'][$key])){
+                  $file = array(
+                    'name' => $_FILES['fields']['name'][$key],
+                    'type' => $_FILES['fields']['type'][$key],
+                    'size' => $_FILES['fields']['size'][$key],
+                    'tmp_name' => $_FILES['fields']['tmp_name'][$key],
+                    'ext_id' => $data->field_id,
+                    'ext_id2' => $value->nid,
+                    'ext_type' => 'field_file'
+                  );
+                  file_save_upload($file, $validate);
+                }else if($message !== 4){
+                  dd_set_message($message, 'error');
+                }
+              }
+            }
+          break;
+        }
+      }else{
+        /**
+         * 其它模块定义的类型，模块名_字段类型_call_save 函数
+         */
+        $function = $data->field_module.'_'.$data->field_type.'_field_node_save';
+        if(function_exists($function)) $function($data, $value, $node, $form);
+      }
+    }else{
+      $data->field_func('save', $data, $node, $form, $value);
+    }
+  }
+  
+  if($value->nid && $field_ids){
+    db_exec('DELETE FROM {fields_term_node} WHERE nid = ? AND tid IN (SELECT tid FROM {fields_term} WHERE field_id IN ('.db_get_placeholder($field_ids).'))',  array_merge(array($value->nid), $field_ids));
+	}
+  
+	if($tids){
+		$cids = array_merge($cids, $tids);
+	}
+  
+	if($cids){
+		foreach($cids as $cid){
+			$nids[] = '('.$cid .','.$value->nid.')';
+		}
+		db_exec('INSERT INTO {fields_term_node} (tid, nid) VALUES '. implode(',', $nids));
+	}
+}
+
+function field_get_node_delete($module, $type, $node){
+  if($node->fields){
+    if(!$datas = field_get_cache_field_group($module, $type)) return;
+    foreach($node->fields as $field_id => $fields){
+      if(!$datas[$field_id]->field_func){
+        // 没有自定义处理函数的字段
+        if($datas[$field_id]->field_module == 'field'){
+          switch($data->field_type){
+            case 'radio': case 'select': case 'checkbox': case 'selects': case 'tags':
+              db_exec('DELETE fields_term_node FROM {fields_term_node} INNER JOIN {fields_term} ON fields_term_node.tid = fields_term.tid WHERE fields_term_node.nid = ? AND fields_term.field_id = ?', array_merge($node->nid, $field_id));
+            break;
+            case 'textfield':
+              db_exec('DELETE FROM {fields_small} WHERE nid = ? AND field_id = ?', array($node->nid, $field_id));
+            break;
+            case 'textarea':
+              db_exec('DELETE FROM {fields_long} WHERE nid = ? AND field_id = ?', array($node->nid, $field_id));
+            break;
+            case 'file':
+              if($fields){
+                foreach($fields as $file){
+                  file_delete($file->fid, 1, $file->filepath);
+                }
+              }
+            break;
+          }
+        }else{
+          /**
+           * 其它模块定义的类型，模块名_字段类型_call_save 函数
+           */
+          $function = $data->field_module.'_'.$data->field_type.'_field_node_delete';
+          if(function_exists($function)) $function($datas[$field_id], $node);
+        }
+      }else{
+        $data->field_func('delete', $datas[$field_id], $node);
+      }
+    }
+  }
+}
+
+/**
+ * 字符串解析为标签，以“,”或“，”为分隔符
+ */
+function field_get_string_tags($id, $text){
+  static $tags;
+  if(!isset($tags[$id])){
+    $text = str_replace('，', ',', $text);
+    if(strpos($text, ',') !== false){
+      foreach(explode(',', $text) as $tag){
+        if($tag =  trim($tag)){
+          $tags[$id][] = $tag;
+        }
+      }
+      $tags[$id] = array_unique($tags[$id]);
+    }else if($text = trim($text)){
+      $tags[$id][] = $text;
+    }
+  }
+  return $tags[$id];
+}
+
+/**
+ * @Implement of hook_system_cache_clear()
+ */
+function field_system_cache_clear($op = 'list', $v = NULL){
+  switch($op){
+    case 'list':
+    return array(
+      'fields' => t('field', '清除字段缓存，当字段信息发生更改时应选择此项'),
+    );
+    case 'submit':
+      field_get_cache_field(NULL, 1);
+      field_set_cache_term();
+  }
+}

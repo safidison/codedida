@@ -1,0 +1,130 @@
+div.ck_swfupload_wrappe, #files_view, #ck_swfupload{
+	background: #fff;
+	padding: 5px;
+}
+#ck_swfupload table{
+  border:1px solid #CCCCCC;
+  width: 100%;
+}
+#ck_swfupload thead{
+	background: #D3EDCE;
+	color: #12340D;
+}
+#ck_swfupload table td, #ck_swfupload  table th{
+  padding: 3px 6px;
+}
+#ck_swfupload tr.odd{
+  background: #FAF0D6;
+}
+
+div.fieldset {
+	border:  1px solid #afe14c;
+	margin: 10px 0;
+	padding: 20px 10px;
+}
+div.fieldset span.legend {
+	position: relative;
+	background-color: #FFF;
+	padding: 3px;
+	top: -30px;
+	font: 700 14px Arial, Helvetica, sans-serif;
+	color: #73b304;
+}
+.su_files_table{
+  overflow: auto;
+  max-height: 180px;
+  _height: 180px;
+}
+#ck_swfupload .su_content{
+	text-align: right;
+	height: 29px;
+}
+#ck_swfupload .su_content *{
+	height: 29px;
+	width: 65px;
+	margin: 0 2px;
+}
+#ck_swfupload  .su_content input{
+	height: 29px;
+	width: auto;
+	padding: 0 8px;
+	float: right;
+	background: #39550F;
+	border: 2px outset #D6F2CE;
+	color: #fff;
+	cursor: pointer;
+}
+#ck_swfupload  .su_content input.su_button_disabled{
+	background: #DBDED8;
+	color: #000;
+}
+#ck_swfupload  .su_status{
+	border:1px solid #B8D3E5;
+	text-align: center;
+	padding: 5px 0;
+	margin-top: 10px;
+}
+#ck_swfupload  .su_error_msg, #ck_swfupload  .su_num{
+	color: #f00;
+}
+#ck_swfupload .su_loading_percentage{
+	color: #f00;
+	padding: 0 8px;
+}
+#ck_swfupload  .su_loading_bytes{
+	color: #BCA012;
+}
+#ck_swfupload .su_loading_total{
+	color: #4B4003;
+}
+#ck_swfupload .su_loading{
+	text-align: center;
+	padding: 5px 12px;
+	border-bottom: 1px solid #0055EA;
+	display: none;
+}
+#ck_swfupload tr.su_file_list_cancel{
+	background: #E3E3E3;
+}
+#ck_swfupload tr.su_upload_error{
+	background: #CB4B46;
+}
+#ck_swfupload .su_upload_error .su_error_msg{
+	color: #fff;
+}
+#ck_swfupload tr.su_upload_ok{
+	background: #F7F79B;
+}
+#ck_swfupload .su_loading_mark{
+	background: #1C58D6;
+	height: 5px;
+	line-height:5px;
+	*font-size:0px;
+	padding: 0;
+	margin:0;
+	width: 0;
+}
+div.ck_swfupload_view{
+	text-align: center;
+	overflow: auto;
+	width: 650px;
+}
+div.ck_swfupload_view img{
+  max-width: 55px;
+  width: expression(this.width > 55 ? 55 : true);
+  border: 1px solid #ccc;
+  padding: 2px;
+  margin: 1px;
+}
+#ck_files{
+  width: 100%;
+  height: 300px;
+}
+#swf_tabs a{
+  padding: 7px 10px;
+  line-height: 20px;
+  cursor: pointer;
+}
+#swf_tabs a.ck_tabs_ac{
+  background: #fff;
+}

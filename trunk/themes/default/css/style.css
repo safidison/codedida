@@ -1,0 +1,285 @@
+/* $Id$ */
+body{
+  font-size: 12px;
+  text-align: center;
+  color:#222;
+  font-family:arial,sans-serif;
+  padding:0;
+  margin: 0;
+}
+select, input{
+  font-size: 12px;
+}
+a{
+  color:#0044DD;
+  text-decoration:none;
+}
+a:hover, a:active, a.active {
+  color:#CC6600;
+  text-decoration:underline;
+}
+h1, h2, h3, h4, h5{
+  margin: 2px 0;
+  padding: 2px 0;
+  color: #0F48A7;
+}
+thead{
+  text-align: center;
+  background: #ccc;
+  height: 24px;
+}
+thead img{
+  border: none;
+}
+thead th{
+  padding: 0 5px;
+}
+table{
+  width: 100%;
+}
+td{
+  padding: 5px;
+}
+.odd{
+  background: #E3EDF5;
+}
+.dc_imp{
+  padding: 0 5px;
+}
+img{
+  border: 0;
+}
+ul, li{
+  padding:0;margin:0;
+}
+li{
+  list-style: none;
+  list-style-image: none;
+  list-style-position:none;
+  margin: 5px 0;
+}
+
+#wrapper{
+  width: 960px;
+  margin: 0 auto;
+  text-align: left;
+}
+
+#header {
+	height: 100px;
+  padding: 0px;
+  position:relative;
+  text-align: left;
+}
+
+#header .menu{
+  position: absolute;
+  bottom:0;
+  height:30px;
+  line-height:30px;
+  right:10px;
+  width:100%;
+  border-bottom: 1px solid #ccc;
+}
+#header .menu .site_menu{
+  height: 30px;
+  float: right;
+}
+#header .menu .site_menu li{
+  padding: 0 10px;
+}
+#header .menu .site_menu_children li{
+  width: 100px;
+  border: 1px solid #ccc;
+  border-bottom: none;
+  margin-bottom: 1px 0;
+  height: 22px;
+  line-height: 22px;
+}
+#header .menu .site_menu_children li.last{
+  border-bottom: 1px solid #ccc;
+}
+#header .logo{
+  display:block;
+  padding-top: 6px;
+  padding-left: 6px;
+  float: left;
+}
+
+#footer{ 
+	clear: both;
+	height: 120px;
+  text-align: center;
+}
+
+#main {
+	width: 960px;
+	margin: 0 auto;
+	text-align: left;
+}
+
+#sidebar-left {
+	width: 200px;
+	float: left;
+	overflow-x: hidden;
+}
+
+#sidebar-right {
+	width: 200px;
+	float: right;
+	overflow-x: hidden;
+}
+
+#center {
+	width: 100%;
+	float: left;
+	overflow-x: hidden;
+}
+
+body.sidebar-left #center, body.sidebar-right #center {
+	width: 760px;
+}
+
+body.sidebars #center {
+	width: 550px;
+}
+body.sidebar-left #content, body.sidebar-right #content, body.sidebars #content {
+	float: right;
+}
+
+body.sidebars #content {
+	width: 760px;
+}
+
+.column{
+	padding: 5px;
+}
+/*top menu*/
+ul.top-menu li{
+  float: left;
+}
+ul.top-menu li a{
+  display: block;
+  margin: 0 1px;
+  padding: 6px 8px;
+  text-decoration: none;
+}
+ul.top-menu li a:hover, ul.top-menu li a.active{
+  background: #E5EDF7;
+}
+/*pager*/
+.pager{
+  margin: 5px 0;
+  overflow: hidden;
+}
+.pager li{
+  float: left;
+  margin: 0 1px;
+  height:22px;
+  line-height:22px;
+}
+.pager a{
+  border: #ddd 1px solid;
+  padding: 2px 5px; 
+  color: #88af3f;
+  margin: 0;
+  text-decoration: none
+}
+.pager a:hover{
+  border: #85bd1e 1px solid;
+  color: #638425;
+  background-color: #f1ffd6
+}
+.pager .pager_current, .pager_number{
+  font-weight: bold;
+  color: #FF5500;
+}
+.pager .pager_current{
+  margin: 0 4px;
+}
+.pager .pager_go_input, .pager .pager_sum, .pager .pager_count{
+  color: #B7B2AF
+}
+.pager .pager_sum, .pager .pager_count{
+  margin-right: 5px;
+}
+.pager .pager_go_input{
+  margin-left: 6px;
+}
+.pager .pager_form_go_input{
+  text-align: center;
+  width: 30px;
+}
+/*form*/
+.form_item{
+  margin: 3px 0;
+}
+.dc_label{
+  color: #034B03;
+  /*
+  display:-moz-inline-box;
+  display:inline-block;
+  width: 120px;
+  text-align: right;
+  */
+}
+.red, a.red, .form_error, .error, .form_required{
+  color: #f00;
+}
+.form_description{
+  color: #7E8186;
+  padding: 0 4px;
+}
+
+.form_item_textarea .form_description{
+  padding: 0;
+}
+
+.form_setting_description{
+  font-weight: bold;
+  font-size: 1.2em;
+  padding: 0;
+  margin: 5px 0;
+}
+.form_text{
+  border:1px solid #B7BCC9;
+  margin-right: 5px;
+}
+.inputhover{
+  border:1px solid #3474E8;
+}
+input.error {
+  border:1px solid #F7031C;
+}
+#ajax_description{
+  padding: 5px 12px;
+  margin: 5px 0;
+  color: #3B5815;
+}
+.messages{
+  padding: 5px 12px;
+  margin: 5px 0;
+  border: 1px solid #DBEDB9;
+}
+.status{
+  color: #437C0D;
+}
+.debug{
+  color: #0F3E79;
+}
+.sql_info{
+  color: #0A4B8E
+}
+.pager_form_go_input{
+  width: 40px;
+}
+.pager-go-button{
+  border: 1px outset #F00;
+  padding: 2px 4px;
+  cursor: pointer;
+} 
+/*system print.tpl.php*/
+#print_dialog{
+  padding: 5px 12px;
+  text-align: left;
+}

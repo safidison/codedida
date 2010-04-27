@@ -1,0 +1,28 @@
+#
+# robots.txt
+#
+
+User-agent: *
+Crawl-delay: 10
+
+Disallow: /includes/
+Disallow: /misc/
+Disallow: /modules/
+Disallow: /sites/
+Disallow: /themes/
+Disallow: /files/
+Disallow: /tools/
+
+Disallow: /rpc.php
+Disallow: /cron.php
+Disallow: /custom.php
+Disallow: /install.php
+
+Disallow: /admin
+Disallow: /search
+Disallow: /user/logout
+Disallow: /user/register
+Disallow: /user/pass
+Disallow: /user/login
+
+Disallow: /?q

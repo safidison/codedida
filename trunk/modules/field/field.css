@@ -1,0 +1,11 @@
+/* $Id$ */
+.form_item_selects{
+  border: 1px solid #ccc;
+  margin: 5px 0;
+}
+.field_form_selects_view{
+  padding: 5px;
+}
+.field_form_selects_view span{
+  margin: 5px;
+}
