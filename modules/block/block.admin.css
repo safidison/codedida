@@ -1,0 +1,30 @@
+/* $Id$ */
+#field_form .dc_label, #block_add_form .dc_label, #block_settings_form .dc_label{
+  display: inline-block;
+  width: 60px;
+  text-align: left;
+}
+#system_admin_format_form .dc_label{
+  display: block;
+  text-align: left;
+}
+.block_item .dc_label{
+  color:#034B03;
+  display:inline;
+  text-align: left;
+  padding-left: 5px;
+}
+.block_item .item-list, .block_item .item-list ul, .block_item .item-list li{
+  display:inline;
+  padding: 0 2px;
+}
+.block_item{
+  border-bottom: 1px solid #ccc;
+  padding: 5px 0;
+}
+.block_item .title{
+  color:#034B03;
+  font-weight: bold;
+  text-align:left;
+  padding: 5px 0;
+}

@@ -1,0 +1,39 @@
+/* $Id$ */
+
+/*admin cache*/
+#system_cache_clear_value .form_checkbox_option{
+  display: block;
+}
+#system_site_settings .form_item, #system_site_global .form_item{
+  margin: 5px 0;
+  border-bottom:1px dotted #CCC;
+  padding: 5px 0;
+}
+.system_admin_default_block{
+  border-bottom:1px solid #CCC;
+  padding: 5px;
+  margin: 5px;
+}
+.system_admin_default_block .title{
+  background: #E5F5DE;
+  padding: 5px 0;
+}
+.system_admin_default_block_system a{
+  padding-left: 12px;
+}
+/*jqui*/
+.jqedit_text textarea, .jqedit_text button{
+  font-size: 12px;
+}
+
+/*field*/
+#field_admin_list{
+  text-align: center;
+}
+
+.user_admin_role_module{
+  background: #DE7424;
+  color: #fff;
+  font-size: 14px;
+  font-weight: bold;
+}
