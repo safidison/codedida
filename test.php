@@ -1,4 +1,0 @@
-<?php
-// $Id$
-
-echo 'test';
