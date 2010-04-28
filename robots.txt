@@ -10,6 +10,7 @@ Disallow: /misc/
 Disallow: /modules/
 Disallow: /sites/
 Disallow: /themes/
+Disallow: /install/
 Disallow: /files/
 Disallow: /tools/
 
