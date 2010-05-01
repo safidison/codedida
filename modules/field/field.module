@@ -18,6 +18,13 @@ function field_menu(){
     'page_arguments' => array(2),
     'file' => 'field.page.inc'
   );
+  $items['json/field/auto/%'] = array(
+    'load_functions' => array(3 => '%0-9'),
+    'access_callback' => true,
+    'page_callback' => 'field_json_auto',
+    'page_arguments' => array(3),
+    'file' => 'field.page.inc'
+  );
   $items['fields/%'] = array(
     'load_functions' => array(1 => array('field_load')),
     'access_callback' => 'field_access',
@@ -188,19 +195,474 @@ function field_field_call_list(){
 }
 
 /**
+ * 验证日期和时间
+ * @param (string) $v
+ *  需要验证的字符串
+ * @param (string) $type
+ *  日期格式
+ * @param (bool) $time
+ *  是否有时间
+ * 仅验证格式，不验证数值是否正确，如：9999-99-99 99:99:99 也是合法的
+ * @returu (false or string)
+ */
+function field_validate_date($v, $format, $time = NULL){
+  if($time){
+    $msg = t('field', '日期格式不正确');
+    if(strpos($v, ' ') !== false && strpos($v, ':') !== false){
+      if($a = explode(' ', $v, 2)){
+        if(preg_match('/\w\w:\w\w:\w\w$/', $a[1])){
+           $msg = false;
+        }
+      }
+    }
+    $v = $a[0];
+  }
+  
+  if($msg) {
+    return $msg;
+  }else{
+    $msg = t('field', '日期格式不正确');
+  }
+  
+  switch($format){
+    case 'yy-mm-dd':
+      if(strpos($v, '-') !== false && preg_match('/\w{4}-\w\w-\w\w$/', $v)){
+        $msg = false;
+      }
+    break;
+    case 'mm/dd/yy':
+      if(strpos($v, '/') !== false && preg_match('/\w\w-\w\w-\w{4}$/', $v)){
+        $msg = false;
+      }
+    break;
+  }
+  
+  return $msg;
+}
+
+/**
+ * * @Implement of hook_field_type_textfield()
+ * 单行文本字段接口
+ * @param $op
+ *  操作类型
+ * @param $type
+ *  字段输入类型
+ * @param $field
+ *  字段所有数据
+ * @param $v
+ *  节点中的字段输入数据
+ */
+function field_field_type_textfield($op, $type = NULL, $field = NULL, $v = NULL){
+  $set = $field->data['validate']['settings'];
+  switch($op){
+    case 'node_form':
+      static $i = 0;
+      switch($type){
+        case 'date': case 'date_time':
+          $dom = 'ui_data_click_'.$i;
+          if($set['datepicker']){
+            $js = array(
+              'dom' => '.'.$dom,
+              'dateFormat' => $set['value_type'],
+            );
+            
+            if($type == 'date_time'){
+              $js['showTime'] = true;
+            }
+            if($set['changeYear']){
+              $js['changeYear'] = true;
+            }
+            if($set['changeMonth']){
+              $js['changeMonth'] = true;
+            }
+           if($set['yearRange']){
+              $js['yearRange'] = $set['yearRange'];
+            }
+            if($set['maxDate']){
+              $js['maxDate'] = $set['maxDate'];
+            }
+            if($set['minDate']){
+              $js['minDate'] = $set['minDate'];
+            }
+            if($set['start_or_end'] && $set['field_key']){
+              $js[$set['start_or_end']] = 'input[name=\'fields['.$set['field_key'].']\']';
+            }
+            dd_add_js(array('uidata' => array($js)), 'setting');
+          }
+          
+        return array('#attributes' => array('class' => 'ui_data_click '.$dom));
+        case 'custom_ok':
+          $dom = 'ui_field_autocomplete_'.$i;
+        return array(
+          '#attributes' => array('class' => 'ui_field_autocomplete '.$dom),
+          '#autocomplete' => array(
+            'url' => url('json/field/auto/'.$field->field_id),
+            'dom' => '.'.$dom
+          )
+        );
+      }
+      ++$i;
+    break;
+    case 'node_save':
+    break;
+    case 'node_validate':
+      // 节点验证
+      if(!isset($v)) break;
+      
+      $showtime = 0;
+      
+      switch($type){
+        case 'figure':
+          if(preg_match('/[^0-9]/', $v)){
+            dd_set_message(t('field', '!string 只能是数字', array('!string' => $field->name)), 'error');
+            return true;
+          }
+        break;
+        case 'letter':
+          if(preg_match('/[^a-z]/i', $v)){
+            dd_set_message(t('field', '!string 只能是字母', array('!string' => $field->name)), 'error');
+            return true;
+          }
+        break;
+        case 'figure_letter':
+          if(preg_match('/[^a-z0-9]/i', $v)){
+            dd_set_message(t('field', '!string 只能是字母和数字', array('!string' => $field->name)), 'error');
+            return true;
+          }
+        break;
+        case 'mail':
+          if($msg = form_vali_mail($v)){
+            dd_set_message($msg, 'error');
+            return true;
+          }
+        break;
+        case 'date_time':
+          $showtime = 1;
+        case 'date':
+          static $start_or_end;
+          if($msg = field_validate_date($v, $set['value_type'], $showtime)){
+            dd_set_message($msg, 'error');
+            return true;
+          }else if($set['start_or_end'] && $set['field_key']){
+            if(!isset($start_or_end[$set['field_key']])){
+              $start_or_end[$field->field_key] = (float)preg_replace(array('/\s/', '/[^\w]/'), array('.', ''), $v);
+            }else if($set['start_or_end'] == 'start'){
+              // 开始字段
+              if(intval($v) >= $start_or_end[$set['field_key']]){
+                dd_set_message(t('field', '开始日期不能大于结束日期'), 'error');
+                return true;
+              }
+            }else{
+              // 结束字段
+              if((float)preg_replace(array('/\s/', '/[^\w]/'), array('.', ''), $v) <= $start_or_end[$set['field_key']]){
+                dd_set_message(t('field', '开始日期不能大于结束日期'), 'error');
+                return true;
+              }
+            }
+          }
+        break;
+        case 'chinese':
+          if(preg_match("/[^\x{4e00}-\x{9fa5}]+$/u", $v)){
+            dd_set_message(t('field', '!string 只能是中文', array('!string' => $field->name)), 'error');
+            return true;
+          }
+        break;
+        case 'custom_ok':
+          $e = false;
+          switch($set['value_type']){
+            case 1: // 普通模式
+              $values = dd_line_to_array($set['values'], 1);
+              if(array_search($v, $values) === false){
+                $e = true;
+              }
+            break;
+            case 2: // 正则模式
+              if(!preg_match($set['values'], $v)){
+                $e = true;
+              }
+            break;
+            case 3: // php 模式
+              $field_value = $v;
+              if(eval($set['values']) == false){
+                $e = true;
+              }
+          }
+          if($e){
+            dd_set_message(t('field', '!string 的值不被允许', array('!string' => $field->name)), 'error');
+            return true;
+          }
+        break;
+        case 'custom_not':
+          switch($set['value_type']){
+            case 1: // 普通模式
+              $values = dd_line_to_array($set['values'], 1);
+              if(array_search($v, $values) !== false){
+                $e = true;
+              }
+            break;
+            case 2: // 正则模式
+              if(preg_match($set['values'], $v)){
+                $e = true;
+              }
+            break;
+            case 3: // php 模式
+              $field_value = $v;
+              if(eval($set['values']) == false){
+                $e = true;
+              }
+          }
+          if($e){
+            dd_set_message(t('field', '!string 的值不被允许', array('!string' => $field->name)), 'error');
+            return true;
+          }
+      }
+    break;
+    case 'validate':
+      // 字段验证
+      if($field->data['validate']['settings']['start_or_end'] && ($type == 'date' || $type == 'date_time')){
+        if($field->data['validate']['settings']['field_key'] == $field->field_key){
+          dd_set_message(t('field', '不能关联自己'), 'error');
+          return true;
+        }
+      }
+      //dd_set_message('错误', 'error');
+      //return true;
+    break;
+    case 'save':
+      // 字段保存
+    break;
+    case 'setting':
+      $value = $field->data['validate']['settings'];
+      $custom_fields = array(
+        'value_type' => array(
+          '#type' => 'radio',
+          '#title' => t('field', '匹配模式'),
+          '#default_value' => $value['value_type'],
+          '#options' => array(
+            1 => t('field', '普通模式'),
+            2 => t('block', '正则模式'),
+            3 => t('block', 'PHP 模式')
+          )
+        ),
+        'values' => array(
+          '#type' => 'textarea',
+          '#default_value' => $value['values'],
+          '#attributes' => array('rows' => 6, 'cols' => 60),
+          '#description' => theme('item_list', array(
+              t('block', '模式说明：'),
+              t('block', '普通模式：一行一条记录，首尾空格将被清除'),
+              t('block', '正则模式：符合PHP标准的正则表达式。以斜杠开头，如：/a.*z/ 表示字符串以a开头，以z结尾'),
+              t('block', 'PHP模式：不包含 php 标签，必须用 return 而不是 echo，返回 false 或 true 或 数组，false 表示未通过验证。$field_value 可用，为当前输入值')
+            )
+          )
+        )
+      );
+      $data_fields = array(
+        'value_type' => array(
+          '#type' => 'select',
+          '#title' => t('field', '日期格式'),
+          '#default_value' => $value['value_type'],
+          '#options' => array(
+            'yy-mm-dd' => 'yy-mm-dd',
+            'mm/dd/yy' => 'mm/dd/yy'
+          )
+        ),
+        'datepicker' => array(
+          '#type' => 'radio',
+          '#title' => t('field', '日期控件'),
+          '#default_value' => isset($value['datepicker']) ? $value['datepicker'] : 1,
+          '#options' => array(t('field', '不启用'), t('field', '启用')),
+          '#description' => t('field', 'js 日期选择控件，便于用户选择日期。只有启用以下选项方有效')
+        ),
+        'changeYear' => array(
+          '#type' => 'radio',
+          '#title' => t('field', '年份下拉'),
+          '#default_value' => $value['changeYear'],
+          '#options' => array(t('field', '否'), t('field', '是')),
+        ),
+        'changeMonth' => array(
+          '#type' => 'radio',
+          '#title' => t('field', '月份下拉'),
+          '#default_value' => $value['changeMonth'],
+          '#options' => array(t('field', '否'), t('field', '是')),
+        ),
+        'yearRange' => array(
+          '#type' => 'textfield',
+          '#title' => t('field', '年份范围'),
+          '#default_value' => $value['yearRange'],
+          '#description' => t('field', '显示在下拉框中，可以是绝对值，如：1949:2049，或相对值，如：-10:+10'),
+        ),
+        'maxDate' => array(
+          '#type' => 'textfield',
+          '#title' => t('field', '最大日期'),
+          '#default_value' => $value['maxDate'],
+          '#description' => t('field', '可以是绝对值，如：2010-01-22，或相对值，如：+1y +1m +1w +1d'),
+        ),
+        'minDate' => array(
+          '#type' => 'textfield',
+          '#title' => t('field', '最小日期'),
+          '#default_value' => $value['minDate'],
+          '#description' => t('field', '可以是绝对值，如：2008-01-22，或相对值，如：-1y -1m -1w -1d'),
+        ),
+        'start_or_end' => array(
+          '#type' => 'select',
+          '#title' => t('field', '字段关联'),
+          '#default_value' => $value['start_or_end'],
+          '#options' => array(
+            t('field', '不需要'),
+            'start' => t('field', '做为开始日期'),
+            'end' => t('field', '做为结束日期'),
+          ),
+          '#description' => t('field', '将两个日期字段关联起来，一个做为开始日期，一个做为结束日期'),
+        ),
+        'field_key' => array(
+          '#type' => 'textfield',
+          '#title' => t('field', '另一个字段'),
+          '#default_value' => $value['field_key'],
+          '#description' => t('field', '请输入需要关联的另一个字段的索引名称'),
+        ),
+      );
+    return array(
+      'date' => array(
+        'title' => t('field', '日期'),
+        'fields' => $data_fields
+      ),
+      'date_time' => array(
+        'title' => t('field', '日期和时间'),
+        'fields' => $data_fields
+      ),
+      'mail' => array(
+        'title' => t('field', '电子邮件')
+      ),
+      'figure' => array(
+        'title' => t('field', '只允许数字'),
+      ),
+      'letter' => array(
+        'title' => t('field', '只允许字母'),
+      ),
+      'figure_letter' => array(
+        'title' => t('field', '数字字母混合'),
+      ),
+      'chinese' => array(
+        'title' => t('field', '只允许中文'),
+      ),
+      'custom_ok' => array(
+        'title' => t('field', '自定义(允许特定值)'),
+        'fields' => $custom_fields,
+      ),
+      'custom_not' => array(
+        'title' => t('field', '自定义(不允许特定值)'),
+        'fields' => $custom_fields,
+      ),
+    );
+  }
+}
+
+/**
  * @Implement of hook_field_call_form()
  *  在添加/更新表单中增加自定义项目
  */
 function field_field_call_form($field, &$form){
   if($field->field_type == 'textarea'){
     $form['fields']['data']['format'] = filter_form_field($field->data['format']);
+    $form['fields']['data']['validate'] = array(
+      '#fieldset_prefix' => 'asc',
+      '#fieldset_legend' => t('field', '高级设置'),
+      '#fieldset_suffix' => 1,
+      '#fieldset' => true,
+    );
+    $form['fields']['data']['validate']['maxsize'] = array(
+      '#type' => 'textfield',
+      '#title' => t('field', '最大长度'),
+      '#weight' => -3,
+      '#default_value' => $field->data['validate']['maxsize'],
+      '#description' => t('field', '单行文本最大不超过 255 个字符。汉字、字母、数字均算做一个字符')
+    );
+    $form['fields']['data']['validate']['minsize'] = array(
+      '#type' => 'textfield',
+      '#title' => t('field', '最小长度'),
+      '#weight' => -2,
+      '#default_value' => $field->data['validate']['minsize']
+    );
+  }else if($field->field_type == 'textfield'){
+    $form['fields']['data']['validate'] = array(
+      '#fieldset_prefix' => 'asc',
+      '#fieldset_legend' => t('field', '高级设置'),
+      '#fieldset_suffix' => 1,
+      '#fieldset' => true,
+    );
+    $form['fields']['data']['validate']['maxsize'] = array(
+      '#type' => 'textfield',
+      '#title' => t('field', '最大长度'),
+      '#weight' => -3,
+      '#default_value' => $field->data['validate']['maxsize'],
+      '#description' => t('field', '单行文本最大不超过 255 个字符。汉字、字母、数字均算做一个字符')
+    );
+    $form['fields']['data']['validate']['minsize'] = array(
+      '#type' => 'textfield',
+      '#title' => t('field', '最小长度'),
+      '#weight' => -2,
+      '#default_value' => $field->data['validate']['minsize']
+    );
+    
+    $options[0] = t('field', '任意');
+    
+    dd_add_js('modules/field/field.admin.js');
+    
+    if($opt = module_invoke_all('field_type_textfield', 'setting', NULL, $field)){
+      if($_POST['data']){
+        $data_type = $_POST['data']['validate']['type'];
+      }else{
+        $data_type = $field->data['validate']['type'];
+      }
+      $coustom_field = false;
+      foreach($opt as $key => $o){
+        $options[$key] = $o['title'];
+        if($o['fields']){
+          
+          foreach($o['fields'] as $field_key => $c){
+            unset($o['fields']['#required']);
+          }
+          
+          // 自定义配置字段
+          $form['fields']['data']['validate']['settings'][$key] = $o['fields'];
+          $coustom_field = true;
+          $form['fields']['data']['validate']['settings'][$key]['#fieldset_prefix'] = 'asc';
+          $form['fields']['data']['validate']['settings'][$key]['#fieldset_legend'] = t('field', '自定义参数');
+          $form['fields']['data']['validate']['settings'][$key]['#fieldset_suffix'] = 1;
+          $form['fields']['data']['validate']['settings'][$key]['#fieldset'] = true;
+          
+          if($data_type == $key){
+            $display = 'block';
+          }else{
+            $display = 'none';
+          }
+          
+          $form['fields']['data']['validate']['settings'][$key]['#fieldset_attributes'] = array(
+            'class' => 'field_type_textfield_settings field_type_textfield_settings_'.$key,
+            'style' => 'display: '.$display.';'
+          );
+        }
+      }
+      if(!$coustom_field){
+        $form['fields']['data']['validate']['settings'] = NULL;
+      }
+    }
+    $form['fields']['data']['validate']['type'] = array(
+      '#type' => 'select',
+      '#title' => t('field', '输入类型'),
+      '#default_value' => $field->data['validate']['type'],
+      '#options' => $options,
+      '#weight' => -1,
+      '#description' => t('field', '此字段允许输入的值。')
+    );
   }else if($field->field_type == 'file'){
     $form['fields']['data']['multi'] = array(
       '#type' => 'select',
       '#title' => t('field', '数量'),
-      '#default_value' => $field->data['multi'],
-      '#options' => array(1 => 1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
-      '#description' => t('field', '可同时上传多个文件，默认为 1 个')
+      '#default_value' => $field->data['multi'] ? $field->data['multi'] : 0,
+      '#options' => array(1 => 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20),
+      '#description' => t('field', '可同时上传多个文件，默认为  1 个')
     );
     $form['fields']['data']['filetype'] = array(
       '#type' => 'textfield',
@@ -319,6 +781,14 @@ function field_form($field){
     '#default_value' => $field->name,
     '#required' => 1,
   );
+  $form['fields']['field_key'] = array(
+    '#type' => 'textfield',
+    '#title' => t('field', '索引'),
+    '#weight' => -99,
+    '#default_value' => $field->field_key,
+    '#description' => t('field', '只能是数字、字母和下划线'),
+    '#required' => 1,
+  );
   $form['fields']['weight'] = array(
     '#default_value' => $field->weight ? $field->weight : 0,
     '#start' => 20,
@@ -429,7 +899,7 @@ function field_form_select_type($form, $v){
  *  返回 array 或 false。保存不成功，返回带有错误信息，成功，则返回 false
  */
 function field_save(&$field){
-  if(is_object($field) && $field->type && $field->module && $field->field_type){
+  if(is_object($field)){
     
     // 基本验证
     $function = $field->module.'_field_call_group';
@@ -437,26 +907,34 @@ function field_save(&$field){
       dd_set_message(t('field', '未定义的字段组'), 'error');
       $error['module']['#error'][] = t('field', '未定义的字段组');
     }else if(!$field->module){
-      $error['module']['#error'][] = t('field', '不能为空');
+      $error['module']['#error'][] = t('field', '模块名称不能为空');
     }else if(!field_get_call_lists($field->field_type)){
       dd_set_message(t('field', '未定义的字段类型'), 'error');
       $error['field_type']['#error'][] = t('field', '未定义的字段类型');
     }else if(!$field->field_type){
-      $error['field_type']['#error'][] = t('field', '不能为空');
+      $error['field_type']['#error'][] = t('field', '字段类型不能为空');
     }else if(!$field->type){
-      $error['type']['#error'][] = t('field', '不能为空');
+      $error['type']['#error'][] = t('field', '字段标识不能为空');
+    }else if(!$field->field_key){
+      $error['field_key']['#error'][] = t('field', '索引名称不能为空');
     }else if(mb_strlen($field->type, 'utf-8') > 16){
-      $error['type']['#error'][] = t('field', '长度不超过 %strlen 个字符', array('%strlen' => 16));
+      $error['type']['#error'][] = t('field', '字段标识长度不超过 %strlen 个字符', array('%strlen' => 16));
     }else if(mb_strlen($field->field_func, 'utf-8') > 64){
-      $error['field_func']['#error'][] = t('field', '长度不超过 %strlen 个字符', array('%strlen' => 64));
+      $error['field_func']['#error'][] = t('field', '回调函数长度不超过 %strlen 个字符', array('%strlen' => 64));
     }else if($field->name && mb_strlen($field->name, 'utf-8') > 64){
-      $error['name']['#error'][] = t('field', '长度不超过 %strlen 个字符', array('%strlen' => 64));
+      $error['name']['#error'][] = t('field', '字符名称长度不超过 %strlen 个字符', array('%strlen' => 64));
     }else if(preg_match('/[^0-9|a-z|_]/i', $field->type)){
-      $error['type']['#error'][] = t('field', '只能是数字、字母与下划线');
+      $error['type']['#error'][] = t('field', '字段标识只能是数字、字母与下划线');
     }else if($field->field_func && preg_match('/[^0-9|a-z|_]/i', $field->field_func)){
-      $error['field_func']['#error'][] = t('field', '只能是数字、字母与下划线');
+      $error['field_func']['#error'][] = t('field', '回调函数只能是数字、字母与下划线');
+    }else if($field->field_key && preg_match('/[^0-9|a-z|_]/i', $field->field_key)){
+      $error['field_key']['#error'][] = t('field', '索引名称只能是数字、字母与下划线');
+    }else if(($field->field_id && db_query('SELECT COUNT(*) FROM {fields} WHERE field_key = ? AND module = ?
+      AND type = ? AND field_id != ?', array($field->field_key, $field->module, $field->type, $field->field_id),
+      array('return' => 'column'))) || (!$field->field_id && db_query('SELECT COUNT(*) FROM {fields} WHERE field_key = ? AND module = ?
+      AND type = ?', array($field->field_key, $field->module, $field->type), array('return' => 'column')))){
+      $error['field_key']['#error'][] = t('field', '%string 已经存在', array('%string' => $field->field_key));
     }else{
-      
       if(!$field->weight) $field->weight = 0;
       if(!$field->required){
         $field->required = 0;
@@ -473,7 +951,8 @@ function field_save(&$field){
         
         if($field->field_id){
           // 更新
-          if(db_exec('UPDATE {fields} SET field_type = ?, field_func = ?, type = ?, module = ?, name = ?, weight = ?, required = ?, access = ?, deleted = ?, locked = ?, data = ? WHERE field_id = ?', array($field->field_type, $field->field_func, $field->type, $field->module, $field->name, $field->weight, $field->required, serialize($field->access), $field->deleted, $field->locked, serialize($field->data), $field->field_id), array('return' => 'return'))){
+          if(db_exec('UPDATE {fields} SET field_key = ?, field_type = ?, field_func = ?, type = ?, module = ?, name = ?, weight = ?, required = ?, access = ?, deleted = ?, locked = ?, data = ? WHERE field_id = ?',
+            array($field->field_key, $field->field_type, $field->field_func, $field->type, $field->module, $field->name, $field->weight, $field->required, serialize($field->access), $field->deleted, $field->locked, serialize($field->data), $field->field_id), array('return' => 'return'))){
             $field->field_id = db_last_insert_id();
           }else{
             dd_set_message(t('field', '更新失败'), 'error');
@@ -490,7 +969,8 @@ function field_save(&$field){
             }
           }
           
-          if(db_exec('INSERT INTO {fields} (field_type, field_func, type, module, name, weight, required, access, deleted, locked, data) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', array($field->field_type, $field->field_func, $field->type, $field->module, $field->name, $field->weight, $field->required, serialize($field->access), $field->deleted, $field->locked, serialize($field->data)))){
+          if(db_exec('INSERT INTO {fields} (field_key, field_type, field_func, type, module, name, weight, required, access, deleted, locked, data) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            array($field->field_key, $field->field_type, $field->field_func, $field->type, $field->module, $field->name, $field->weight, $field->required, serialize($field->access), $field->deleted, $field->locked, serialize($field->data)))){
             $field->field_id = db_last_insert_id();
           }else{
             dd_set_message(t('field', '写入失败'), 'error');
@@ -523,13 +1003,7 @@ function field_load($field_id, $clear = NULL){
   static $fields;
   $lists = field_get_call_lists();
   if(!isset($fields[$field_id])){
-    if(!$clear){
-      $fields[$field_id] = field_get_cache_field($field_id);
-    }else if($field = db_query('SELECT * FROM {fields} WHERE field_id = ?', array($field->field_id), array('return' => 'one'))){
-      $field->field_module = $lists[$field->field_type]['name'];
-      module_alter_all('field_call_load', $field);
-      $fields[$field_id] = $field;
-    }
+    $fields[$field_id] = field_get_cache_field($field_id, $clear);
   }
   return $fields[$field_id];
 }
@@ -638,7 +1112,7 @@ function field_lists($module = NULL, $type = NULL){
   foreach($fetch as $field){
     $links = array();
     if(!$field->locked){
-      $links[] = l(t('field', '编辑'), $_GET['q'], array('query' => $get.'field_op=update&field_field_id='.$field->field_id.'#redirect='.rawurlencode($_SERVER['REQUEST_URI'])));
+      $links[] = l(t('field', '编辑'), $_GET['q'], array('query' => $get.'field_op=update&field_field_id='.$field->field_id.'&redirect='.rawurlencode($_SERVER['REQUEST_URI'])));
     }
     if($field->deleted){
       $links[] = l(t('field', '删除'), $_GET['q'], array('query' => $get.'field_op=delete&field_field_id='.$field->field_id, 'attributes' => array('class' => 'confirm')));
@@ -1113,6 +1587,16 @@ function field_field_call_validate(&$field){
       dd_set_message(t('field', '文件大小只能是数字'), 'error');
       return true;
     }
+  }else if($field->field_type == 'textfield'){
+    if($field->data['validate']['type']){
+      // 回调自定义配置
+      if($field->data['validate']['settings'][$field->data['validate']['type']]){
+        $field->data['validate']['settings'] = $field->data['validate']['settings'][$field->data['validate']['type']];
+      }else{
+        unset($field->data['validate']['settings']);
+      }
+      return module_invoke_all('field_type_textfield', 'validate', $field->data['validate']['type'], $field);
+    }
   }
 }
 
@@ -1162,9 +1646,13 @@ function field_field_call_save($field){
    * 这个分类树，最多不超过 10 级，在定义字段组时，可以设置层级限制
    * 字段基本信息添加成功后，若有此值，则写入 field_term 表中
    */
-   if($field->children && in_array($field->field_type, field_get_term_type())){
-     field_batch_save_term($field, 0, $field->children);
-   }
+  if($field->children && in_array($field->field_type, field_get_term_type())){
+   field_batch_save_term($field, 0, $field->children);
+  }
+  if($field->field_type == 'textfield' && $field->data['validate']['type']){
+      // 回调自定义配置
+    module_invoke_all('field_type_textfield', 'save', $field->data['validate']['type'], $field);
+  }
 }
 
 /**
@@ -1361,10 +1849,10 @@ function field_get_node_load($module, $type, & $node){
               
               switch($data->field_type){ // 应用于表单
                 case 'select': case 'radio': // 单选
-                  $node->fields[$o->field_id] = $o;
+                  $node->fields[$data->field_key] = $o;
                 break;
                 case 'checkbox': case 'selects': case 'tags':// 多选
-            	    $node->fields[$o->field_id][$o->tid] = $o;
+            	    $node->fields[$data->field_key][$o->tid] = $o;
               }
             }
           }
@@ -1374,7 +1862,7 @@ function field_get_node_load($module, $type, & $node){
         if($fetch = field_get_node_data($node->nid, $data->field_type)){
           foreach($fetch as $o){
             if($o->field_id == $data->field_id){
-              $node->fields[$o->field_id] = $o;
+              $node->fields[$data->field_key] = $o;
               continue;
             }
           }
@@ -1383,7 +1871,7 @@ function field_get_node_load($module, $type, & $node){
         if($fetch = field_get_node_data($node->nid, 'file')){
           foreach($fetch as $o){
             if($o->field_id == $data->field_id){
-              $node->fields[$o->field_id][$o->fid] = $o;
+              $node->fields[$data->field_key][$o->fid] = $o;
             }
           }
         }
@@ -1415,8 +1903,8 @@ function field_get_node_load($module, $type, & $node){
  * 分类表单选择项
  */
 function field_get_term_options($terms = array(), $required = 0){
-  if(!$required) $options = array("" => t('field', '不限'));
   $options = array();
+  if(!$required) $options = array("" => t('field', '不限'));
   if($terms){
     foreach($terms as $term){
       $options[$term->tid] = $term->name;
@@ -1483,27 +1971,27 @@ function field_get_node_form($module, $type, $node = NULL, &$form = NULL, $field
       // 没有自定义处理函数的字段
       if($data->field_module == 'field'){
         $options = field_get_cache_term($module, $type);
-        $key = 'field_'.$field_id;
+        
         $required = $data->required ? true : false;
         $field_value = NULL;
         switch($data->field_type){
           case 'radio':
-            $form['fields']['fields'][$key] = array(
+            $form['fields']['fields'][$data->field_key] = array(
               '#title' => $data->name,
               '#type' => $data->field_type,
-              '#default_value' => $node->fields[$field_id] ? $node->fields[$field_id]->tid : '',
+              '#default_value' => $node->fields[$field_id] ? $node->fields[$data->field_key]->tid : '',
               '#required' => $required,
               '#options' => field_get_term_options($options[$field_id], $required),
               '#description' => $data->data['description']
             );
           break;
           case 'checkbox':
-            if($node->fields[$field_id]){
-              foreach($node->fields[$field_id] as $de){
+            if($node->fields[$data->field_key]){
+              foreach($node->fields[$data->field_key] as $de){
                 $field_value[$de->tid] = $de->tid;
               }
             }
-            $form['fields']['fields'][$key] = array(
+            $form['fields']['fields'][$data->field_key] = array(
               '#title' => $data->name,
               '#type' => $data->field_type,
               '#default_value' => $field_value,
@@ -1515,64 +2003,64 @@ function field_get_node_form($module, $type, $node = NULL, &$form = NULL, $field
           case 'select':
             if($conf['field_term_children'][$field_id]){
             	dd_add_js(array('fields' => array(
-                $key => array(
+                $data->field_key => array(
 	                'url' => url('json/field/'.$field_id),
             		)
             	)), 'setting');
-              $form['fields']['fields']['field_root_'.$key] = array(
+              $form['fields']['fields']['field_root_'.$data->field_key] = array(
                 '#title' => $data->name,
                 '#type' => 'select',
                 '#required' => $required,
                 '#attributes' => array(
-                  'class' => 'field_option_children field_option_children_'.$key,
-                  'alt' => $key
+                  'class' => 'field_option_children field_option_children_'.$data->field_key,
+                  'alt' => $data->field_key
                 ),
                 '#options' => field_get_term_options($options[$field_id]),
                 '#description' => $data->data['description']
               );
               $default_value = NULL;
-              if($_POST['fields'][$key]){
-                $default_value = $_POST['fields'][$key];
-              }else if($node->fields[$field_id]){
-                $default_value = $node->fields[$field_id]->tid;
+              if($_POST['fields'][$data->field_key]){
+                $default_value = $_POST['fields'][$data->field_key];
+              }else if($node->fields[$data->field_key]){
+                $default_value = $node->fields[$data->field_key]->tid;
               }
               if($default_value && $terms = field_get_term_childrens($default_value)){
                 static $ajaxId;
                 $ajaxId = 0;
                 $terms = array_reverse($terms);
-                $form['fields']['fields']['field_root_'.$key]['#prefix'] = '<div class="form_item form_item_select" id="form_field_root_'.$key.'">';
-                $form['fields']['fields']['field_root_'.$key]['#default_value'] = array_shift($terms);
-                $form['fields']['fields']['field_root_'.$key]['#description'] = '';
+                $form['fields']['fields']['field_root_'.$data->field_key]['#prefix'] = '<div class="form_item form_item_select" id="form_field_root_'.$data->field_key.'">';
+                $form['fields']['fields']['field_root_'.$data->field_key]['#default_value'] = array_shift($terms);
+                $form['fields']['fields']['field_root_'.$data->field_key]['#description'] = '';
                 foreach($terms as $children){
                   ++$ajaxId;
-                  $form['fields']['fields']['_field_root_'.$key.$ajaxId] = array(
+                  $form['fields']['fields']['_field_root_'.$data->field_key.$ajaxId] = array(
                     '#type' => 'select',
                     '#attributes' => array(
                       'class' => 'field_option_children',
-                      'alt' => $key
+                      'alt' => $data->field_key
                     ),
                     '#suffix' => '',
                     '#default_value' => $children['value'],
                     '#options' => $children['option'],
                   );
                 }
-                $form['fields']['fields']['_field_root_'.$key.$ajaxId]['#suffix'] = '</div>';
-                $form['fields']['fields']['_field_root_'.$key.$ajaxId]['#description'] = $data->data['description'];
+                $form['fields']['fields']['_field_root_'.$data->field_key.$ajaxId]['#suffix'] = '</div>';
+                $form['fields']['fields']['_field_root_'.$data->field_key.$ajaxId]['#description'] = $data->data['description'];
               }
-              $form['fields']['fields'][$key] = array(
+              $form['fields']['fields'][$data->field_key] = array(
                 '#type' => 'hidden',
                 '#default_value' => $default_value,
                 '#required' => $required,
                 '#attributes' => array(
-                  'class' => 'field_select_value field_select_value_'.$key,
-                  'alt' => $key
+                  'class' => 'field_select_value field_select_value_'.$data->field_key,
+                  'alt' => $data->field_key
                 )
               );
             }else{
-              $form['fields']['fields'][$key] = array(
+              $form['fields']['fields'][$data->field_key] = array(
                 '#title' => $data->name,
                 '#type' => 'select',
-                '#default_value' => $node->fields[$field_id] ? current($node->fields[$field_id])->tid : '',
+                '#default_value' => $node->fields[$data->field_key] ? current($node->fields[$data->field_key])->tid : '',
                 '#required' => $required,
                 '#options' => field_get_term_options($options[$field_id], $required),
                 '#description' => $data->data['description']
@@ -1582,29 +2070,29 @@ function field_get_node_form($module, $type, $node = NULL, &$form = NULL, $field
           case 'selects':
             if($conf['field_term_children'][$data->field_id]){
             	dd_add_js(array('fields' => array(
-                $key => array(
+                $data->field_key => array(
 	                'url' => url('json/field/'.$data->field_id)
             		)
             	)), 'setting');
-              $form['fields']['fields']['field_root_'.$key] = array(
+              $form['fields']['fields']['field_root_'.$data->field_key] = array(
                 '#title' => $data->name,
                 '#type' => 'select',
-                '#required' => $node->fields[$field_id] ? false : $required,
+                '#required' => $node->fields[$data->field_key] ? false : $required,
                 '#attributes' => array(
-                  'class' => 'field_option_children field_option_children_'.$key,
-                  'alt' => $key
+                  'class' => 'field_option_children field_option_children_'.$data->field_key,
+                  'alt' => $data->field_key
                 ),
-                '#prefix' => '<div class="form_item form_item_select form_item_selects" id="user_edit_form_field_field_root_'.$key.'">',
-                '#field_suffix' => '<input type="button" value="'.t('field', '增加').'" class="form_select_multiple_button" alt="'.$key.'" />',
+                '#prefix' => '<div class="form_item form_item_select form_item_selects" id="user_edit_form_field_field_root_'.$data->field_key.'">',
+                '#field_suffix' => '<input type="button" value="'.t('field', '增加').'" class="form_select_multiple_button" alt="'.$data->field_key.'" />',
                 '#options' => field_get_term_options($options[$data->field_id]),
                 '#description' => $data->data['description']
               );
               
               $defaults = NULL;
-              if($_POST['fields'][$key]){
-                $defaults = $_POST['fields'][$key];
-              }else if($node->fields[$field_id]){
-                foreach($node->fields[$field_id] as $de){
+              if($_POST['fields'][$data->field_key]){
+                $defaults = $_POST['fields'][$data->field_key];
+              }else if($node->fields[$data->field_key]){
+                foreach($node->fields[$data->field_key] as $de){
                   $defaults[$de->tid] = $de->tid;
                 }
               }
@@ -1613,37 +2101,37 @@ function field_get_node_form($module, $type, $node = NULL, &$form = NULL, $field
               
               if($defaults){
                 foreach($defaults as $default_value){
-                  $form['fields']['fields'][$key][$default_value] = array(
+                  $form['fields']['fields'][$data->field_key][$default_value] = array(
                     '#type' => 'hidden',
                     '#default_value' => $default_value,
                     '#attributes' => array('class' => 'field_form_selects_option_'.$default_value)
                   );
-                  if($node->fields[$field_id]){
-                    $description .= '<span>'.$node->fields[$field_id][$default_value]->name;
+                  if($node->fields[$data->field_key]){
+                    $description .= '<span>'.$node->fields[$data->field_key][$default_value]->name;
                     $description .= '<a href="javascript:void(0);" alt="'.$default_value.'" onClick="fields.deleteOption($(this));">('.t('field', '移除').')</a></span>';
                   }
                 }
               }
               
-              $form['fields']['fields']['fiel   d_root_'.$key]['#description'] = $data->data['description'] . '<div class="field_form_selects_view">'.$description.'</div>';
-              $form['fields']['fields']['_multiple_'.$key] = array(
+              $form['fields']['fields']['field_root_'.$data->field_key]['#description'] = $data->data['description'] . '<div class="field_form_selects_view">'.$description.'</div>';
+              $form['fields']['fields']['_multiple_'.$data->field_key] = array(
                 '#type' => 'hidden',
-                '#default_value' => $node->fields[$field_id] ? 0 : "",
+                '#default_value' => $node->fields[$data->field_key] ? 0 : "",
                 '#required' => $required,
                 '#attributes' => array(
-                  'class' => 'field_select_value field_select_value_'.$key,
-                  'alt' => $key
+                  'class' => 'field_select_value field_select_value_'.$data->field_key,
+                  'alt' => $data->field_key
                 ),
                 '#suffix' => '</div>'
               );
             }else{
               $defaults = NULL;
-              if($node->fields[$field_id]){
-                foreach($node->fields[$field_id] as $de){
+              if($node->fields[$data->field_key]){
+                foreach($node->fields[$data->field_key] as $de){
                   $defaults[$de->tid] = $de->tid;
                 }
               }
-              $form['fields']['fields'][$key] = array(
+              $form['fields']['fields'][$data->field_key] = array(
                 '#title' => $data->name,
                 '#type' => 'selects',
                 '#default_value' => $defaults,
@@ -1655,12 +2143,12 @@ function field_get_node_form($module, $type, $node = NULL, &$form = NULL, $field
           break;
           case 'tags':
             // 标签
-            if($node->fields[$field_id]){
-              foreach($node->fields[$field_id] as $de){
+            if($node->fields[$data->field_key]){
+              foreach($node->fields[$data->field_key] as $de){
                 $field_value .= $de->name.',';
               }
             }
-            $form['fields']['fields'][$key] = array(
+            $form['fields']['fields'][$data->field_key] = array(
               '#title' => $data->name,
               '#type' => 'textfield',
               '#default_value' => $field_value ? rtrim($field_value, ',') : '',
@@ -1669,20 +2157,35 @@ function field_get_node_form($module, $type, $node = NULL, &$form = NULL, $field
               '#description' => $data->data['description']
             );
           break;
-          case 'textfield': case 'textarea':
-            // 单行文本 和 多行文本
-            $form['fields']['fields'][$key] = array(
+          case 'textfield':
+            // 单行文本
+            $form['fields']['fields'][$data->field_key] = array(
               '#title' => $data->name,
               '#type' => $data->field_type,
-              '#default_value' => $node->fields[$field_id]->text,
+              '#default_value' => $node->fields[$data->field_key]->text,
+              '#required' => $required,
+              '#description' => $data->data['description']
+            );
+            if($data->data['validate']['type']){
+              if($textfield_opt = module_invoke_all('field_type_textfield', 'node_form', $data->data['validate']['type'], $data)){
+                $form['fields']['fields'][$data->field_key] = array_merge($form['fields']['fields'][$data->field_key], $textfield_opt);
+              }
+            }
+          break;
+          case 'textarea':
+            // 多行文本
+            $form['fields']['fields'][$data->field_key] = array(
+              '#title' => $data->name,
+              '#type' => $data->field_type,
+              '#default_value' => $node->fields[$data->field_key]->text,
               '#required' => $required,
               '#description' => $data->data['description']
             );
           break;
           case 'file': // 文件
             if($data->data['multi'] > 1){
-              if($node->fields[$field_id]){
-                $multi = $data->data['multi'] - count($node->fields[$field_id]);
+              if($node->fields[$data->field_key]){
+                $multi = $data->data['multi'] - count($node->fields[$data->field_key]);
                 if($multi < 1){
                   $disabled = true;
                 }
@@ -1692,7 +2195,7 @@ function field_get_node_form($module, $type, $node = NULL, &$form = NULL, $field
             }else{
               $multi = 0;
             }
-            $form['fields']['fields'][$key] = array(
+            $form['fields']['fields'][$data->field_key] = array(
               '#title' => $data->name,
               '#type' => 'file',
               '#multi' => $multi,
@@ -1702,19 +2205,19 @@ function field_get_node_form($module, $type, $node = NULL, &$form = NULL, $field
                 'savepath' => $data->data['savepath'],
                 'filesize' => $data->data['filesize']
               ),
-              '#required' => $node->fields[$field_id] ? false : $required,
+              '#required' => $node->fields[$data->field_key] ? false : $required,
             );
             $description = '';
-            if($node->fields[$field_id]){
+            if($node->fields[$data->field_key]){
               if($data->data['multi'] > 1){
                 $description = '<span class="field_file_view field_file_view_multi">';
               }else{
                 $description = '<span class="field_file_view field_file_view_one">';
               }
-              foreach($node->fields[$data->field_id] as $files){
+              foreach($node->fields[$data->field_key] as $files){
                 $description .= '<span class="field_file_list">';
                 if(strpos($files->filemime, 'image') !== false){
-                  $description .= l(img(image_get_thumb($files->fid, $files->filepath, $data['thumbs']['thumb'])), f($files->filepath), array('html' => true, 'attributes' => array('target' => '_blank')));
+                  $description .= l(img(image_get_thumb($files->fid, $files->filepath, $data->data['thumbs']['thumb'])), f($files->filepath), array('html' => true, 'attributes' => array('target' => '_blank')));
                 }else{
                   $description .= l(t('field', '下载'), f($fields->filepath), array('html' => true, 'attributes' => array('target' => '_blank', 'title' => $files->filename)));
                 }
@@ -1725,7 +2228,7 @@ function field_get_node_form($module, $type, $node = NULL, &$form = NULL, $field
               }
               $description .= '</span><span class="clear"></span>';
             }
-            $form['fields']['fields'][$key]['#description'] = $data->data['description']. $description;
+            $form['fields']['fields'][$data->field_key]['#description'] = $data->data['description']. $description;
         }
       }else{
         /**
@@ -1765,29 +2268,28 @@ function field_get_node_validate($module, $type, $value, $node, $form = NULL){
     if(!$data->field_func){
       // 没有自定义处理函数的字段
       if($data->field_module == 'field'){
-        $key = 'field_'.$data->field_id;
         switch($data->field_type){
           case 'select': // 单选
-            if($value->fields[$key] && $conf['field_term_children'][$data->field_id] && !db_query('SELECT COUNT(field_id) FROM {fields_term} WHERE field_id = ? AND tid = ?', array($data->field_id, $value->fields[$key]), array('return' => 'column'))){
+            if($value->fields[$data->field_key] && $conf['field_term_children'][$data->field_id] && !db_query('SELECT COUNT(field_id) FROM {fields_term} WHERE field_id = ? AND tid = ?', array($data->field_id, $value->fields[$data->field_key]), array('return' => 'column'))){
               dd_set_message(t('field', '%string 出现非法选择', array('%string' => $data->name)), 'error');
               return true;
             }
           break;
           case 'selects':
-            if($data->required && !$value->fields[$key]){
+            if($data->required && !$value->fields[$data->field_key]){
               dd_set_message(t('field', '%string 不能为空', array('%string' => $data->name)), 'error');
               return true;
-            }else if($value->fields[$key] && $conf['field_term_children'][$data->field_id] && db_query('SELECT COUNT(field_id) FROM {fields_term} WHERE field_id != ? AND tid IN ('.db_get_placeholder($value->fields[$key]).')', array_merge(array($data->field_id), $value->fields[$key]), array('return' => 'column'))){
+            }else if($value->fields[$data->field_key] && $conf['field_term_children'][$data->field_id] && db_query('SELECT COUNT(field_id) FROM {fields_term} WHERE field_id != ? AND tid IN ('.db_get_placeholder($value->fields[$data->field_key]).')', array_merge(array($data->field_id), $value->fields[$data->field_key]), array('return' => 'column'))){
               dd_set_message(t('field', '%string 出现非法选择', array('%string' => $data->name)), 'error');
               return true;
             }
           break;
           case 'tags':
             // 标签
-            if($tags = field_get_string_tags($data->field_id, $value->fields[$key])){
+            if($tags = field_get_string_tags($data->field_id, $value->fields[$data->field_key])){
             	foreach($tags as $tag){
             		if(mb_strlen($tag, 'utf-8') > 64){
-            			$t['field'][$key]['#error'][] = t('field', '%string 的长度不超过 %length 字符', array('%string' => $tag, '%length' => 64));
+            			$t['fields'][$data->field_key]['#error'][] = t('field', '%string 的长度不超过 %length 字符', array('%string' => $tag, '%length' => 64));
             			break;
             		}
             	}
@@ -1795,15 +2297,27 @@ function field_get_node_validate($module, $type, $value, $node, $form = NULL){
           break;
           case 'textfield':
             // 单行文本
-        		if($value->fields[$key] && mb_strlen($value->fields[$key], 'utf-8') > 255){
-        			$t['field'][$key]['#error'][] = t('field', '%string 的长度不超过 %length 字符', array('%string' => $data->name, '%length' => 255));
-        		}
+            $strlen = mb_strlen($value->fields[$data->field_key], 'utf-8');
+        		if($value->fields[$data->field_key] && $strlen > 255){
+        			$t['fields'][$data->field_key]['#error'][] = t('field', '%string 的长度不超过 %length 字符', array('%string' => $data->name, '%length' => 255));
+        		}else if($data->data['validate']['maxsize'] && $strlen > $data->data['validate']['maxsize']){
+              $t['fields'][$data->field_key]['#error'][] = t('field', '%string 的长度不超过 %length 字符', array('%string' => $data->name, '%length' => $data->data['validate']['maxsize']));
+        		}else if($data->data['validate']['minsize'] && $strlen < $data->data['validate']['minsize']){
+              $t['fields'][$data->field_key]['#error'][] = t('field', '%string 的长度不小于 %length 字符', array('%string' => $data->name, '%length' => $data->data['validate']['minsize']));
+        		}else if($data->data['validate']['type'] 
+        		  && module_invoke_all('field_type_textfield', 'node_validate', $data->data['validate']['type'], $data, $value->fields[$data->field_key])){
+              return true;
+            }
           break;
           case 'textarea':
             // 多行文本
-            if($data->data['maxlength'] && $value->fields[$key] && mb_strlen($value->fields[$key], 'utf-8') > $data->data['maxlength']){
-        			$t['field'][$key]['#error'][] = t('field', '%string 的长度不超过 %length 字符', array('%string' => $data->name, '%length' => $data->data['maxlength']));
-        		}
+        		$strlen = mb_strlen($value->fields[$data->field_key], 'utf-8');
+        		
+            if($data->data['validate']['maxsize'] && $strlen > $data->data['validate']['maxsize']){
+              $t['fields'][$data->field_key]['#error'][] = t('field', '%string 的长度不超过 %length 字符', array('%string' => $data->name, '%length' => $data->data['validate']['maxsize']));
+            }else if($data->data['validate']['minsize'] && $strlen < $data->data['validate']['minsize']){
+              $t['fields'][$data->field_key]['#error'][] = t('field', '%string 的长度不小于 %length 字符', array('%string' => $data->name, '%length' => $data->data['validate']['minsize']));
+            }
           break;
           //case 'file': // 上传文件在 submit 环节处理
         }
@@ -1830,56 +2344,62 @@ function field_get_node_view($module, $type, &$node){
   global $conf;
   foreach($datas as $data){
     
-    if(!$node->fields[$data->field_id]) continue;
+    if(!$node->fields[$data->field_key]) continue;
     
     if(!$data->field_func){
       // 没有自定义处理函数的字段
       if($data->field_module == 'field'){
         switch($data->field_type){
           case 'select':  case 'radio':
-            $node->field_view['category'][$data->field_id] = array(
-              '#content' => l($node->fields[$data->field_id]->name, 'category/'.$node->fields[$data->field_id]->tid),
+            $node->field_view['category'][$data->field_key] = array(
+              '#content' => l($node->fields[$data->field_key]->name, 'category/'.$node->fields[$data->field_key]->tid),
               '#name' => $data->name
             );
           break;
           case 'checkbox': case 'selects':
             $term = $content = NULL;
-            foreach($node->fields[$data->field_id] as $term){
+            foreach($node->fields[$data->field_key] as $term){
               $content .= l($term->name, 'category/'.$term->tid);
             }
-            $node->field_view['category'][$data->field_id] = array(
+            $node->field_view['category'][$data->field_key] = array(
               '#content' => $content,
               '#name' => $data->name
             );
           break;
           case 'tags':
             $term = $content = NULL;
-            foreach($node->fields[$data->field_id] as $term){
+            foreach($node->fields[$data->field_key] as $term){
               $content .= l($term->name, 'category/'.$term->tid);
             }
-            $node->field_view['tags'][$data->field_id] = array(
+            $node->field_view['tags'][$data->field_key] = array(
               '#content' => $content,
               '#name' => $data->name
             );
           break;
           case 'textfield':
-            $node->field_view['textfield'][$data->field_id] = array(
-              '#content' => check_pain($node->fields[$data->field_id]->text),
+           $textfield = check_plain($node->fields[$data->field_key]->text);
+           if($data->data['validate']['type']){
+              if($textfield_value = module_invoke_all('field_type_textfield', 'node_view', $data->data['validate']['type'], $data, $node->fields[$data->field_key]->text)){
+                $textfield = $textfield_value;
+              }
+            }
+            $node->field_view['textfield'][$data->field_key] = array(
+              '#content' => $textfield,
               '#name' => $data->name
             );
           break;
           case 'textarea':
-            $node->field_view['textarea'][$data->field_id] = array(
-              '#content' => filter_view($node->fields[$data->field_id]->text, $data->data['format']),
+            $node->field_view['textarea'][$data->field_key] = array(
+              '#content' => filter_view($node->fields[$data->field_key]->text, $data->data['format']),
               '#name' => $data->name
             );
           break;
           case 'file':
             $content = NULL;
-            foreach($node->fields[$data->field_id] as $file){
+            foreach($node->fields[$data->field_key] as $file){
               $content .= l(img(image_get_thumb($file->fid, $file->filepath, $data->data['thumbs']['medium'])), f($file->filepath), array('html' => 1, 'attributes' => array('target' => '_blank')));
             }
-            $node->field_view['file'][$data->field_id] = array(
+            $node->field_view['file'][$data->field_key] = array(
               '#content' => $content, '#name' => $data->name
             );
         }
@@ -1915,26 +2435,25 @@ function field_get_node_save($module, $type, $value, $node = NULL, $form = NULL)
       continue;
     }
     if(!$data->field_func){
-      $key = 'field_'.$data->field_id;
       // 没有自定义处理函数的字段
       if($data->field_module == 'field'){
         switch($data->field_type){
           case 'radio': case 'select':
             $field_ids[$data->field_id] = $data->field_id;
             
-            if($value->fields[$key]) $cids[] = $value->fields[$key];
+            if($value->fields[$data->field_key]) $cids[] = $value->fields[$data->field_key];
           break;
           case 'checkbox': case 'selects':
             $field_ids[$data->field_id] = $data->field_id;
-            if($value->fields[$key]) $cids = array_merge($cids, $value->fields[$key]);
+            if($value->fields[$data->field_key]) $cids = array_merge($cids, $value->fields[$data->field_key]);
           break;
           case 'tags':
             $field_ids[$data->field_id] = $data->field_id;
             
-            if($tags = field_get_string_tags($data->field_id, $value->fields[$key])){
+            if($tags = field_get_string_tags($data->field_id, $value->fields[$data->field_key])){
           		foreach($tags as $tag){
-                if($node->fields[$data->field_id]){
-                  if(in_array($tag, $node->fields[$data->field_id])){
+                if($node->fields[$data->field_key]){
+                  if(in_array($tag, $node->fields[$data->field_key])){
                     $tids[] = $tid;
                     continue;
                   }
@@ -1949,34 +2468,39 @@ function field_get_node_save($module, $type, $value, $node = NULL, $form = NULL)
             }
           break;
           case 'textfield':
+            if($data->data['validate']['type']){
+              if($textfield_value = module_invoke_all('field_type_textfield', 'node_save', $data->data['validate']['type'], $data, $value->fields[$data->field_key])){
+                $value->fields[$data->field_key] = $textfield_value;
+              }
+            }
             db_exec('DELETE FROM {fields_small} WHERE nid = ? AND field_id = ?', array($value->nid, $data->field_id));
-            if($value->fields[$key]){
-              db_exec('INSERT INTO {fields_small} (nid, field_id, text) VALUES (?, ?, ?)', array($value->nid, $data->field_id, $value->fields[$key]));
+            if($value->fields[$data->field_key]){
+              db_exec('INSERT INTO {fields_small} (nid, field_id, text) VALUES (?, ?, ?)', array($value->nid, $data->field_id, $value->fields[$data->field_key]));
             }
           break;
           case 'textarea':
             db_exec('DELETE FROM {fields_long} WHERE nid = ? AND field_id = ?', array($value->nid, $data->field_id));
-            if($value->fields[$key]){
-              db_exec('INSERT INTO {fields_long} (nid, field_id, text) VALUES (?, ?, ?)', array($value->nid, $data->field_id, $value->fields[$key]));
+            if($value->fields[$data->field_key]){
+              db_exec('INSERT INTO {fields_long} (nid, field_id, text) VALUES (?, ?, ?)', array($value->nid, $data->field_id, $value->fields[$data->field_key]));
             }
           break;
           case 'file':
-            if($_FILES['fields'] && $_FILES['fields']['name'][$key]){
+            if($_FILES['fields'] && $_FILES['fields']['name'][$data->field_key]){
               $validate = array(
                 'filetype' => $data->data['filetype'],
                 'savepath' => $data->data['savepath'],
-                'filesize' => $data->data['filesize']
+                'filesize' => $data->data['filesize'] ? $data->data['filesize'] : 999999
               );
-              if(is_array($_FILES['fields']['name'][$key])){
+              if(is_array($_FILES['fields']['name'][$data->field_key])){
                 $files = 0;
-                foreach($_FILES['fields']['name'][$key] as $i => $name){
+                foreach($_FILES['fields']['name'][$data->field_key] as $i => $name){
                   if($i > $data->data['multi']) break;
-                  if(!$message = file_validate_error($_FILES['fields']['error'][$key][$i])){
+                  if(!$message = file_validate_error($_FILES['fields']['error'][$data->field_key][$i])){
                     $file = array(
                       'name' => $name,
-                      'type' => $_FILES['fields']['type'][$key][$i],
-                      'size' => $_FILES['fields']['size'][$key][$i],
-                      'tmp_name' => $_FILES['fields']['tmp_name'][$key][$i],
+                      'type' => $_FILES['fields']['type'][$data->field_key][$i],
+                      'size' => $_FILES['fields']['size'][$data->field_key][$i],
+                      'tmp_name' => $_FILES['fields']['tmp_name'][$data->field_key][$i],
                       'ext_id' => $data->field_id, // 字段id
                       'ext_id2' => $value->nid, // 节点id
                       'ext_type' => 'field_file' // 扩展标记
@@ -1988,10 +2512,10 @@ function field_get_node_save($module, $type, $value, $node = NULL, $form = NULL)
                     dd_set_message($message, 'error');
                   }
                 }
-                if($node->fields[$data->field_id]){
-                  $k = $files + count($node->fields[$data->field_id]) - $data->data['multi'];
+                if($node->fields[$data->field_key]){
+                  $k = $files + count($node->fields[$data->field_key]) - $data->data['multi'];
                   if($k > 0){
-                    foreach($node->fields[$data->field_id] as $file){
+                    foreach($node->fields[$data->field_key] as $file){
                       if($k == 0) break;
                       file_delete($file->fid, 1, $file->filepath);
                       --$k;
@@ -1999,17 +2523,17 @@ function field_get_node_save($module, $type, $value, $node = NULL, $form = NULL)
                   }
                 }
               }else{
-                if($node->fields[$data->field_id]){
-                  foreach($node->fields[$data->field_id] as $file){
+                if($node->fields[$data->field_key]){
+                  foreach($node->fields[$data->field_key] as $file){
                     file_delete($file->fid, 1, $file->filepath);
                   }
                 }
-                if(!$message = file_validate_error($_FILES['fields']['error'][$key])){
+                if(!$message = file_validate_error($_FILES['fields']['error'][$data->field_key])){
                   $file = array(
-                    'name' => $_FILES['fields']['name'][$key],
-                    'type' => $_FILES['fields']['type'][$key],
-                    'size' => $_FILES['fields']['size'][$key],
-                    'tmp_name' => $_FILES['fields']['tmp_name'][$key],
+                    'name' => $_FILES['fields']['name'][$data->field_key],
+                    'type' => $_FILES['fields']['type'][$data->field_key],
+                    'size' => $_FILES['fields']['size'][$data->field_key],
+                    'tmp_name' => $_FILES['fields']['tmp_name'][$data->field_key],
                     'ext_id' => $data->field_id,
                     'ext_id2' => $value->nid,
                     'ext_type' => 'field_file'

@@ -110,7 +110,8 @@ Dida.messageShow = function(text, opt){
   }else{
     o = {timeOut: 5000, status: 'status'};
   }
-  $('body').append('<div style="position:absolute;top:0;right:0;" class="js_messageShow '+o.status+'">'+text+'</div>');
+  
+  $('body').append('<div style="position:absolute;top:0;right:0;z-index: 1000;" class="js_messageShow '+o.status+'">'+text+'</div>');
   window.setTimeout(function(){$('.js_messageShow').remove();}, o.timeOut);
 }
 
@@ -397,12 +398,15 @@ $(function(){
 	    o.buttonImage = "/misc/images/calendar.gif";
 	    o.buttonImageOnly = true;
       
-      if(o.start && o.end){
-        o.onClose = function(text, insert){ uidata_vali(i, text, insert);};
+      if(o.start || o.end){
+      	o.onClose = function(text){ 
+					var instance = $(this).data("datepicker");
+					uidata_vali($(this), text, instance, o.start ? 'start' : 'end');
+        }
       }
       
       if(o.showTime){
-        o.duration = '';
+      	o.duration = '';
         o.showTime = true;
         o.constrainInput = false;
       }
@@ -410,19 +414,26 @@ $(function(){
       $(o.dom).datepicker(o).focus(function(){ this.blur(); });
     });
   };
-  function uidata_vali(i, text, insert){
-    var element = settings.uidata;
-    var start = element[i].start;
-    var end = element[i].end;
-    var s = $(start).val();
-    var e = $(end).val();
-    re = /[^0-9]/g;
-    s = s.replace(re, '');
-    e = e.replace(re, '');
-    if($(end).val() && (e <= s)){
-      alert('结束日期必须大于开始日期');
-      $(end).val('');
-    }
+  function uidata_vali(obj, text, instance, type){
+  	var val_end, val_start;
+  	if(type == 'start'){
+  		val_start = text;
+  		val_end = $(instance.settings.start).val();
+  	}else{
+  		val_end = text;
+  		val_start = $(instance.settings.end).val();
+  	}
+  	
+  	if(val_end && val_start){
+      re = /[^0-9]/g;
+      val_end = val_end.replace(re, '');
+      val_start = val_start.replace(re, '');
+      if(val_end <= val_start){
+      	obj.val('');
+      	alert('结束日期必须大于开始日期');
+      }
+  	}
+  	return false;
   };
   $('#tour_get_search .category_form_selects_button').remove();
 });

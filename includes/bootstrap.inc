@@ -2427,7 +2427,7 @@ function cache_system_set_file($filename, $var_name, $value, $path = 1){
   if(!is_string($value)){
     $value = var_export($value, true);
   	if(strpos($value, 'stdClass::__set_state') !== false){
-  		$value = str_replace('stdClass::__set_state', 'cache_array_to_object', $value);
+  		$value = str_replace('stdClass::__set_state', '(object)', $value);
   	}
     $value .= ';';
   }

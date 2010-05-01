@@ -77,6 +77,7 @@ function user_menu(){
     'access_callback' => 'user_is_login',
     'page_callback' => 'user_logout',
   );
+  
   $items['user/%'] = array(
     'load_functions' => array(1 => array('user_load')),
     'access_callback' => true,
@@ -84,6 +85,7 @@ function user_menu(){
     'page_arguments' => array(1),
     'file' => 'user.page.inc',
   );
+  
   $items['admin/users'] = array(
     'title' => '用户列表',
     'access_arguments' => array('admin user view'),

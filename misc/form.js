@@ -67,10 +67,26 @@ $(function(){
     var element = settings.auto;
     $(element).each(function() {
       auto = this;
-    	$("#" + attr).autocomplete(auto.url, {
-    		width: auto.width,
-    		selectFirst: false
-    	});
+      if(auto.dom){
+      	if(auto.url){
+      		auto.source = function(request, response){
+      			$.ajax({
+      				url: auto.url,
+      				dataType: 'json',
+      				type: 'POST',
+      				data: {value: request.term},
+      				success: function(data) {
+      					if(!data.error){
+	    						response(data.contents);
+      					}else{
+      						response([]);
+      					}
+      				}
+      			})
+      		}
+      	}
+	    	$(auto.dom).autocomplete(auto);
+      }
     });
   }
   if(settings.sort){
