@@ -19,6 +19,30 @@ function field_json($field_id){
   exit;
 }
 
+function field_json_auto($field_id){
+  dd_set_header('Content-Type: text/plain; charset=utf-8');
+  if($field = field_load($field_id)){
+    if($field->data['validate']['type'] == 'custom_ok' && $field->data['validate']['settings']['values']){
+      $json['error'] = 0;
+       switch($field->data['validate']['settings']['value_type']){
+        case 1: // 普通模式
+          $json['contents'] = dd_line_to_array($field->data['validate']['settings']['values'], 1);
+          echo json_encode($json);
+          exit;
+        break;
+        case 3: // php 模式
+          $field_value = $_POST['value'];
+          $field_type = 'autocomplete';
+          $json['contents'] = eval($field->data['validate']['settings']['values']);
+          echo json_encode($json);
+          exit;
+      }
+    }
+  }
+  echo '{"error": "1"}';
+  exit;
+}
+
 /**
  * 字段浏览页面
  */

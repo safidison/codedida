@@ -17,6 +17,13 @@ function field_schema(){
         'default' => '',
         'description' => '字段类型标识'
       ),
+      'field_key' => array(
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => '字段索引'
+      ),
     	'field_func' => array(
         'type' => 'varchar',
         'length' => 64,
@@ -87,6 +94,9 @@ function field_schema(){
     ),
     'indexes' => array(
       'weight' => array('weight'),
+    ),
+    'unique keys' => array(
+      'ftm' => array('field_key', 'type', 'module'),
     ),
     'primary key' => array('field_id'),
   );
@@ -256,6 +266,34 @@ function field_schema(){
 function field_install() {
   $ret = array();
   $ret = module_install_schema('install', 'field');
+  return $ret;
+}
+
+/**
+ * @Implement of hook_update_X()
+ */
+function field_update_1(){
+  /**
+   * 字段增加索引值 field_key，在节点调用中，可输出关联数组，方便调用
+   */
+  $ret = array();
+  $field_key = array(
+    'type' => 'varchar',
+    'length' => 128,
+    'not null' => TRUE,
+    'default' => '',
+    'description' => '字段索引'
+  );
+  
+  $ret = db_add_field('fields', 'field_key', $field_key);
+  
+  if($ret){
+    db_exec('UPDATE {fields} SET field_key = field_id');
+    db_add_unique('fields', 'ftm', array('field_key', 'type', 'module'));
+  }
+  
+  field_get_cache_field(NULL, 1);
+  
   return $ret;
 }
 

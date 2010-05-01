@@ -42,7 +42,9 @@ h2.system_no_content{
   padding: 5px 12px;
   text-align: left;
 }
-
+.ui-datepicker select.ui-datepicker-month{
+	width: 35%;
+}
 /*form*/
 .form_item{
   margin: 3px 0;

@@ -147,8 +147,7 @@ function dd_get_form($form_id) {
   	dd_set_form_cache($form);
   }
   
-  $fields = dd_form_field($form, $_POST, $error);
-  $fields = dd_form_sort($fields);
+  $fields = dd_form_sort(dd_form_field($form, $_POST, $error));
   
   $output .= '<form '.dd_attributes($form['#args']).'>';
   if($settings['#title']){
@@ -437,9 +436,10 @@ function _dd_form_html($fields){
 //字段排序
 function dd_form_sort($fields){
   foreach($fields as $key => $child){
-    if(isset($child['#children'])){
+    //if(isset($child['#children'])){
+    if(strpos($key, '#') === false && is_array($child)){
       uasort($child, 'dd_form_cmp');
-      $child = array_reverse($child, true);
+      //$child = array_reverse($child, true);
       $childs = dd_form_sort_child($child);
       $fields[$key] = $childs;
     }
@@ -452,9 +452,9 @@ function dd_form_sort($fields){
 //子字段排序
 function dd_form_sort_child($fields){
   foreach($fields as $key => $child){
-    if((strpos($key, '#') === false) && isset($child['#children'])){
+    if(strpos($key, '#') === false && is_array($child)){
       uasort($child, "dd_form_cmp");
-      $child = array_reverse($child, true);
+      //$child = array_reverse($child, true);
       $childs = dd_form_sort_child($child);
       $fields[$key] = $childs;
     }
@@ -689,7 +689,6 @@ function dd_form_error($field){
 //单行文本字段
 function dd_form_textfield($field){
   if($field['#autocomplete']){
-    $field['#attributes']['class'] = ($field['#attributes']['class'] ? $field['#attributes']['class'].' autocomplete': 'autocomplete');
     form_set_auto($field);
   }
   
@@ -919,11 +918,11 @@ function dd_form_label($field){
 }
 
 function form_set_auto($field = NULL){
-  dd_add_js('misc/jquery.autocomplete.js');
-  if($field['#attributes']['id']){
+  if($field['#autocomplete']){
+    dd_jqui();
     foreach($field['#autocomplete'] as $key => $value){
       if($value){
-        $auto_val[$field['#attributes']['id']][$key] = $value;
+        $auto_val[$key] = $value;
       }
     }
     dd_add_js(array('auto' => $auto_val), 'setting');
