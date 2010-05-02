@@ -11,6 +11,7 @@
   php_flag session.auto_start               off
   php_value mbstring.http_input             pass
   php_value mbstring.http_output            pass
+  php_value mbstring.internal_encoding      utf-8
   php_flag mbstring.encoding_translation    off
 </IfModule>
 

@@ -250,6 +250,8 @@ function file_set($filepath, $uid, $info = true){
  *  配置参数，见上传示例
  */
 function file_save_upload($file, $validate = NULL, $rename = 1){
+  if(isset($file['error']) && file_validate_error($file['error']) != false) return false;
+  
   if(!$file['name'] || !$file['tmp_name']) return false;
   
   $file = (object) $file;
