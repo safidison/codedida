@@ -11,9 +11,9 @@ function system_file_upload(){
         if($_GET['type'] == 'image'){
           $validate['image'] = true;
         }
-        if(!$error = file_validate_error($_FILES['upload']['error'])){
-          $file = file_save_upload($_FILES[$_GET['name']], $validate);
-        }
+        
+        $file = file_save_upload($_FILES[$_GET['name']], $validate);
+        
         if($_GET['op'] == 'ckeditor'){
           if($file->filepath) {
             $filepath = f($file->filepath);
