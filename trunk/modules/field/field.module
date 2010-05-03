@@ -2203,7 +2203,7 @@ function field_get_node_form($module, $type, $node = NULL, &$form = NULL, $field
               '#validate' => array(
                 'filetype' => $data->data['filetype'],
                 'savepath' => $data->data['savepath'],
-                'filesize' => $data->data['filesize']
+                'filesize' => $data->data['filesize'] ? $data->data['filesize'] : 999999
               ),
               '#required' => $node->fields[$data->field_key] ? false : $required,
             );
