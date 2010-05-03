@@ -717,13 +717,12 @@ function dd_form_weight($field){
   
   $field['#options'] = $opt;
   
-  if($field['#ajax']){
-    $field['#attributes']['class'] .= ' dd_form_ajax_weight';
+  if($field['#attributes']['class']){
+    $field['#attributes']['class'] .= ' weight dd_form_ajax_field';
+  }else{
+    $field['#attributes']['class'] = 'weight';
   }
-  if($field['#href']){
-    $field['#attributes']['href'] = $field['#href'];
-  }
-  $field['#attributes']['class'] .= ' weight';
+  
   return dd_form_select($field);
 }
 

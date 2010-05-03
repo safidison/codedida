@@ -47,7 +47,7 @@ $(function(){
     return false;
   });
   
-  $('.dd_form_ajax_weight').change(function(){
+  $('.dd_form_ajax_field').change(function(){
   	var href = $(this).attr('href');
   	if(href){
   		$.ajax({

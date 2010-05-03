@@ -925,7 +925,7 @@ function system_admin_format(){
           }
         break;
         case 'update':
-          if($filter = ddb_query('SELECT * FROM {filter_tags} WHERE fid = ?', array($args[4]), array('return' => 'one'))){
+          if($filter = db_query('SELECT * FROM {filter_tags} WHERE fid = ?', array($args[4]), array('return' => 'one'))){
             $output .= dd_get_form('system_admin_format_form', $filter->module, $filter->delta, $filter);
           }else{
             dd_set_message(t('system', '不正确的访问'));
@@ -992,6 +992,7 @@ function system_admin_format(){
  * 过滤器表单
  */
 function system_admin_format_form($module, $delta, $filter = NULL){
+  
   $add = call_user_func($module.'_filter', 'add', $delta);
   if(!$add[$delta] || !$add[$delta]['title']){
     dd_set_message(t('system', '不正确的访问'));
@@ -1057,7 +1058,6 @@ function system_admin_format_form_validate($form, $v){
       if(db_exec('INSERT INTO {filter_tags} (title, module, delta, description) VALUES (?, ?, ?, ?)', array($v['title'], $v['module'], $v['delta'], $v['description']))){
         $v['fid'] = db_last_insert_id();
         dd_set_message(t('system', '保存成功'));
-        return true;
       }else{
         dd_set_message(t('system', '保存失败'));
         return true;
@@ -1065,8 +1065,8 @@ function system_admin_format_form_validate($form, $v){
     }else{
       $t['title']['#error'][] = t('system', '%string 已经存在', array('%string' => $v['title']));
     }
-    cache_del('cid', 'filter_get_filters'); // 清除自定义过滤器缓存
     call_user_func($v['module'].'_filter', 'save', $v['delta'], NULL, (object)$v);
+    cache_del('cid', 'filter_get_filters'); // 清除自定义过滤器缓存
   }
   return $t;
 }
@@ -1143,7 +1143,7 @@ function system_admin_filter_form($fid = NULL){
 	    '#fieldset_prefix' => 'asc',
 	    '#fieldset_legend' => t('system', '过滤器'),
       '#fieldset_suffix' => 1,
-      '#description' => t('system', '权重将决定过滤器调用的先后顺序，多个过滤器之间可能存在冲突。')
+      '#description' => t('system', '权重将决定过滤器调用的先后顺序，多个过滤器之间可能存在冲突')
     );
     foreach($allLists as $key => $filter){
       $op = array();
