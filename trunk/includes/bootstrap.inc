@@ -1673,7 +1673,6 @@ function dd_get_menu($menus = NULL){
   if($menus){
     static $i;
     if($i == 0){
-      dd_add_js('misc/jquery.menu.js');
       dd_add_js('$(\'.site_menu\').menuLevel();', 'inline');
     }
     foreach($menus as $key => $lists){
@@ -1755,6 +1754,7 @@ function dd_set_header($header = NULL) {
   }
   return implode("\n", $stored_headers);
 }
+
 function dd_set_html_head($data = NULL) {
   static $stored_head = '';
   if (!is_null($data)) {
@@ -2278,12 +2278,38 @@ function format_interval($timestamp, $granularity = 5) {
   return $output ? $output : '0 秒';
 }
 
-// iso 日期转时间戳
-function format_date_iso($iso){
-  if(strpos($iso, '-') !== false){
-    $d = explode('-', $iso);
-    if(count($d) == 3) return mktime(0, 0, 0, $d[1], $d[2], $d[0]);
+/**
+ * 日期转时间戳，日期格式：2010-05-25 或 2010/05/25
+ */ 
+function format_date_mktime($text){
+  static $data;
+  if(!isset($data[$text])){
+    $data[$text] = '';
+    
+    if(strpos($text, '-') !== false){
+      $t = '-';
+    }else if(strpos($text, '/') !== false){
+      $t = '/';
+    }else{
+      $t = NULL;
+    }
+    
+    $time = array(0, 0, 0);
+    
+    if(strpos($text, ':') !== false){
+      if($a = end(explode(' ', $text, 2))){
+        $time = explode(':', $a);
+      }
+    }
+    
+    if($t){
+      $d = explode($t, $text);
+      if(count($d) == 3) {
+        $data[$text] = mktime($time[0], $time[1], $time[2], $d[1], $d[2], $d[0]);
+      }
+    }
   }
+  return $data[$text];
 }
 
 // 获取当前日期零点时间戳
@@ -2307,6 +2333,46 @@ function _dd_text_cache(){
   dd_set_header('Content-Type: text/plain; charset=utf-8');
   dd_set_header('Cache-Control: no-cache, must-revalidate');
   dd_set_header('Expires: Sat, 26 Jul 1997 05:00:00 GMT');
+}
+
+/**
+ * meta 参数
+ */
+function dd_set_meta(array $v = array()){
+  if(isset($v)){
+    if($v['title']){
+      dd_set_title(array($v['title']));
+      unset($v['title']);
+    }
+    foreach($v as $key => $content){
+      if($content){
+        dd_set_html_head("<meta name=\"$key\" content=\"$content\" />");
+      }
+    }
+  }
+}
+
+function dd_get_share_fav($url, $title){
+  
+  if($lists = module_invoke_all('share_fav')){
+    $args = array('<url>' => urlencode($url), '<title>' => urlencode($title));
+    foreach($lists as $key => $list){
+      if($list['href']){
+        $link = strtr($list['href'], $args);
+        if($list['icon']){
+          $data = l(img($list['icon']), $link, array('html' => true, 
+          'attributes' => array('target' => '_blank', 'title' => $list['title'])));
+        }else{
+          $data = l($list['title'], $link, array('attributes' => array('target' => '_blank')));
+        }
+        $items[] = array(
+          'data' => $data,
+          'class' => 'share_'.$key
+        );
+      }
+    }
+    return theme('item_list', $items, NULL, 'ul', array('class' => 'share_fav_view_list'));
+  }
 }
 
 /**

@@ -90,6 +90,10 @@ function dida_is_setup(){
   if(!function_exists('gd_info')){
     $error[] = '请开启 GD 扩展';
   }
+  if(!is_writable('./sites/logs')){
+    $error[] = ' 日志目录(sites/logs)必须有读取权限 ';
+  }
+  
   if($error) return $error;
   
   global $conf, $conf_dir, $conf_file, $setting_file;
