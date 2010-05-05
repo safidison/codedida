@@ -1019,3 +1019,52 @@ function form_time_select($title, $type = 'get'){
 function dd_label($v, $class = NULL){
   return '<span class="dd_label'.($class ? ' '. $class :  '').'">'.$v.'</span>';
 }
+
+/**
+ * meta 表单
+ */
+function dd_get_form_meta($sort = 'desc', $value, $title = 'meta 参数'){
+  $form = array(
+    '#fieldset_prefix' => $sort,
+    '#fieldset_legend' => $title,
+    '#fieldset_suffix' => 1,
+    '#fieldset' => true,
+  );
+  $form['title'] = array(
+    '#type' => 'textfield',
+    '#title' => 'title',
+    '#attributes' => array('size' => 50),
+    '#default_value' => $value['title'],
+  );
+  $form['keywords'] = array(
+    '#type' => 'textfield',
+    '#title' => 'keywords',
+    '#attributes' => array('size' => 50),
+    '#default_value' => $value['keywords'],
+  );
+  $form['robots'] = array(
+    '#type' => 'textfield',
+    '#title' => 'robots',
+    '#attributes' => array('size' => 50),
+    '#default_value' => $value['robots'],
+    '#description' => t('system', 'all|none|index|noindex|follow|nofollow')
+  );
+  $form['author'] = array(
+    '#type' => 'textfield',
+    '#title' => 'author',
+    '#attributes' => array('size' => 50),
+    '#default_value' => $value['author'],
+  );
+  $form['generator'] = array(
+    '#type' => 'textfield',
+    '#title' => 'generator',
+    '#attributes' => array('size' => 50),
+    '#default_value' => $value['generator'],
+  );
+  $form['description'] = array(
+    '#type' => 'textarea',
+    '#title' => 'description',
+    '#default_value' => $value['description'],
+  );
+  return $form;
+}

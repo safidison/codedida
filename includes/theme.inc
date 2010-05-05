@@ -14,6 +14,7 @@ function theme_init() {
   dd_add_css($conf['themes'][$template]['path'].'/css/style.css', 'theme');
   dd_add_js('misc/jquery.js', 'core');
   dd_add_js('misc/dida.js', 'core');
+  dd_add_js('misc/jquery.dida.js', 'core');
 }
 
 /**

@@ -401,7 +401,7 @@ $(function(){
       if(o.start || o.end){
       	o.onClose = function(text){ 
 					var instance = $(this).data("datepicker");
-					uidata_vali($(this), text, instance, o.start ? 'start' : 'end');
+					uidata_vali($(this), text, instance, instance.settings.start ? 'start' : 'end');
         }
       }
       
@@ -435,5 +435,4 @@ $(function(){
   	}
   	return false;
   };
-  $('#tour_get_search .category_form_selects_button').remove();
 });
