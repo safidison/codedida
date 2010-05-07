@@ -678,8 +678,12 @@ function user_register_form($op = 'user'){
     );
   }
   
-  module_alter_all('user_register_form', $form);
-  field_get_node_form('user', 'field', NULL, $form);
+  $ac = new stdClass();
+  $ac = $GLOBALS['user'];
+  
+  module_alter_all('user_register_form', $form, $op, $ac);
+  field_get_node_form('user', 'field', $ac, $form);
+  
   $form['fields']['submit'] = array(
     '#type' => 'submit',
     '#weight' => 100,
@@ -763,6 +767,22 @@ function user_set_roles($uid, $rid){
 	}else if($rid && $rid != var_get_key('user', 'anonymous_role', 1)){
 		db_exec('INSERT INTO {user_roles} (uid, rid) VALUES (?, ?)', array($uid, $rid));
 	}
+}
+
+/**
+ * 添加或更新角色
+ * @param (array) $role
+ */
+function user_save_role($role = array()){
+  $name = $role['name'];
+  if(!$rid = db_query('SELECT rid FROM {role} WHERE name = ?', array($name), array('return' => 'column'))){
+    if(db_exec('INSERT INTO {role} (name) VALUES (?)', array($name, ($role['perm'] ? serialize($role['perm']) : '')))){
+      return db_last_insert_id();
+    }
+  }else if($role['perm']){
+    db_exec('UPDATE {role} SET perm = ? WHERE rid = ?', array(($role['perm'] ? serialize($role['perm']) : ''), $rid));
+  }
+  return $rid;
 }
 
 /**
@@ -1141,7 +1161,8 @@ function user_session_reg(&$ac) {
 
 function user_clear_session($uid){
   if($u = user_load($uid)){
-    $_SESSION['user'] = $u;
+    global $user;
+    $user = $_SESSION['user'] = $u;
   }
 }
 
@@ -1175,7 +1196,7 @@ function user_site_menu(&$menu){
   
   if(!$user->uid){
     $menu['user'] = array(
-        array(
+        'login' => array(
           '#weight' => 999,
           '#data' => l(t('user', '登录'), 'user/login'),
           '#childrens' => array(
@@ -1184,7 +1205,7 @@ function user_site_menu(&$menu){
         )
     );
     if(user_is_register()){
-      $menu['user'][] = array(
+      $menu['user']['register'] = array(
         '#data' => l(t('user', '注册'), 'user/register'),
         '#weight' => 1000
       );
@@ -1343,8 +1364,9 @@ function user_field_call_form(&$field, &$form){
 
 /**
  * 输出用户链接
+ * @param (object) $ac
  */
-function user_name($ac){
+function theme_username($ac){
   if($ac->uid > 0){
     $output = l($ac->name, 'user/'.$ac->uid);
   }else{

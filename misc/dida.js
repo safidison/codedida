@@ -387,6 +387,64 @@ $(function(){
       });
     }
   };
+  //自动完成
+  if(settings.auto){
+  	var ui_auto = {};
+    $(settings.auto).each(function(i, item) {
+      if(item.dom){
+      	ui_auto[i] = item;
+      	if(ui_auto[i].url){
+      		ui_auto[i].cache = {};
+      		ui_auto[i].source = function(request, response){
+      			if(ui_auto[i].cache[request.term] != undefined){
+      				response(ui_auto[i].cache[request.term]);
+      				return;
+      			}
+      			
+      			$.ajax({
+      				url: ui_auto[i].url,
+      				dataType: 'json',
+      				type: 'POST',
+      				data: {value: request.term},
+      				success: function(data) {
+      					if(!data.error && data.contents){
+      						ui_auto[i].cache[request.term] = data.contents;
+	    						response(data.contents);
+      					}else{
+      						if(ui_auto[i].range){
+      							$(ui_auto[i].dom).val("");
+      						}
+      						ui_auto[i].cache[request.term] = [];
+      						response([]);
+      					}
+      				}
+      			})
+      		}
+      	}
+      	$(ui_auto[i].dom).autocomplete(ui_auto[i]);
+      	if($.browser.mozilla){
+      		/**
+      		 * firefox 中文输入法 bug
+      		 */
+	      	$(ui_auto[i].dom).bind("text", function() {
+	      		$(this).autocomplete('search');
+	      	});
+      	}
+      }
+    });
+  }
+  if(settings.sort){
+    var element = settings.sort;
+    $(element).each(function(i) {
+      var $$ = this;
+      $(this.wid).after('<span class="ui-icon ui-icon-arrowthick-2-n-s"></span>');
+      $(this.dom).after('<div class="messages sort_messages sort_messages_'+ i +'" style="display: none"></div>');
+      $(this.dom).sortable({
+         change: function(event, ui) {$('.sort_messages').show().text('提示：排序已变动，请提交保存'); $(this.dom).sortable("serialize"); }
+      });
+    });
+  }
+  
   //时间控件
   if(settings.uidata){
     $.datepicker.setDefaults($.datepicker.regional['zh-CN']);

@@ -339,6 +339,8 @@ function user_admin_roles_form_validate($form, $v){
     dd_set_message(t('user', '角色 %string 添加成功', array('%string' => $v['name'])));
     cache_del('cid', 'user_roles');
     dd_goto('admin/users/roles');
+  }else{
+    dd_set_message(t('user', '添加失败，角色已经存在'));
   }
   return $t;
 }
@@ -349,7 +351,8 @@ function user_admin_roles_form_validate($form, $v){
 function user_admin_fields(){
 	$tabs = array(
 		l(t('user', '字段管理'), 'admin/users/fields'),
-		l(t('user', '添加字段'), 'admin/users/fields/add')
+		l(t('user', '添加字段'), 'admin/users/fields/add'),
+		l(t('user', '导出字段'), 'admin/users/fields/export')
 	);
   $args = arg();
   switch($args[3]){
@@ -358,6 +361,9 @@ function user_admin_fields(){
       $field->module = 'user';
       $field->redirect = url('admin/users/fields');
   		$output = dd_get_form('field_form', $field);
+  	break;
+  	case 'export':
+  	  $output = field_export(0, 'user', 'field');
   	break;
   	default:
   		$output = field_lists('user', 'field');

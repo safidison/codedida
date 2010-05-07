@@ -10,8 +10,20 @@ function theme_init() {
   if(is_file($conf['themes'][$template]['path'] . '/template.php')){
     require_once $conf['themes'][$template]['path'] . '/template.php';
   }
+  if(!$conf['themes'][$template]['styles']){
+    dd_add_css($conf['themes'][$template]['path'].'/css/style.css', 'theme');
+  }else{
+    foreach($conf['themes'][$template]['styles'] as $style){
+      dd_add_css($conf['themes'][$template]['path'].'/'. $style, 'theme');
+    }
+  }
   
-  dd_add_css($conf['themes'][$template]['path'].'/css/style.css', 'theme');
+  if($conf['themes'][$template]['scripts']){
+    foreach($conf['themes'][$template]['scripts'] as $script){
+      dd_add_js($conf['themes'][$template]['path'].'/'. $script, 'theme');
+    }
+  }
+  
   dd_add_js('misc/jquery.js', 'core');
   dd_add_js('misc/dida.js', 'core');
   dd_add_js('misc/jquery.dida.js', 'core');
