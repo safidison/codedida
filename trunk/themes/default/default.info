@@ -14,4 +14,10 @@ $info = array(
   	'right' => '右栏',
   	'bottom' => '底部',
   ),
+  /*
+  'styles' => array( // 附加css，相对于主题文件夹，如：css/my.css。若无，则默认加载 css/style.css
+  ),
+  'scripts' => array( // 附加js，相对于主题文件夹，如：js/my.js
+  )
+  */
 );

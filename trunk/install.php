@@ -19,6 +19,10 @@ if(!$conf_dir){
 $conf_file = $conf_dir .'/cache/conf.php';
 $setting_file = $conf_dir .'/setting.php';
 
+if(is_file($conf_file)){
+  require_once $conf_file;
+}
+
 if(is_file($setting_file)){
 	require_once $setting_file;
   
@@ -30,13 +34,14 @@ if(is_file($setting_file)){
   }
   
   if($installed){
-    header('Location: '.$base_path, true, 301);
+    if($conf['status']){
+      header('Location: '.$base_path, true, 301);
+    }else{
+      header('Content-Type: text/html; charset=utf-8');
+      echo $setting_file . ' 文件显示系统已经安装，或许这是一个旧的配置文件，请确认并清除该文件内容';
+    }
     exit;
   }
-}
-
-if(is_file($conf_file)){
-	require_once $conf_file;
 }
 
 require_once './includes/bootstrap.inc';

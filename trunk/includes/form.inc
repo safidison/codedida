@@ -924,7 +924,7 @@ function form_set_auto($field = NULL){
         $auto_val[$key] = $value;
       }
     }
-    dd_add_js(array('auto' => $auto_val), 'setting');
+    dd_add_js(array('auto' => array($auto_val)), 'setting');
   }
 }
 

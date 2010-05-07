@@ -61,43 +61,10 @@ $(function(){
   $('span.option_label, span.form_radio_text').click(function(){
   	$(this).prev('input').attr('checked', !$(this).prev('input').attr('checked'));
   });
-  
-  //自动完成
-  if(settings.auto){
-    var element = settings.auto;
-    $(element).each(function() {
-      auto = this;
-      if(auto.dom){
-      	if(auto.url){
-      		auto.source = function(request, response){
-      			$.ajax({
-      				url: auto.url,
-      				dataType: 'json',
-      				type: 'POST',
-      				data: {value: request.term},
-      				success: function(data) {
-      					if(!data.error){
-	    						response(data.contents);
-      					}else{
-      						response([]);
-      					}
-      				}
-      			})
-      		}
-      	}
-	    	$(auto.dom).autocomplete(auto);
-      }
-    });
-  }
-  if(settings.sort){
-    var element = settings.sort;
-    $(element).each(function(i) {
-      var $$ = this;
-      $(this.wid).after('<span class="ui-icon ui-icon-arrowthick-2-n-s"></span>');
-      $(this.dom).after('<div class="messages sort_messages sort_messages_'+ i +'" style="display: none"></div>');
-      $(this.dom).sortable({
-         change: function(event, ui) {$('.sort_messages').show().text('提示：排序已变动，请提交保存'); $(this.dom).sortable("serialize"); }
-      });
-    });
-  }
+  $('span.form_description').click(function(){
+  	$(this).prev('input').focus();
+  });
+  $('label.dd_label').click(function(){
+  	$(this).next('input').focus();
+  });
 });

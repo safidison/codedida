@@ -44,6 +44,8 @@ function module_enabled_variable($op = 'all'){
         'filename' => $info['filename'],
         'path' => $info['path'],
         'region' => $info['info']['region'],
+        'styles' => $info['info']['styles'] ? $info['info']['styles'] : NULL,
+        'scripts' => $info['info']['scripts'] ? $info['info']['scripts'] : NULL,
         'name' => ($info['info']['name'] ? $info['info']['name'] : $info['filename']),
         'language' => $info['info']['language']
       );

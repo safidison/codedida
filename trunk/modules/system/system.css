@@ -42,9 +42,6 @@ h2.system_no_content{
   padding: 5px 12px;
   text-align: left;
 }
-.ui-datepicker select.ui-datepicker-month{
-	width: 35%;
-}
 /*form*/
 .form_item{
   margin: 3px 0;
@@ -52,6 +49,7 @@ h2.system_no_content{
 .dd_label{
   color: #034B03;
   font-weight: bold;
+  cursor: pointer;
   /*
   display:-moz-inline-box;
   display:inline-block;
@@ -80,6 +78,7 @@ h2.system_no_content{
 .form_description{
   color: #7E8186;
   padding: 0 4px;
+  cursor: pointer;
 }
 .form_item_file .form_description{
   padding: 0;
@@ -345,4 +344,11 @@ legend.asc{
 }
 #files_view_editor li span a{
   padding: 0 2px;
+}
+
+#user_edit_form .dd_label{
+  display:-moz-inline-box;
+  display:inline-block;
+  width: 100px;
+  text-align: left;
 }
