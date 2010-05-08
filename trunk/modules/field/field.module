@@ -387,10 +387,14 @@ function field_field_type_textfield($op, $type = NULL, $field = NULL, $v = NULL)
               if(eval($set['values']) == false){
                 $e = true;
               }
+            break;
+            default:
+              $e = true;
           }
           if($e){
-            dd_set_message(t('field', '!string 的值不被允许', array('!string' => $field->name)), 'error');
-            return true;
+            $error = t('field', '!string 的值不被允许', array('!string' => $field->name));
+            dd_set_message($error, 'error');
+            return array($error);
           }
         break;
         case 'custom_not':
@@ -411,10 +415,14 @@ function field_field_type_textfield($op, $type = NULL, $field = NULL, $v = NULL)
               if(eval($set['values']) == false){
                 $e = true;
               }
+            break;
+            default:
+              $e = true;
           }
           if($e){
-            dd_set_message(t('field', '!string 的值不被允许', array('!string' => $field->name)), 'error');
-            return true;
+            $error = t('field', '!string 的值不被允许', array('!string' => $field->name));
+            dd_set_message($error, 'error');
+            return array($error);
           }
       }
     break;
@@ -606,10 +614,14 @@ function field_field_type_tags($op, $type = NULL, $field = NULL, $v = NULL){
               if(eval($set['values']) == false){
                 $e = true;
               }
+            break;
+            default:
+              $e = true;
           }
           if($e){
-            dd_set_message(t('field', '!string 的值不被允许', array('!string' => $field->name)), 'error');
-            return true;
+            $error = t('field', '!string 的值不被允许', array('!string' => $field->name));
+            dd_set_message($error, 'error');
+            return array($error);
           }
         break;
         case 'custom_not':
@@ -630,10 +642,14 @@ function field_field_type_tags($op, $type = NULL, $field = NULL, $v = NULL){
               if(eval($set['values']) == false){
                 $e = true;
               }
+            break;
+            default:
+              $e = true;
           }
           if($e){
-            dd_set_message(t('field', '!string 的值不被允许', array('!string' => $field->name)), 'error');
-            return true;
+            $error = t('field', '!string 的值不被允许', array('!string' => $field->name));
+            dd_set_message($error, 'error');
+            return array($error);
           }
       }
     break;
@@ -712,17 +728,24 @@ function field_field_call_form($field, &$form){
     $form['fields']['data']['validate']['maxsize'] = array(
       '#type' => 'textfield',
       '#title' => t('field', '最大长度'),
-      '#weight' => -3,
+      '#weight' => -4,
       '#default_value' => $field->data['validate']['maxsize'],
       '#description' => t('field', '单行文本最大不超过 255 个字符。汉字、字母、数字均算做一个字符')
     );
     $form['fields']['data']['validate']['minsize'] = array(
       '#type' => 'textfield',
       '#title' => t('field', '最小长度'),
-      '#weight' => -2,
+      '#weight' => -3,
       '#default_value' => $field->data['validate']['minsize']
     );
-    
+    $form['fields']['data']['validate']['unique'] = array(
+      '#type' => 'radio',
+      '#title' => t('field', '唯一值'),
+      '#weight' => -2,
+      '#options' => array(t('field', '否'), t('field', '是')),
+      '#default_value' => $field->data['validate']['unique'],
+      '#description' => t('field', '不允许重复值')
+    );   
     $options[0] = t('field', '任意');
     
     dd_add_js('modules/field/field.admin.js');
@@ -793,6 +816,12 @@ function field_field_call_form($field, &$form){
       '#title' => t('field', '大小'),
       '#default_value' => $field->data['filesize'],
       '#description' => t('field', '允许的文件大小，单位KB，留空为不限')
+    );
+    $form['fields']['data']['filename'] = array(
+      '#type' => 'textfield',
+      '#title' => t('field', '名称'),
+      '#default_value' => $field->data['filename'],
+      '#description' => t('field', '指定文件名称，可使用<a href="!url">通配符</a>，建议留空', array('!url' => url('admin/token')))
     );
     $form['fields']['data']['thumbs']['thumb'] = array(
       '#type' => 'textfield',
@@ -1003,10 +1032,11 @@ function field_form($field){
     '#description' => t('field', '只能是数字、字母和下划线'),
     '#required' => 1,
   );
+  
   $form['fields']['weight'] = array(
     '#default_value' => $field->weight ? $field->weight : 0,
-    '#start' => 20,
-    '#end' => -20,
+    '#start' => -20,
+    '#end' => 20,
     '#title' => t('field', '权重'),
     '#type' => 'weight'
   );
@@ -1617,7 +1647,7 @@ function field_term_load($tid){
 		if($term = db_query('SELECT * FROM {fields_term} WHERE tid = ?', array($tid), array('return' => 'one'))){
 		  $field = field_load($term->field_id);
       $term->field = $field;
-		  module_alter_all('field_call_term_load', $term);
+		  module_alter_all('field_call_term_load', $field, $term);
 		}
 		$terms[$tid] = $term;
 	}
@@ -1777,6 +1807,7 @@ function field_term_form($field = NULL, $term = NULL){
   $form['fields']['pid'] = array(
     '#title' => t('field', '上级'),
     '#type' => 'select',
+    '#weight' => -100,
     '#default_value' => $term->pid,
     '#options' => field_term_options($field, $group['level'])
   );
@@ -1790,6 +1821,7 @@ function field_term_form($field = NULL, $term = NULL){
   $form['fields']['name'] = array(
     '#type' => 'textfield',
     '#title' => t('field', '名称'),
+    '#weight' => -99,
     '#default_value' => $term->name,
     '#required' => 1,
   );
@@ -1829,7 +1861,6 @@ function field_term_form_validate($form, $v){
      * 3、触发自定义保存 hook_field_call_term_save()
      */
     if($term = field_save_term($field, $term)){
-      module_invoke_all('field_call_term_save', $field, $term);
       field_set_cache_term();
       dd_set_message(t('field', '操作成功'));
     }else{
@@ -1845,13 +1876,13 @@ function field_term_form_validate($form, $v){
 /**
  * 保存分类数据，若存在则更新
  */
-function field_save_term($field, $term, $batch = 0){
+function field_save_term(&$field, $term, $batch = 0){
   if($error = module_invoke_all('field_call_term_validate', $field, $term)){
-    dc_set_message(implode('<br />', dd_array_multi2single($error)), 'error');
+    dd_set_message(implode('<br />', dd_array_multi2single($error)), 'error');
     return false;
   }
   if(mb_strlen($term->name, 'utf-8') > 64){
-		dc_set_message(t('field', '名称长度不超过 75 个字符'), 'error');
+		dd_set_message(t('field', '名称长度不超过 75 个字符'), 'error');
 		return false;
   }
 	if(!$group = module_invoke($field->module, 'field_call_group', $field->type)){
@@ -1863,18 +1894,17 @@ function field_save_term($field, $term, $batch = 0){
 		dd_set_message(t('field', '层级深度已超过限制，添加失败'), 'error');
 		return false;
 	}
-  
+	
   if(!$term->field_id) $term->field_id = $field->field_id;
+  
   if($term->tid){
     if(!db_query('SELECT tid FROM {fields_term} WHERE field_id = ? AND name = ? AND tid != ?', array($field->field_id, $term->name, $term->tid), array('return' => 'column'))){
-      return field_update_term($term);
+      $newterm = field_update_term($term);
     }else{
       dd_set_message(t('field', '%string 已经存在', array('%string' => $term->name)), 'error');
       return false;
     }
-  }
-  
-  if($batch){
+  }else if($batch){
     static $data;
     if(!isset($data[$term->field_id])){
       $data[$term->field_id] = array($term->pid => array());
@@ -1884,17 +1914,22 @@ function field_save_term($field, $term, $batch = 0){
         }
       }
     }
-    if($data[$term->field_id] && $tid = array_search($term->name, $data[$term->field_id][$term->pid])){
+    if($data[$term->field_id][$term->pid] && $tid = array_search($term->name, $data[$term->field_id][$term->pid])){
       $term->tid = $tid;
-      return field_update_term($term);
+      $newterm = field_update_term($term);
     }else{
-      return field_insert_term($term);
+      $newterm = field_insert_term($term);
     }
   }else if(!db_query('SELECT tid FROM {fields_term} WHERE field_id = ? AND name = ?', array($field->field_id, $term->name), array('return' => 'column'))){
-    return field_insert_term($term);
+    $newterm = field_insert_term($term);
   }else{
     dd_set_message(t('field', '%string 已经存在', array('%string' => $term->name)), 'error');
     return false;
+  }
+  
+  if($newterm->tid){
+    module_invoke_all('field_call_term_save', $field, $newterm);
+    return $newterm;
   }
 }
 
@@ -1905,6 +1940,7 @@ function field_insert_term($term){
   if(!$term->weight) $term->weight = 0;
   if(!$term->pid) $term->pid = 0;
   if(!$term->description) $term->description = '';
+  $term->_op = 'insert';
   if(db_exec('INSERT INTO {fields_term} (pid, field_id, weight, name, description) VALUES (?, ?, ?, ?, ?)', array($term->pid, $term->field_id, $term->weight, $term->name, $term->description))){
     if($term->tid = db_last_insert_id()) return $term;
   }
@@ -1917,7 +1953,7 @@ function field_update_term($term){
   if(!$term->weight) $term->weight = 0;
   if(!$term->pid) $term->pid = 0;
   if(!$term->description) $term->description = '';
-  
+  $term->_op = 'update';
   if(db_exec('UPDATE {fields_term} SET pid = ?, weight = ?, name = ?, description = ? WHERE tid = ?',
   array($term->pid, $term->weight, $term->name, $term->description, $term->tid), array('return' => 1))){
     return $term;
@@ -1932,14 +1968,15 @@ function field_batch_save_term(&$field, $pid = 0, $data = array(), $message = 1)
   foreach($data as $term){
     if(is_array($term)){
       if($term['name']){
-        if($t = field_save_term($field, (object)array('pid' => $pid, 'name' => $term['name'], 'weight' => $term['weight'], 'description' => $term['description']), 1)){
+        $term['pid'] = $pid;
+        if($t = field_save_term($field, (object)$term, 1)){
           if($message) dd_set_message(t('field', '%string 添加成功', array('%string' => $t->name)));
           if($term['childrens'] && is_array($term['childrens'])){
-            field_batch_save_term($field->field_id, $t->tid, $term['childrens'], $message);
+            field_batch_save_term($field, $t->tid, $term['childrens'], $message);
           }
         }
       }
-    }else if(field_save_term($field, (object)array('pid' => $pid, 'name' => $term), 1)){
+    }else if($t = field_save_term($field, (object)array('pid' => $pid, 'name' => $term), 1)){
       if($message) dd_set_message(t('field', '%string 添加成功', array('%string' => $term)));
     }
   }
@@ -2153,6 +2190,28 @@ function field_get_cache_field_group($module, $type = NULL, $clear = 0){
 }
 
 /**
+ * 按索引获取字段
+ */
+function field_get_cache_field_key($module, $type, $field_key){
+  if($fields = field_get_cache_field_group($module, $type)){
+    foreach($fields as $field){
+      if($field_key == $field->field_key){
+        return $field;
+      }
+    }
+  }
+}
+
+/**
+ * 按 id 获取字段
+ */
+function field_get_cache_field_id($module, $type, $field_id){
+  if($fields = field_get_cache_field_group($module, $type)){
+    return $fields[$field_id];
+  }
+}
+
+/**
  * 以下相关函数是字段在节点中的应用接口
  * 节点可以是任何对象，通过字段组名让字段与其关联，调用相应接口进行操作
  * 如用户提交、更新、删除节点，同时也将操作关联的字段，以 field_node_ 为前缀
@@ -2170,8 +2229,13 @@ function field_get_cache_field_group($module, $type = NULL, $clear = 0){
  * @param (string) $type
  *  term：分类，textfield：单行文本，textarea：多行文本，file：上传字段
  */
-function field_get_node_data($nid, $type = 'term'){
+function field_get_node_data($nid, $type = 'term', $clear = NULL){
   static $data;
+  
+  if($clear){
+    $data[$nid] = NULL;
+  }
+  
   if(!isset($data[$nid])) $data[$nid] = array();
   if(!isset($data[$nid][$type])){
     switch($type){
@@ -2201,12 +2265,12 @@ function field_get_node_data($nid, $type = 'term'){
  * @param (object) $node
  *  节点对象
  */
-function field_get_node_load($module, $type, & $node){
+function field_get_node_load($module, $type, & $node, $ac = NULL){
   if(!$datas = field_get_cache_field_group($module, $type)) return;
   // 分组下可能有 1 个或多个字段
   $term_type = field_get_term_type();
   foreach($datas as $data){
-    if(!field_access('view', $data, $node)){
+    if(!field_access('view', $data, $node, $ac)){
       // 至少有浏览权限，才能加载数据
       continue;
     }
@@ -2314,7 +2378,7 @@ function field_get_term_childrens($tid){
 /**
  * 节点回调字段表单
  */
-function field_get_node_form($module, $type, $node = NULL, &$form = NULL, $fieldset = NULL){
+function field_get_node_form($module, $type, $node = NULL, &$form = NULL, $fieldset = NULL, $ac = NULL){
   if(!$group = module_invoke($module, 'field_call_group', $type)){
     dd_set_message(t('field', '未定义的字段组'), 'error');
     return;
@@ -2339,7 +2403,7 @@ function field_get_node_form($module, $type, $node = NULL, &$form = NULL, $field
   dd_add_css('modules/field/field.css');
   global $conf;
   foreach($datas as $field_id => $data){
-    if(!field_access('update', $data, $node)){
+    if(!field_access('update', $data, $node, $ac)){
       continue;
     }
     if(!$data->field_func){
@@ -2544,6 +2608,7 @@ function field_get_node_form($module, $type, $node = NULL, &$form = NULL, $field
               '#type' => $data->field_type,
               '#default_value' => $node->fields[$data->field_key]->text,
               '#required' => $required,
+              '#attributes' => array('size' => 50),
               '#description' => $data->data['description']
             );
             if($data->data['validate']['type']){
@@ -2648,20 +2713,23 @@ function field_get_node_validate($module, $type, $value, $node, $form = NULL){
     if(!$data->field_func){
       // 没有自定义处理函数的字段
       if($data->field_module == 'field'){
+        $error = t('field', '%string 出现非法选择', array('%string' => $data->name));
+        
         switch($data->field_type){
           case 'select': // 单选
             if($value->fields[$data->field_key] && $conf['field_term_children'][$data->field_id] && !db_query('SELECT COUNT(field_id) FROM {fields_term} WHERE field_id = ? AND tid = ?', array($data->field_id, $value->fields[$data->field_key]), array('return' => 'column'))){
-              dd_set_message(t('field', '%string 出现非法选择', array('%string' => $data->name)), 'error');
-              return true;
+              dd_set_message($error, 'error');
+              $t['fields'][$data->field_key]['#error'][] = $error;
             }
           break;
           case 'selects':
             if($data->required && !$value->fields[$data->field_key]){
-              dd_set_message(t('field', '%string 不能为空', array('%string' => $data->name)), 'error');
-              return true;
+              $error = t('field', '%string 不能为空', array('%string' => $data->name));
+              dd_set_message($error, 'error');
+              $t['fields'][$data->field_key]['#error'][] = $error;
             }else if($value->fields[$data->field_key] && $conf['field_term_children'][$data->field_id] && db_query('SELECT COUNT(field_id) FROM {fields_term} WHERE field_id != ? AND tid IN ('.db_get_placeholder($value->fields[$data->field_key]).')', array_merge(array($data->field_id), $value->fields[$data->field_key]), array('return' => 'column'))){
-              dd_set_message(t('field', '%string 出现非法选择', array('%string' => $data->name)), 'error');
-              return true;
+              dd_set_message($error, 'error');
+              $t['fields'][$data->field_key]['#error'][] = $error;
             }
           break;
           case 'tags':
@@ -2671,9 +2739,9 @@ function field_get_node_validate($module, $type, $value, $node, $form = NULL){
             		if(mb_strlen($tag, 'utf-8') > 64){
             			$t['fields'][$data->field_key]['#error'][] = t('field', '%string 的长度不超过 %length 字符', array('%string' => $tag, '%length' => 64));
             			break;
-            		}else if($data->data['validate']['type'] 
-                  && module_invoke_all('field_type_tags', 'node_validate', $data->data['validate']['type'], $data, $value->fields[$data->field_key])){
-                  return true;
+            		}else if($data->data['validate']['type'] &&
+            		$msg = module_invoke_all('field_type_tags', 'node_validate', $data->data['validate']['type'], $data, $value->fields[$data->field_key])){
+                  $t['fields'][$data->field_key]['#error'][] = $msg;
                 }
             	}
             }
@@ -2688,9 +2756,19 @@ function field_get_node_validate($module, $type, $value, $node, $form = NULL){
                 $t['fields'][$data->field_key]['#error'][] = t('field', '%string 的长度不超过 %length 字符', array('%string' => $data->name, '%length' => $data->data['validate']['maxsize']));
           		}else if($data->data['validate']['minsize'] && $strlen < $data->data['validate']['minsize']){
                 $t['fields'][$data->field_key]['#error'][] = t('field', '%string 的长度不小于 %length 字符', array('%string' => $data->name, '%length' => $data->data['validate']['minsize']));
-          		}else if($data->data['validate']['type'] 
-          		  && module_invoke_all('field_type_textfield', 'node_validate', $data->data['validate']['type'], $data, $value->fields[$data->field_key])){
-                return true;
+          		}else if($data->data['validate']['type'] && 
+          		$msg = module_invoke_all('field_type_textfield', 'node_validate', $data->data['validate']['type'], $data, $value->fields[$data->field_key])){
+                $t['fields'][$data->field_key]['#error'][] = $msg;
+              }else if($data->data['validate']['unique']){
+                if($value->nid){
+                  if(db_query('SELECT field_id FROM {fields_small} WHERE nid != ? AND field_id = ? AND text = ?',
+                  array($value->nid, $data->field_id, $value->fields[$data->field_key]), array('return' => 'column'))){
+                    $t['fields'][$data->field_key]['#error'][] = t('field', '%string 已经存在', array('%string' => $data->name));
+                  }
+                }else if(db_query('SELECT field_id FROM {fields_small} WHERE field_id = ? AND text = ?',
+                array($data->field_id, $value->fields[$data->field_key]), array('return' => 'column'))){
+                  $t['fields'][$data->field_key]['#error'][] = t('field', '%string 已经存在', array('%string' => $data->name));
+                }
               }
             }
           break;
@@ -2821,6 +2899,7 @@ function field_get_node_save($module, $type, $value, $node = NULL, $form = NULL)
     if(!field_access('update', $data, $node)){
       continue;
     }
+    
     if(!$data->field_func){
       // 没有自定义处理函数的字段
       if($data->field_module == 'field'){
@@ -2892,6 +2971,11 @@ function field_get_node_save($module, $type, $value, $node = NULL, $form = NULL)
                 foreach($_FILES['fields']['name'][$data->field_key] as $i => $name){
                   if($i > $data->data['multi']) break;
                   if(!$message = file_validate_error($_FILES['fields']['error'][$data->field_key][$i])){
+                    if($data->data['filename']){
+                      $validate['filename'] = dd_get_token($data->data['filename'], $value);
+                    }else{
+                      $validate['filename'] = NULL;
+                    }
                     $file = array(
                       'name' => $name,
                       'type' => $_FILES['fields']['type'][$data->field_key][$i],
@@ -2924,6 +3008,13 @@ function field_get_node_save($module, $type, $value, $node = NULL, $form = NULL)
                     file_delete($file->fid, 1, $file->filepath);
                   }
                 }
+                
+                if($data->data['filename']){
+                  $validate['filename'] = dd_get_token($data->data['filename'], $value);
+                }else{
+                  $validate['filename'] = NULL;
+                }
+                
                 if(!$message = file_validate_error($_FILES['fields']['error'][$data->field_key])){
                   $file = array(
                     'name' => $_FILES['fields']['name'][$data->field_key],
