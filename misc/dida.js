@@ -411,7 +411,7 @@ $(function(){
       						ui_auto[i].cache[request.term] = data.contents;
 	    						response(data.contents);
       					}else{
-      						if(ui_auto[i].range){
+      						if(ui_auto[i].range && ($.browser.mozilla || $.browser.msie)){
       							$(ui_auto[i].dom).val("");
       						}
       						ui_auto[i].cache[request.term] = [];

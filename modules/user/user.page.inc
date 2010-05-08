@@ -122,6 +122,13 @@ function user_page_newpass(){
     dd_js_print('$(\'#ajax_description\').html("'.addslashes(implode('<br />', dd_array_multi2single($error))).'").show(300);');
     exit();
   }
+  
+  dd_set_tabs(array(
+    l(t('user', '我的帐户'), 'user/'.$ac->uid),
+    l(t('user', '编辑资料'), 'user/edit'),
+    l(t('user', '修改密码'), 'user/newpass'),
+  ));
+  
   $form['settings'] = array(
     '#ajax_validate' => true,
     '#ajax_submit' => array(
@@ -233,13 +240,17 @@ function user_page_register(){
         }else{
           $rediect = url(dd_get_token(var_get_key('user', 'redirect', 'user/' . $account->uid), $account, array('user')));
         }
-        if(!$GLOBALS['conf']['user']['status']){
-          dd_set_message(t('user', '恭喜，注册成功了，你需要通过邮箱激活帐号'));
-          $rediect = url('user/activation');
-        }else{
+        if($account->status == 1){
           dd_set_message(t('user', '恭喜，注册成功了'));
           user_session_reg($account);
+        }else if($GLOBALS['conf']['user']['status'] == 0){
+          dd_set_message(t('user', '恭喜，注册成功了，你需要通过邮箱激活帐号'));
+          $rediect = url('user/activation');
+        }else if($GLOBALS['conf']['user']['status'] == -1){
+          dd_set_message(t('user', '恭喜，注册成功了，请等待管理员激你的帐号'));
+          $rediect = $GLOBALS['base_path'];
         }
+        
         dd_js_print('window.location.href = "'.urldecode($rediect).'"');
       }else{
         dd_js_print('alert(\''.t('user', '抱歉，出现问题，注册失败了').'\')');
@@ -319,11 +330,7 @@ function user_page_login_ajax(){
 
 function user_page_view($account){
   global $user;
-  if($user->uid == $account->uid){
-    $title = t('user', '我的主页');
-  }else{
-    $title = t('user', '!string 的主页', array('!string' => $account->name));
-  }
+  
   $output = '<h2>'.$account->name.'</h2>';
   
   if($data = _module_invoke_all('user_page', $account)){
@@ -351,7 +358,13 @@ function user_page_view($account){
     }
     
   }
-  
+  if($account->uid && $account->uid == $user->uid){
+    dd_set_tabs(array(
+      l(t('user', '我的帐户'), 'user/'.$ac->uid),
+      l(t('user', '编辑资料'), 'user/edit'),
+      l(t('user', '修改密码'), 'user/newpass'),
+    ));
+  }
   dd_set_title(array($title));
   dd_set_breadcrumb(array($title));
   return $output;

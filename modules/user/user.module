@@ -154,8 +154,13 @@ function user_is_login(){
  * 激活
  */
 function user_is_activation($goto = NULL){
- if(!$GLOBALS['user']->uid && !$GLOBALS['conf']['user']['status']){
-   return true;
+ if(!$GLOBALS['user']->uid){
+   if($GLOBALS['conf']['user']['status'] == 0){
+    return true;
+   }else if($goto){
+     dd_set_message(t('user', '当前设置无法自动激活帐号，请联系管理员，手动激活'));
+     dd_goto(NULL);
+   }
  }else if($goto){
    dd_set_message(t('user', '当前帐号已激活，若要激活其它帐号，请先退出'));
    dd_goto(NULL);
@@ -348,15 +353,27 @@ function user_get_data($uid, $key = NULL){
 }
 
 /**
+ * 判断当前用户是否为指定用户
+ */
+function user_get_current_name($ac){
+  if($GLOBALS['user']->uid == $ac->uid){
+    return t('user', '我');
+  }else{
+    return $ac->name;
+  }
+}
+/**
  * 用户编辑表单
  */
 function user_edit_form($ac, $op = 'user'){
   global $conf, $user;
+  
   if(!$ac->data) $ac->data = array();
   if(user_access('admin user change name') || ($user->uid == $ac->uid && user_access('admin user change name'))){
     $form['fields']['name'] = array(
       '#type' => 'textfield',
       '#default_value' => $ac->name,
+      '#required' => 1,
       '#title' => t('user', '昵称'),
     );
   }else{
@@ -367,11 +384,31 @@ function user_edit_form($ac, $op = 'user'){
     $form['fields']['mail'] = array(
       '#type' => 'textfield',
       '#default_value' => $ac->mail,
+      '#required' => 1,
       '#title' => t('user', '帐号'),
     );
   }else{
     $form['fields']['mail'] = array('#value' => $ac->mail, '#title' => t('user', '帐号'));
   }
+  
+  $form['fields']['created'] = array('#value' => format_date($ac->created), '#title' => t('user', '注册时间'));
+  $form['fields']['host'] = array('#value' => $ac->host, '#title' => t('user', '上次登录主机'));
+  $form['fields']['login'] = array('#value' => format_date($ac->login), '#title' => t('user', '上次登录时间'));
+  
+  if($op == 'user'){
+    dd_set_tabs(array(
+      l(t('user', '我的帐户'), 'user/'.$ac->uid),
+      l(t('user', '编辑资料'), 'user/edit'),
+      l(t('user', '修改密码'), 'user/newpass'),
+    ));
+    $form['fields']['pass'] = array(
+      '#type' => 'password',
+      '#title' => t('user', '密码'),
+      '#required' => 1,
+      '#description' => t('user', '必须验证密码才能修改资料，!link', array('!link' => l(t('user', '修改密码'), 'user/newpass')))
+    );
+  }
+  
   if(($conf['user']['select_lang'] || $op == 'admin') && count($conf['languages']) > 1){
 	  $form['fields']['language'] = array(
 	    '#type' => 'select',
@@ -405,9 +442,6 @@ function user_edit_form($ac, $op = 'user'){
 	  );
   }
   
-  $form['fields']['created'] = array('#value' => format_date($ac->created), '#title' => t('user', '注册时间'));
-  $form['fields']['host'] = array('#value' => $ac->host, '#title' => t('user', '上次登录主机'));
-  $form['fields']['login'] = array('#value' => format_date($ac->login), '#title' => t('user', '上次登录时间'));
   $form['fields']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('user', '确认提交'),
@@ -417,11 +451,11 @@ function user_edit_form($ac, $op = 'user'){
   
   module_alter_all('user_edit_form', $ac, $op, $form);
   
-  field_get_node_form('user', 'field', $ac, $form);
+  field_get_node_form('user', 'field', $ac, $form, NULL, $ac);
   
   $form['settings'] = array(
     '#validate' => array('user_edit_validate'),
-    '#data' => $ac,
+    '#values_object' => true,
     '#ajax_validate' => true
   );
   $form['fields']['op'] = array(
@@ -439,82 +473,95 @@ function user_edit_form($ac, $op = 'user'){
     '#type' => 'hidden',
     '#constant' => 1
   );
+  
   return $form;
 }
 
 /**
  * 用户资料编辑验证
  */
-function user_edit_validate($form, $value){
+function user_edit_validate($form, &$value){
   global $user;
-  if($ac = $form['settings']['#data']){
-    $v = (object) $value;
-    if($ac->uid == $v->uid){
-      if(user_access('admin user change mail') || ($user->uid == $ac->uid && user_access('admin user change mail'))){
-        if($ac->mail != $v->mail){
-          $error = user_default_validate_mail($v->mail);
-        }
-      }
-      
-      if(!$error && (user_access('admin user change name') || ($user->uid == $ac->uid && user_access('admin user change name')))){
-        if($ac->name != $v->name){
-          $error = user_default_validate_name($v->name);
-        }
-      }
-      
-      // 验证密码
-      if(!$error && $v->op == 'user' && !db_query('SELECT uid FROM {users} WHERE uid = ? AND pass = ?', array($ac->uid, md5($v->pass), array('return' => 'column')))){
-        $error['pass']['#error'][] = t('user', '密码不匹配');
-      }
-      
-      if(!$error){
-        if(!$error = field_get_node_validate('user', 'field', $v, $ac, $form)){
-          /**
-           * 触发 hook_user_edit_validate()
-           */
-          $error = module_invoke_all('user_edit_validate', $v, $ac, $form);
-        }
-      }
+  if($value['uid'] == $user->uid){
+    $ac = $user;
+  }else{
+    $ac = user_load($value['uid']);
+  }
+  
+  if(user_access('admin user change mail') || ($user->uid == $ac->uid && user_access('admin user change mail'))){
+    if($ac['mail'] != $value['mail']){
+      $error = user_default_validate_mail($value['mail']);
     }
   }
+  
+  if(!$error && (user_access('admin user change name') || ($user->uid == $ac->uid && user_access('admin user change name')))){
+    if($ac->name != $value['name']){
+      $error = user_default_validate_name($value['name']);
+    }
+  }
+  
+  // 验证密码
+  if(!$error && $value['op'] == 'user' && !db_query('SELECT uid FROM {users} WHERE uid = ? AND pass = ?',
+  array($ac->uid, md5($value['pass'])), array('return' => 'column'))){
+    $error['pass']['#error'][] = t('user', '密码不匹配');
+  }
+  
+  if(!$error){
+    if(!$error = field_get_node_validate('user', 'field', $value['_dida_values'], $ac, $form)){
+      /**
+       * 触发 hook_user_edit_validate()
+       */
+      $error = module_invoke_all('user_edit_validate', $value['_dida_values'], $ac, $form);
+    }
+  }
+  
   return $error;
 }
 
-function user_edit_submit($form, $value){
-  $ac = $form['settings']['#data'];
-  $v = (object) $value;
-  if($ac->uid == $v->uid){
-    global $user;
-    if(isset($v->theme)) $ac->theme = $v->theme;
-    if(isset($v->language)) $ac->language = $v->language;
-    if(user_access('admin user change mail') || ($user->uid == $ac->uid && user_access('admin user change mail'))){
-      $ac->mail = $v->mail;
-    }
-    if(user_access('admin user change name') || ($user->uid == $ac->uid && user_access('admin user change name'))){
-      $ac->name = $v->name;
+function user_edit_submit($form, &$value){
+  global $user;
+  if($value['uid'] == $user->uid){
+    $ac = $user;
+  }else{
+    $ac = user_load($value['uid']);
+  }
+  
+  if($value['_dida_values']->theme){
+    $ac->theme = $value['_dida_values']->theme;
+  }
+  if($value['_dida_values']->language){
+    $ac->language = $value['_dida_values']->language;
+  }else if(!$ac->language){
+    $ac->language = '';
+  }
+  
+  
+  if(user_access('admin user change mail') || ($user->uid == $ac->uid && user_access('admin user change mail'))){
+    $ac->mail = $value['_dida_values']->mail;
+  }
+  if(user_access('admin user change name') || ($user->uid == $ac->uid && user_access('admin user change name'))){
+    $ac->name = $value['_dida_values']->name;
+  }
+  
+  if(db_exec('UPDATE {users} SET name = ?, mail = ?, theme = ?, language = ? WHERE uid = ?',
+  array($ac->name, $ac->mail, $ac->theme, $ac->language, $ac->uid), array('return' => 1))){
+    /**
+     * 触发 hook_user_save()
+     */
+    
+    if($value['_dida_values']->rid){
+    	user_set_roles($ac->uid, $value['_dida_values']->rid);
     }
     
-    if(db_exec('UPDATE {users} SET name = ?, mail = ?, theme = ?, language = ? WHERE uid = ?', array($ac->name, $ac->mail, $ac->theme, $ac->language, $ac->uid), array('return' => 1))){
-      /**
-       * 触发 hook_user_save()
-       */
-      $ac->nid = $ac->uid;
-      if($user->uid == $ac->uid){
-        user_clear_session($ac->uid);
-      }
-      
-      if($v->rid){
-      	user_set_roles($ac->uid, $v->rid);
-      }
-      
-      module_invoke_all('user_save', $v, $ac);
-      
-      field_get_node_save('user', 'field', $v, $ac);
-      
-      dd_set_message(t('user', '编辑成功'));
+    module_invoke_all('user_save', $value['_dida_values'], $ac);
+    
+    field_get_node_save('user', 'field', $value['_dida_values'], $ac);
+    
+    if($user->uid == $ac->uid){
+      user_clear_session($ac->uid);
     }
-  }else{
-    dd_set_message(t('user', '错误的请求'));
+    
+    dd_set_message(t('user', '编辑成功'));
   }
 }
 
@@ -538,9 +585,6 @@ function user_save($v, $ac = NULL, &$error = NULL){
       
       if(db_exec('UPDATE {users} SET name = ?, mail = ?, theme = ?, language = ? WHERE uid = ?', array($ac->name, $ac->mail, $ac->theme, $ac->language, $ac->uid), array('return' => 1))){
         $v->nid = $ac->uid;
-        if($user->uid == $ac->uid){
-          user_clear_session($ac->uid);
-        }
         
         if($v->rid){
         	user_set_roles($ac->uid, $v->rid);
@@ -548,6 +592,10 @@ function user_save($v, $ac = NULL, &$error = NULL){
         
         field_get_node_save('user', 'field', $v, $ac);
         module_invoke_all('user_save', $v, $ac);
+        
+        if($user->uid == $ac->uid){
+          user_clear_session($ac->uid);
+        }
       }
       return $v;
     }else{
@@ -604,6 +652,7 @@ function user_register_form($op = 'user'){
   $form['settings'] = array(
     '#validate' => array('user_register_validate'),
     '#ajax_validate' => true,
+    '#values_object' => true,
     '#ajax_submit' => array(
       'des' => true,
       'options' => array(
@@ -723,29 +772,35 @@ function user_default_validate_mail($mail){
 /**
  * 注册验证
  */
-function user_register_validate($form, $value){
-  $v = (object) $value;
-  if(!$t = user_default_validate_name($v->name)){
-    if(!$t = user_default_validate_mail($v->mail)){
-      if(!isset($v->pass) || ($v->pass != $v->pass)){
+function user_register_validate($form, &$value){
+  if(!$t = user_default_validate_name($value['name'])){
+    if(!$t = user_default_validate_mail($value['mail'])){
+      if(!isset($value['pass']) || ($v['pass'] != $v['pass'])){
         $t['pass2']['#error'][] = t('user', '两次输入的密码不一致');
-      }else if(!$t = field_get_node_validate('user', 'field', $v, NULL, $form)){
-        $t = module_invoke_all('user_validate', $v);
+      }else if(!$t = field_get_node_validate('user', 'field', $value['_dida_values'], NULL, $form)){
+        $t = module_invoke_all('user_validate', $value['_dida_values']);
       }
     }
   }
+  
   return $t;
 }
 
 /**
  * 注册表单提交处理
  */
-function user_register_submit($form, $value){
-  $v = (object) $value;
-  if($account = user_insert($v)){
-    dd_set_message(t('user', '恭喜，注册成功了'));
-    if($user = user_login(user_load($account->uid))){
-      dd_goto(dd_get_token(var_get_key('user', 'redirect', 'user/' . $user->uid), $user, array('user', 'system')));
+function user_register_submit($form, &$value){
+  if($account = user_insert($value['_dida_values'])){
+    if($account->status == 1){
+      if($user = user_login(user_load($account->uid))){
+        dd_goto(dd_get_token(var_get_key('user', 'redirect', 'user/' . $user->uid), $user, array('user', 'system')));
+      }
+    }else if($GLOBALS['conf']['user']['status'] == 0){
+      dd_set_message(t('user', '恭喜，注册成功了，你需要通过邮箱激活帐号'));
+      dd_goto('user/activation');
+    }else if($GLOBALS['conf']['user']['status'] == -1){
+      dd_set_message(t('user', '恭喜，注册成功了，请等待管理员激你的帐号'));
+      dd_goto(NULL);
     }
   }else{
     dd_set_message(t('user', '抱歉，出现问题，注册失败了'));
@@ -792,7 +847,7 @@ function user_save_role($role = array()){
  */
 function user_insert($value){
   if(!isset($value->status)){
-    $value->status = var_get_key('user', 'status', 1);
+    $value->status = var_get_key('user', 'status', 1) == 1 ? 1 : 0;
   }
   
   if(!isset($value->language) || $value->language == $GLOBALS['conf']['default_language']){
@@ -806,12 +861,13 @@ function user_insert($value){
   
   if(db_exec('INSERT INTO {users} (name, pass, mail, theme, language, created, status, active, login, count, host, session, data) VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, 0, ?, ?, ?)', array($value->name, md5($value->pass), $value->mail, $value->theme, $value->language, $value->created, $value->status, $value->host, $value->session, NULL))){
     if($value->uid = db_last_insert_id()){
-      user_set_roles($value->uid, $v->rid);
+      user_set_roles($value->uid, $value->rid);
       $value->roles = user_get_roles($uid);
       
-      if(!var_get_key('user', 'status', 0)){
+      if(var_get_key('user', 'status', 0) == 0){
         _user_activation($uid, $value->name, $value->mail, $_SERVER['REQUEST_TIME']);
       }
+      
       $value->nid = $value->uid;
       
       /**
@@ -1086,9 +1142,9 @@ function _user_login_validate($ac, $value){
 /**
  * 载入用户信息，触发 hook_user_load()
  */
-function user_load($uid){
+function user_load($uid, $clear = NULL){
   static $ac;
-  if(!isset($ac[$uid])){
+  if(!isset($ac[$uid]) || $clear){
   	global $conf;
   	$ac[$uid] = new stdClass();
     
@@ -1113,7 +1169,7 @@ function user_load($uid){
        */
       $ac[$uid]->nid = $ac[$uid]->uid;
       
-      field_get_node_load('user', 'field', $ac[$uid]);
+      field_get_node_load('user', 'field', $ac[$uid], $ac[$uid]);
       
       module_alter_all('user_load', $ac[$uid]);
     }
@@ -1160,7 +1216,7 @@ function user_session_reg(&$ac) {
 }
 
 function user_clear_session($uid){
-  if($u = user_load($uid)){
+  if($u = user_load($uid, 1)){
     global $user;
     $user = $_SESSION['user'] = $u;
   }

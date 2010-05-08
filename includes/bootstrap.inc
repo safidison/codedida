@@ -1272,8 +1272,9 @@ function qqwry_getip($ip, $true = false) {
 }
 
 function qqwry_data($ip, $file = './tools/QQWry.Dat') {
-
-	if(!$fd = @fopen($file, 'rb')) {
+  if(!is_file($file)) return false;
+  
+	if(!$fd = fopen($file, 'rb')) {
 		return false;
 	}
 
@@ -2398,11 +2399,13 @@ function arg($index = NULL, $path = NULL) {
  * 递归合并数组
  */
 function dd_array_multi2single($multi, &$array = array()){
-  foreach($multi as $value){
-    if(is_array($value)){
-      dd_array_multi2single($value, $array);
-    }else if($value != ''){
-      $array[] = $value;
+  if(is_array($multi)){
+    foreach($multi as $value){
+      if(is_array($value)){
+        dd_array_multi2single($value, $array);
+      }else if($value != ''){
+        $array[] = $value;
+      }
     }
   }
   return $array;

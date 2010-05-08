@@ -65,6 +65,6 @@ $(function(){
   	$(this).prev('input').focus();
   });
   $('label.dd_label').click(function(){
-  	$(this).next('input').focus();
+  	$(this).next().focus();
   });
 });

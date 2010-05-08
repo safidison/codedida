@@ -208,7 +208,7 @@ function user_set_settings(){
     '#title' => t('user', '激活帐号'),
     '#required' => true,
     '#default_value' => var_get_key('user', 'status', 1),
-    '#options' => array(t('user', '需要通过邮箱激活'), t('user', '不需要激活')),
+    '#options' => array(t('user', '通过邮箱激活'), t('user', '不需要激活'), -1 => t('user', '手动激活')),
   );
   $form['fields']['user']['anonymous'] = array(
     '#type' => 'textfield',

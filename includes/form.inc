@@ -105,16 +105,27 @@ function dd_get_form($form_id) {
   
   // 处理当前提交的表单
   if($_POST['form_id'] == $form_id){
+    
+    $form_values = $_POST;
+    
+    if($settings['#values_object']){
+      $form_values['_dida_values'] = (object) $_POST;
+    }
+    
   	// 基本验证：必填字段，选项字段数据是否被修改
-    if(!$error = dd_form_required($form, $_POST)){
+    if(!$error = dd_form_required($form, $form_values)){
     	// 回调表单验证函数
     	
       if(is_array($settings['#validate'])){
         foreach($settings['#validate'] as $function){
-          if($error = $function($form, $_POST)){
+          if($error = $function($form, $form_values)){
             break;
           }
         }
+      }
+      
+      if($error){
+        $error = array_filter($error);
       }
       
       // 所有验证通过后再处理文件字段
@@ -125,7 +136,7 @@ function dd_get_form($form_id) {
         dd_del_form_cache($user->uid, $form_id, $form_token);
         
         //回调提交函数，处理数据。
-        form_save_submit($form, $_POST);
+        form_save_submit($form, $form_values);
         
         //重定向页面
         
@@ -179,7 +190,7 @@ function dd_get_form($form_id) {
  * 可通过如下方式在提交函数中处理异常：
  * 	发现异常后重定向到某个页面，脱离默认表单处理流程。
 */
-function form_save_submit($form, $value){
+function form_save_submit($form, &$value){
   foreach($form['fields'] as $key => $field){
     if(strpos($key, '#') === false){
       if(($field['#type'] == 'submit') && $value[$key]){
@@ -193,7 +204,7 @@ function form_save_submit($form, $value){
   }
 }
 
-function _form_save_submit($fields, $subvalue, $value){
+function _form_save_submit($fields, $subvalue, &$value){
   foreach($fields as $key => $field){
     if(strpos($key, '#') === false){
       if(($field['#type'] == 'submit') && $subvalue[$key]){
@@ -638,6 +649,10 @@ function _dd_form_element(&$form, $field, $value, $error){
     $class[] = 'form_text';
   }
   
+  if(!isset($field['#type'])){
+    $field['#type'] = 'value';
+  }
+  
   if($class) $field['#attributes']['class'] = implode(' ', $class);
   $field['#form_id'] = $form['#form_id'];
   
@@ -808,14 +823,24 @@ function dd_form_checkbox($field){
   return $output . dd_form_error($field);
 }
 
-//全选
-function dd_cp_checkbox($id, $att = NULL, $value = NULL){
-  $att['class'] = $att['class'] ? $att['class'] : 'admin_delete_check';
-  return dd_form_checkbox(array('#name' => 'check',  '#attributes' => $att, '#options' => array($id => ($value ? $value : ''))));
-}
-
-function _dd_cp_checkbox(){
-  return dd_form_checkbox(array('#name' => 'check',  '#attributes' => array('disabled' => 'disabled')));
+/**
+ * 全选
+ * @param (string) $key
+ *  字段键名
+ * @param unknown_type $att
+ * @param unknown_type $value
+ */
+function dd_cp_checkbox($key = '0', $att = NULL, $value = NULL){
+  if(!isset($att['class'])){
+    $att['class'] = 'form_all_check';
+  }
+  if(!isset($att['alt'])){
+    $att['alt'] = 'field_check_dom';
+  }
+  if(!isset($value)){
+    $value = t('system', '全选');
+  }
+  return dd_form_checkbox(array('#name' => 'check',  '#attributes' => $att, '#options' => array($key => $value)));
 }
 
 function dd_form_ajax_form($url, $title = '确认提交', $att = NULL){
@@ -862,7 +887,10 @@ function dd_form_selects($field){
   return $output . dd_form_error($field);
 }
 
-//单选框字段
+/**
+ * 单选框字段
+ * @param (array) $field
+ */
 function dd_form_radio($field){
   $output = dd_form_label($field);
   if(is_array($field['#options'])){
@@ -897,12 +925,12 @@ function dd_form_button($field){
 
 //提交按钮字段
 function dd_form_submit($field){
-  return '<input type="submit" name="'.$field['#name'].'" value="'.($field['#value'] ? $field['#value'] : '确认提交').'"'.dd_attributes($field['#attributes']).'/>';
+  return dd_form_label($field) .'<input type="submit" name="'.$field['#name'].'" value="'.($field['#value'] ? $field['#value'] : '确认提交').'"'.dd_attributes($field['#attributes']).'/>';
 }
 
 //图片按钮字段
 function dd_form_image($field){
-  return '<input type="image" name="'.$field['#name'].'" src="'.$field['#src'].'"'.dd_attributes($field['#attributes']).'/>';
+  return dd_form_label($field). '<input type="image" name="'.$field['#name'].'" src="'.$field['#src'].'"'.dd_attributes($field['#attributes']).'/>';
 }
 
 function dd_form_label($field){
