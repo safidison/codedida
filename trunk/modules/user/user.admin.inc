@@ -1,7 +1,19 @@
 <?php
 // $Id$
 
+function _user_admin_tabs(){
+  dd_set_tabs(array(
+    l(t('user', '用户设置'), 'admin/users/settings'),
+    l(t('user', '用户列表'), 'admin/users'),
+    l(t('user', '新增用户'), 'admin/users/add'),
+    l(t('user', '用户权限'), 'admin/users/perms'),
+    l(t('user', '角色管理'), 'admin/users/roles'),
+    l(t('user', '用户字段'), 'admin/users/fields'),
+  ));
+}
+
 function user_admin_default(){
+  _user_admin_tabs();
   $hr = array(
     t('user', '帐号'),
     array('data' => t('user', '昵称'), 'field' => 'name'),
@@ -40,7 +52,8 @@ function user_admin_default(){
 function user_admin_view($ac){
 	switch(arg(4)){
 		case 'edit':
-			dd_set_tabs(array(l(t('user', '会员列表'), 'admin/users'), l(t('user', '%string 的资料编辑', array('%string' => $ac->name)), $_GET['q'])));
+		  _user_admin_tabs();
+			dd_set_sub_tabs(array(l(t('user', '%string 的资料编辑', array('%string' => $ac->name)), $_GET['q'])));
 		return dd_get_form('user_edit_form', $ac, 'admin');
 		case 'hide':
 			if(db_exec('UPDATE {users} SET status = 2, session = 0 WHERE uid = ?', array($ac->uid))){
@@ -68,6 +81,7 @@ function user_admin_view($ac){
 //用户角色组权限分配
 function user_set_perm(){
   global $conf;
+  _user_admin_tabs();
   $perms = _user_perm();
   if($fetch = db_query('SELECT * FROM {role} ORDER BY rid DESC', NULL, array('fetch' => 'array'))){
     foreach($fetch as $role){
@@ -160,6 +174,7 @@ function user_set_perm_validate($form, $value){
  */
 function user_admin_add(){
 	global $conf;
+	_user_admin_tabs();
   $form = user_register_form('admin');
   unset($form['fields']['captcha']);
   $opt = user_roles_opt();
@@ -196,6 +211,7 @@ function user_admin_add_submit($form, $value){
 }
 
 function user_set_settings(){
+  _user_admin_tabs();
   $form['fields']['user']['register'] = array(
     '#type' => 'radio',
     '#title' => t('user', '允许注册'),
@@ -253,6 +269,28 @@ function user_set_settings(){
     '#options' => user_roles_opt(),
     '#description' => t('user', '游客的默认角色权限'),
   );
+  $form['fields']['user']['custom_view'] = array(
+    '#type' => 'select',
+    '#title' => t('user', '用户主页'),
+    '#required' => 1,
+    '#default_value' => var_get_key('user', 'custom_view', 0),
+    '#options' => array(t('user', '系统默认'), t('user', '自定义')),
+    '#description' => t('user', '若选择自定义，用户主页将不会有任何显示，仅传递可用变量，请自行在 user.tpl.php 中布局'),
+  );
+  
+  $options = array(0 => t('user', '默认'));
+  if($modules = var_get('modules')){
+    foreach($modules as $module => $info){
+      $options[$module] =  $info['name'];
+    }
+  }
+  $form['fields']['user']['custom_view_module'] = array(
+    '#type' => 'select',
+    '#title' => t('user', '交给模块处理'),
+    '#default_value' => var_get_key('user', 'custom_view_module'),
+    '#options' => $options,
+    '#description' => t('user', '将用户首页完全交给某个模块处理，除非某个模块建议这么做，否则请不要选择'),
+  );
   $form['settings'] = array(
     '#validate' => array('user_set_settings_validate')
   );
@@ -276,7 +314,8 @@ function user_set_settings_validate($form, $v){
 }
 
 function user_admin_roles(){
-  dd_set_tabs(array(l(t('user', '角色'), 'admin/users/roles'), l(t('user', '新增'), 'admin/users/roles/add')), NULL, 'ul', array('class' => 'admin_tabs'));
+  _user_admin_tabs();
+  dd_set_sub_tabs(array(l(t('user', '角色'), 'admin/users/roles'), l(t('user', '新增'), 'admin/users/roles/add')), NULL, 'ul', array('class' => 'admin_tabs'));
   
   if(arg(3) != 'add'){
     switch($_GET['op']){
@@ -354,6 +393,15 @@ function user_admin_fields(){
 		l(t('user', '添加字段'), 'admin/users/fields/add'),
 		l(t('user', '导出字段'), 'admin/users/fields/export')
 	);
+	global $user;
+	
+	if($user->count < 3){
+	  if(!field_get_cache_field_key('user', 'field', 'avatar')){
+  	  dd_set_help(t('user', '测试一下，创建一个头像字段，!link',
+  	  array('!link' => l(t('user', '点这儿'), 'admin/users/fields/test'))));
+	  }
+	}
+	
   $args = arg();
   switch($args[3]){
   	case 'add':
@@ -365,10 +413,46 @@ function user_admin_fields(){
   	case 'export':
   	  $output = field_export(0, 'user', 'field');
   	break;
+  	case 'test':
+  	  _user_field_test();
+  	break;
   	default:
   		$output = field_lists('user', 'field');
   }
   
   dd_set_tabs($tabs);
   return $output;
+}
+
+/**
+ * 创建一个头像字段
+ */
+function _user_field_test(){
+  if(!field_get_cache_field_key('user', 'field', 'avatar')){
+    $field = array(
+      'name' => t('field', '头像'),
+      'module' => 'user',
+      'type' => 'field',
+      'field_type' => 'file',
+      'field_key' => 'avatar',
+      'weight' => -20,
+      'data' => array(
+        'multi' => 1,
+        'filesize' => 1024,
+        'filename' => '[uid]',
+        'savepath' => 'avatar',
+        'thumbs' => array(
+          'thumb' => '85x85',
+          'medium' => '200x200',
+        )
+      )
+    );
+    
+    $data = (object) $field;
+    field_save($data);
+  }else{
+    dd_set_message(t('user', '已经创建了'));
+  }
+  
+  dd_goto('admin/users/fields');
 }

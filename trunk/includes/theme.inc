@@ -218,8 +218,10 @@ function template_preprocess_page(&$var, $args){
     $tpl = 'page';
     while ($arg = arg($i++)) {
       $arg = str_replace(array('/', '\\', '\0'), '', $arg);
-      $args_id .= '_'.$arg;
-      $args_value .= 'page_wrapper'.$args_id . ' ';
+      if(!is_numeric($arg)){
+        $args_id .= '_'.$arg;
+        $args_value .= 'page_wrapper'.$args_id . ' ';
+      }
       $tpls[] = $tpl .'_'. $arg . '.tpl.php';
       if (!is_numeric($arg)) {
         $tpl .= '_'. $arg;

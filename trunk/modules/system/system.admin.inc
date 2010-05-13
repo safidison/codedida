@@ -371,6 +371,30 @@ function system_site_settings(){
     '#default_value' => var_get('cron_pass'),
     '#description' => t('system', '不设置请留空'),
   );
+  
+  $form['fields']['custom_view'] = array(
+    '#type' => 'select',
+    '#title' => t('user', '网站首页'),
+    '#required' => 1,
+    '#default_value' => var_get('front_view_type'),
+    '#options' => array(t('system', '系统默认'), t('system', '自定义')),
+    '#description' => t('system', '若选择自定义，首页将不会有任何显示，仅传递可用变量，请自行在 front.tpl.php 中布局'),
+  );
+  
+  $options = array(0 => t('system', '默认'));
+  if($modules = var_get('modules')){
+    foreach($modules as $module => $info){
+      $options[$module] =  $info['name'];
+    }
+  }
+  $form['fields']['front_view_module'] = array(
+    '#type' => 'select',
+    '#title' => t('system', '交给模块处理'),
+    '#default_value' => var_get('front_view_module'),
+    '#options' => $options,
+    '#description' => t('system', '将网站首页完全交给某个模块处理，除非某个模块建议这么做，否则请不要选择'),
+  );
+  
   $type = 'form';
   
   module_alter_all('system_site_settings', $type, $form);
@@ -676,6 +700,7 @@ function system_admin_token(){
 function system_admin_lang(){
 	global $conf;
   dd_set_tabs(array(l(t('system', '语言管理'), 'admin/lang'), l(t('system', '导入语言'), 'admin/lang/cache')));
+  dd_set_help(t('system', '所有语言文件将被合并，保存在 %path 目录下', array('%path' => $GLOBALS['conf_dir'].'/cache/languages')));
 	if(arg(2)){
     if($conf['languages'][arg(2)]){
   		$lang = arg(2);

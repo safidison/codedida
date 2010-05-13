@@ -370,6 +370,38 @@ function menu_menu_match($str, $match){
     case '%a-z':
       if(!preg_match('/[^a-z]/i', $str)) return $str;
     break;
+    case '%0-9html':
+      if(strpos($str, '.') !== false){
+        $h = explode('.', $str, 2);
+        if($h[1] == 'html' && !preg_match('/[^0-9]/', $h[0])){
+          return (int)$h[0];
+        }
+      }
+    break;
+    case '%html':
+      if(strpos($str, '.') !== false){
+        $h = explode('.', $str, 2);
+        if($h[0] && $h[1] == 'html'){
+          return $h[0];
+        }
+      }
+    break;
+    case '%0-9shtml':
+      if(strpos($str, '.') !== false){
+        $h = explode('.', $str, 2);
+        if($h[1] == 'shtml' && !preg_match('/[^0-9]/', $h[0])){
+          return (int)$h[0];
+        }
+      }
+    break;
+    case '%shtml':
+      if(strpos($str, '.') !== false){
+        $h = explode('.', $str, 2);
+        if($h[0] && $h[1] == 'shtml'){
+          return $h[0];
+        }
+      }
+    break;
   }
   return false;
 }

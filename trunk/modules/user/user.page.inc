@@ -124,7 +124,7 @@ function user_page_newpass(){
   }
   
   dd_set_tabs(array(
-    l(t('user', '我的帐户'), 'user/'.$ac->uid),
+    l(t('user', '我的主页'), 'user/'.$ac->uid),
     l(t('user', '编辑资料'), 'user/edit'),
     l(t('user', '修改密码'), 'user/newpass'),
   ));
@@ -232,9 +232,9 @@ function user_page_edit(){
  */
 function user_page_register(){
   if($_GET['ajax'] == 'submit'){
+    $form_values = array();
     if(!$error = dd_ajax_validate(0, 'user_register_form', $_POST['form_token'])){
-      $v = (object)$_POST;
-      if($account = user_insert($v)){
+      if($account = user_insert($_POST['_dida_values'])){
         if($_GET['redirect'] && strpos($_GET['redirect'], 'user/login') === false && strpos($_GET['redirect'], 'user/register') === false){
           $rediect = $_GET['redirect'];
         }else{
@@ -242,7 +242,7 @@ function user_page_register(){
         }
         if($account->status == 1){
           dd_set_message(t('user', '恭喜，注册成功了'));
-          user_session_reg($account);
+          user_login(user_load($account->uid));
         }else if($GLOBALS['conf']['user']['status'] == 0){
           dd_set_message(t('user', '恭喜，注册成功了，你需要通过邮箱激活帐号'));
           $rediect = url('user/activation');
@@ -326,46 +326,4 @@ function user_page_login_ajax(){
   }
   echo theme('print', dd_get_form('user_login_form'));
   exit;
-}
-
-function user_page_view($account){
-  global $user;
-  
-  $output = '<h2>'.$account->name.'</h2>';
-  
-  if($data = _module_invoke_all('user_page', $account)){
-    $i = 0;
-    foreach($data as $module => $content){
-      $row = array();
-      if(is_array($content)){
-        $row['#weight'] = !isset($content['#weight']) ? $i : $content['#weight'];
-        $row['#data'] = $content['#data'];
-      }else{
-        $row['#weight'] = $i;
-        $row['#data'] = $content;
-      }
-      
-      $row['#data'] = '<div class="user_page_'.$module.'_view">'.$row['#data'].'</div>';
-      
-      $contents[] = $row;
-      ++$i;
-    }
-    
-    uasort($contents, 'dd_form_cmp');
-    
-    foreach($contents as $d){
-      $output .= $d['#data'];
-    }
-    
-  }
-  if($account->uid && $account->uid == $user->uid){
-    dd_set_tabs(array(
-      l(t('user', '我的帐户'), 'user/'.$ac->uid),
-      l(t('user', '编辑资料'), 'user/edit'),
-      l(t('user', '修改密码'), 'user/newpass'),
-    ));
-  }
-  dd_set_title(array($title));
-  dd_set_breadcrumb(array($title));
-  return $output;
 }

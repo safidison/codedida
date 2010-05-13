@@ -8,7 +8,10 @@ function system_file_upload(){
   switch($_GET['op']){
     case 'ckeditor': case 'swfupload':
       if($_GET['name'] && $_FILES[$_GET['name']]){
-        if($_GET['type'] == 'image'){
+        
+        if($_GET['image_size']){
+          $validate['image']['size'] = $_GET['image_size'];
+        }else if($_GET['type'] == 'image'){
           $validate['image'] = true;
         }
         

@@ -509,16 +509,36 @@ function module_invoke_all() {
   $return = array();
   foreach ($conf['modules'] as $module => $info) {
     $function = $module .'_'. $hook;
-    if (function_exists($function)) {
+    if(function_exists($function)) {
       $result = call_user_func_array($function, $args);
-      if (isset($result) && is_array($result)) {
+      if(is_array($result)) {
         $return = array_merge_recursive($return, $result);
-      }else if (isset($result)) {
+      }else if(isset($result)) {
         $return[] = $result;
       }
     }
   }
   return $return;
+}
+
+/**
+ * 调用所有已启用模块实现的 hook，与  module_invoke_all 不同的是，遇到首个返回值（包括false，不包括 NULL），则结束 
+ * @return (*)
+ */
+function module_invoke_first() {
+  global $conf;
+  $args = func_get_args();
+  $hook = $args[0];
+  unset($args[0]);
+  foreach ($conf['modules'] as $module => $info) {
+    $function = $module .'_'. $hook;
+    if(function_exists($function)) {
+      $result = call_user_func_array($function, $args);
+      if(isset($result)) {
+        return $result;
+      }
+    }
+  }
 }
 
 /**

@@ -17,6 +17,17 @@
   padding: 20px;
   border: 1px solid #ccc;
 }
+#dialog_wrapper_loading{
+	height: 100px;
+	line-height: 100px;
+	font-size: 16px;
+  color: #E06C0D;
+  font-weight: bold;
+  text-align: center;
+}
+#dialog_wrapper_loading img{
+	padding: 0 6px;
+}
 h2.system_no_content{
   text-align: center;
   margin: 12px 0;
@@ -112,6 +123,9 @@ img.form_captcha_img{
 }
 #user_register_form .form_text, #user_login_form .form_text{
   width: 140px;
+}
+.user_page_user_view .user_field_view_avatar{
+	float: right;
 }
 span.option_label, span.form_radio_text{
 	cursor: pointer;
@@ -351,4 +365,54 @@ legend.asc{
   display:inline-block;
   width: 100px;
   text-align: left;
+}
+/*swfupload*/
+.su_files_table{
+	max-height: 300px;
+	overflow-y: auto;
+}
+.su_files_table{
+	text-align: center;
+}
+.su_files_table th{
+  background: #DE7424;
+  color: #fff;
+}
+.dida_swfupload_content{
+	border: 1px solid #ccc;
+	padding: 5px;
+	margin: 5px 0;
+}
+.dida_swfupload_fieldset .legend{
+	margin: 5px 0;
+	font-size: 16px;
+	font-weight: bold; 
+	color: #1C5503;
+}
+.dida_swfupload_button{
+	height: 30px;
+	margin: 5px 0;
+	line-height: 30px;
+}
+.dida_swfupload_button input{
+	height: 28px;
+}
+.dida_swfupload_button *{
+	float: left;
+}
+.dida_swfupload_content .su_status, .dida_swfupload_content .su_loading{
+	margin: 5px 0;
+	padding: 5px 0;
+	color: #798174;
+	font-size: 14px;
+	font-weight: bold; 
+	text-align: center;
+	border-bottom: 1px solid #ccc;
+}
+.dida_swfupload_content .su_loading{
+	font-size: 12px;
+	color: #798174;
+}
+.su_file_op_queued a{
+	padding: 0 5px;
 }
