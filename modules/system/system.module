@@ -418,6 +418,19 @@ function system_field_type_delete($op, $field_type = NULL, $call_type = NULL, $f
   db_query('DELETE FROM {fields_small} WHERE fid = %d', $field->fid);
 }
 
+function _system_filter_tags($fid, array $tags = array()){
+  static $cache;
+  if(!isset($cache[$fid])){
+    $cache[$fid] = '';
+    if($tags){
+      foreach($tags as $key => $t){
+        $cache[$fid] .= '<'.$key.'>'; 
+      }
+    }
+  }
+  return $cache[$fid];
+}
+
 /**
  * hook_filter
  * 过滤器接口
@@ -453,20 +466,33 @@ function system_filter($op, $delta = NULL, $format = NULL, $value = NULL, $filte
         if($filter = filter_get_filters($filter_id)){
           if($filter->delta < 2){
             if($filter->tags){
-              preg_match_all('/<[\/|\s]*([0-9a-z]*?)[\s|>|\/|.*>]/ims', $value, $matches);
-              if($matches){
-                if($filter->delta == 0){
+              $filter_tags_type = var_get('filter_system_type_'.$filter->fid);
+              if($filter->delta == 0){
+                preg_match_all('/<[\/|\s]*([0-9a-z]*?)[\s|>|\/|.*>]/ims', $value, $matches);
+                if($matches){
                   foreach($matches[1] as $key => $matche){
                     if(!$filter->tags[$matche]){
-                      $value = str_replace($matches[0][$key], check_plain($matches[0][$key]), $value);
+                      if(!$filter_tags_type){
+                        $value = str_replace($matches[0][$key], check_plain($matches[0][$key]), $value);
+                      }else{
+                        $value = strip_tags($value, '<'.$matche.'>');
+                      }
+                    }
+                  }
+                }
+              }else{
+                // 不被允许
+                if(!$filter_tags_type){
+                  preg_match_all('/<[\/|\s]*([0-9a-z]*?)[\s|>|\/|.*>]/ims', $value, $matches);
+                  if($matches){
+                    foreach($matches[1] as $key => $matche){
+                      if($filter->tags[$matche]){
+                        $value = str_replace($matches[0][$key], check_plain($matches[0][$key]), $value);
+                      }
                     }
                   }
                 }else{
-                  foreach($matches[1] as $key => $matche){
-                    if($filter->tags[$matche]){
-                     $value = str_replace($matches[0][$key], check_plain($matches[0][$key]), $value);
-                    }
-                  }
+                  $value = strip_tags($value, _system_filter_tags($filter->fid, $filter->tags));
                 }
               }
             }
@@ -540,6 +566,16 @@ function system_filter($op, $delta = NULL, $format = NULL, $value = NULL, $filte
             '#attributes' => array('size' => 60),
             '#description' => t('system', 'HTML 标签，以空格分隔。如： h2 h3 ul')
           );
+          $form['strip_type'] = array(
+            '#type' => 'radio',
+            '#title' => t('system', '过滤模式'),
+            '#required' => 1,
+            '#default_value' => var_get('filter_system_type_'.$value->fid),
+            '#options' => array(
+              t('system', '将不允许的标签转换为 &lt; &gt;'),
+              t('system', '将不允许的标签清除'),
+            )
+          );
         break;
         default:
           $form['body'] = array(
@@ -550,6 +586,16 @@ function system_filter($op, $delta = NULL, $format = NULL, $value = NULL, $filte
             '#attributes' => array('size' => 60),
             '#description' => t('system', 'HTML 标签，以空格分隔。如： h2 h3 ul')
           );
+          $form['strip_type'] = array(
+            '#type' => 'radio',
+            '#title' => t('system', '过滤模式'),
+            '#required' => 1,
+            '#default_value' => var_get('filter_system_type_'.$value->fid),
+            '#options' => array(
+              t('system', '将不允许的标签转换为 &lt; &gt;'),
+              t('system', '将不允许的标签清除'),
+            )
+          );
       }
     return $form;
     case 'validate':
@@ -557,6 +603,7 @@ function system_filter($op, $delta = NULL, $format = NULL, $value = NULL, $filte
     return $error;
     case 'save':
       db_exec('UPDATE {filter_tags} SET body = ? WHERE fid = ?', array(trim($value->body), $value->fid));
+      var_set('filter_system_type_'.$value->fid, $value->strip_type);
     break;
     case 'delete':
   }
@@ -715,6 +762,7 @@ function system_setting_form_submit($form, $value){
 //编辑器
 function dd_get_editor($dom, $v = array()){
 	static $i;
+	
 	if(!$i) {
 		dd_add_js('misc/ckeditor/ckeditor.js', 'module', 0);
 		dd_add_js('misc/farbtastic.js');
@@ -727,7 +775,7 @@ function dd_get_editor($dom, $v = array()){
       array('Styles','Format','Font','FontSize','TextColor', 'BGColor','ShowBlocks','-','MyColor', 'About', 'swfupload', 'insertcode')
     );
     
-		$toolbar['small'] = array(array('Source', 'Maximize', '-', 'Strike', 'Underline', 'Bold', 'Italic','TextColor','BGColor', '-', 'NumberedList', 'BulletedList', '-', 'Link', 'Unlink', 'Image', '-', 'insertcode'));
+		$toolbar['small'] = array(array('Source', 'Maximize', '-', 'Strike', 'Underline', 'Bold', 'Italic','TextColor','BGColor', '-', 'NumberedList', 'BulletedList', '-', 'Link', 'Unlink', '-', 'insertcode'));
 		
 		$toolbar['medium'] = array(
 			array('Source', 'Maximize', 'AutoSave', '-', 'Strike', 'Underline', 'Bold', 'Italic', 'TextColor','BGColor', '-', 'Cut', 'Copy', 'Paste', 'PasteText','PasteFromWord', 'Undo', 'Redo', '-', 'NumberedList', 'BulletedList', 'BodyBreak'),
@@ -737,9 +785,10 @@ function dd_get_editor($dom, $v = array()){
 		
 		dd_add_js('var toolbar = '.dd_to_js($toolbar).';', 'inline_nojq', 0, 'footer');
 	}
-  if(!$v['extraPlugins']){
+  if(!isset($v['extraPlugins'])){
     $v['extraPlugins'] = 'swfupload,autosave,bodybreak,insertcode';
   }
+  
 	if(strpos($v['extraPlugins'], 'swfupload') !== false){
 		dd_add_js('misc/swfupload/swfupload.js');
 		dd_add_js('misc/swfupload/jquery.swfupload.js');
@@ -756,6 +805,7 @@ function dd_get_editor($dom, $v = array()){
 	}
   
 	if($_COOKIE['editorColor']) $v['uiColor'] = $_COOKIE['editorColor'];
+	
 	if($v['upload_image']) {
 		$v['filebrowserImageUploadUrl'] = url('files/editor', array('query' => 'op=ckeditor&name=upload&type=image'));
     if(!$v['filebrowserBrowseUrl']) {
@@ -766,6 +816,7 @@ function dd_get_editor($dom, $v = array()){
 	}
   
   $v['instanceName'] = $dom;
+  
 	switch($v['toolbar']){
 		case 'full':
 			$v['toolbar'] = ':::code:::toolbar.full';
@@ -774,6 +825,14 @@ function dd_get_editor($dom, $v = array()){
 			$v['toolbar'] = ':::code:::toolbar.small';
 		break;
 		case is_array($v['toolbar']):
+		break;
+		case 'custom':
+		  // 自定义
+		  $v['toolbar'] = $v['_toolbar'];
+		  unset($v['_toolbar']);
+		break;
+		case 'mini':
+		  $v['toolbar'] = array(array('Strike', 'Underline', 'Bold'));
 		break;
 		case 'medium': default:
 			$v['toolbar'] = ':::code:::toolbar.medium';
@@ -789,30 +848,61 @@ function system_alias_reservation(){
 	return array('admin/', 'files/', 'modules/', 'themes/', 'sites/', 'log/', 'tools/', 'misc/', 'includes/');
 }
 
-function dd_get_swfupload($dom, $v, $html = 1){
-	if(!$v['upload_url']) return false;
+/**
+ * 获取 swfupload 上传
+ * @param (string) $dom
+ *  html 元素 id，如： mydom， 不指定将递增
+ * @param (array) $v
+ *  swfupload 配置参数
+ * @param $html
+ *  是否返回 html 代码，若不需要，则必须自行输出 html 代码
+ * @returu 若 $html 为真，返回 swfupload 所需的 html 代码
+ */
+function dd_get_swfupload($dom = NULL, $v = array(), $html = 1){
+  static $i = 0;
+  
+  if(!$dom){
+    $dom = 'dida_swfupload_wrapper_'.$i;
+  }
+  
+	if(!$v['upload_url']) {
+	  $v['upload_url'] = url('files/editor', array('query' => 'op=swfupload&name=Filedata&type=image'));
+	}
+	
+  $html_text = array(
+    'list' => t('system', '文件队列'),
+    'stop' => t('system', '暂停上传'),
+    'start' => t('system', '开始上传'),
+    'des' => t('system', '图片'),
+  );
+  
+  if($v['html_text']){
+    $html_text = array_merge($html_text, $v['html_text']);
+    unset($v['html_text']);
+  }
+	
 	$args = array(
 		'flash_url' => f('misc/swfupload/swfupload.swf'),
 		'post_params' => array(
-			'PHPSESSID' => session_id(),
-			'uid' => $GLOBALS['user']->uid ? $GLOBALS['user']->uid : 0,
-		),
-		'file_size_limit' => '2 MB',
+      '__SETPHPSESSID' => $GLOBALS['user']->session,
+      '__SETUID' => $GLOBALS['user']->uid
+    ),
+		'file_size_limit' => '8 MB',
 		'file_types' => '*.jpg;*.gif;*.png',
-		'file_types_description' => t('system', '图片'),
+		'file_types_description' => $html_text['des'],
 		'file_upload_limit' => 100,
 		'file_queue_limit' => '0',
 		'custom_settings' => array(
-			'wrapper' => $dom,
-			'fileLists' => '#su_files'
+			'wrapper' => '#'.$dom,
+			'fileLists' => '#su_files_'.$i
 		),
     'minimum_flash_version' => '9.0.28',
-		'debug' => true,
+		'debug' => false,
 		'button_image_url' => f('misc/swfupload/button.png'),
-		'button_width' => 65,
-		'button_height' => 29,
-		'button_placeholder_id' => 'swf_select_button',
-    'button_placeholder' => '$(\'#swf_select_button\')[0]',
+		'button_width' => 70,
+		'button_height' => 28,
+		'button_placeholder_id' => 'swf_select_button_'.$i,
+    'button_placeholder' => '$(\'#swf_select_button_'.$i.'\')[0]',
     'swfupload_loaded_handler' => 'Su.swfLoaded',
     'file_dialog_start_handler' => 'Su.dialogStart',
 		'file_queued_handler' => 'Su.fileQueued',
@@ -824,26 +914,47 @@ function dd_get_swfupload($dom, $v, $html = 1){
 		'upload_success_handler' => 'Su.uploadSuccess',
     'upload_complete_handler' => 'Su.uploadComplete'
 	);
+	
+	if($v['html_config']){
+	  $config = $v['html_config'];
+	  unset($v['html_config']);
+	}else{
+	  $config = NULL;
+	}
+	
+	++$i;
+	
 	if($v['custom_settings']){
     $args['custom_settings'] = array_merge($v['custom_settings'], $args['custom_settings']);
     unset($v['custom_settings']);
   }
+  
   $v = array_merge($args, $v);
+  
   dd_add_js('misc/swfupload/swfupload.js');
   dd_add_js('misc/swfupload/jquery.swfupload.js');
   
-  dd_add_js('$(\''.$dom.'\').swfupload('.dd_to_js($v).')', 'inline');
+  dd_add_js('$(\'#'.$dom.'\').swfupload('.dd_to_js($v).')', 'inline', false, 'footer');
+  
   if($html){
-    $output = _dd_get_class_id($dom, 'su_content');
-    $output .= _dd_get_class_id($v['custom_settings']['fileLists'], 'fieldset');
-    $output .= '<span class="legend">文件队列</span>';
-    $output .= '</div>';
-    if($html == 1){
-      $output .= '<input type="button" class="su_stop_upload" value="暂停上传" />';
+    $output = '<div id="'.$dom.'" class="dida_swfupload_content su_content">';
+    if(!$config['no_lists']){
+      $output .= '<fieldset id="'.substr($v['custom_settings']['fileLists'], 1).'" class="collapsible dida_swfupload_fieldset">';
+      if(!$config['no_lists_text']){
+        $output .= '<legend class="collapse-processed asc"><a href="#">'.$html_text['list'].'</a></legend>';
+      }
     }
-    $output .= '<input type="button" class="su_start_upload" value="开始上传" />';
+    $output .= '</fieldset><div class="dida_swfupload_button">';
     $output .= '<span id="'.$v['button_placeholder_id'].'"></span>';
-    $output .= '</div>';
+    
+    if(!$config['no_stop']){
+      $output .= '<input type="button" class="su_stop_upload" value="'.$html_text['stop'].'" />';
+    }
+    if(!$config['no_start']){
+      $output .= '<input type="button" class="su_start_upload" value="'.$html_text['start'].'" />';
+    }
+    
+    $output .= '</div></div>';
     return $output;
   }
 }
@@ -882,36 +993,64 @@ function system_status_update(){
 }
 
 /**
- * @Implement of hook_help()
- */
-function system_help($path){
-  switch($path){
-    case 'admin/lang/cache':
-    return t('system', '所有语言文件将被合并，保存在 %path 目录下', array('%path' => $GLOBALS['conf_dir'].'/cache/languages'));
-  }
-}
-
-function _dd_get_class_id($str, $class = NULL){
-  if(substr($str, 0, 1) == '#'){
-    $t = '<div id="'.substr($str, 1).'"';
-    if($class) $t .= ' class="'.$class.'"';
-  }else{
-    $t = '<div class="'.substr($str, 1);
-    if($class) $t .= ' '.$class.'"';
-    $t .= '"';
-  }
-  $t .= '>';
-  return $t;
-}
-
-/**
- * 首页
+ * 首页显示内容，将触发 hook_front_view()，模块将需要显示在首页的数据添加到 $front 对象中，供自定义使用
+ * 通常应使用模块名称做为对象名，方便主题制作 ，如 fields 模块定义的数据均在  $front->fields 之中
+ * 假如设置使用默认布局 ，将触发 hook_front()，模块可以返回一个数组，如：
+ * return $array('#data' => '要显示的内容', '#weight' => -10) 或返回一个字符串 rerurn '要显示的内容';
+ * 最后所有模块需要显示的内容，按权重合并显示在主页。
+ * 通常情况 下，hook_front() 返回的内容和 hook_front_view() 的原始数据是一致的，前者仅多了一些 html 格式处理
+ * 这样，在用户选择自定义布局的情况下，也可以通过 $front 对象获取到模块自定义内容
+ * 假如设置交给特定模块处理， hook_front_view()、hook_front() 均不会执行，而是调用该模块  _module_front_view() 函数
  */
 function front_page(){
-  if(!$value = _module_invoke_all('front')){
-    $value['system'] = custom_get('front_default');
+  /**
+   * 将首页完全交给某个模块来处理
+   */
+  if($module = var_get('front_view_module', 0)){
+    $function = '_'.$module.'_front_view';
+    if(function_exists($function)){
+      return $function();
+    }
   }
-  return theme('front', $value);
+  
+  $front = new stdClass();
+  /**
+   * 触发 hook_front_view()
+   */
+  module_alter_all('front_view', $front);
+  
+  if(!var_get('front_view_type', 0)){
+    if($data = _module_invoke_all('front_page')){
+      $i = 0;
+      foreach($data as $module => $content){
+        $row = array();
+        if(is_array($content)){
+          $row['#weight'] = !isset($content['#weight']) ? $i : $content['#weight'];
+          $row['#data'] = $content['#data'];
+        }else{
+          $row['#weight'] = $i;
+          $row['#data'] = $content;
+        }
+        
+        $row['#data'] = '<div class="front_block_'.$module.'">'.$row['#data'].'</div>';
+        
+        $contents[] = $row;
+        ++$i;
+      }
+      
+      uasort($contents, 'dd_form_cmp');
+      
+      foreach($contents as $d){
+        $front->content .= $d['#data'];
+      }
+    }else{
+      $front->content = custom_get('front_default');
+    }
+  }else if(!$front){
+    $front->content = custom_get('front_default');
+  }
+  
+  return theme('front', $front);
 }
 
 /**
@@ -979,7 +1118,7 @@ function system_theme(){
 		),
 		'front' => array(
 		  'tpl' => 'front.tpl.php',
-		  'args' => array('v'),
+		  'args' => array('front'),
 		),
 		'form_ajax' => array(
 		  'tpl' => 'form_ajax.tpl.php',

@@ -291,6 +291,7 @@ function pager_view_link($text, $page_new, $element, $parameters = array(), $att
       $attributes['title'] = '转到第 '.$text .' 页';
     }
   }
+  
   return l($text, $_GET['q'], array('attributes' => $attributes, 'query' => count($query) ? implode('&', $query) : NULL));
 }
 
@@ -301,6 +302,7 @@ function pager_load_array($value, $element, $old_array) {
       $new_array[$i] = 0;
     }
   }
+  
   $new_array[$element] = (int)$value;
   return $new_array;
 }

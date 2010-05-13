@@ -1,6 +1,8 @@
 <?php 
-  if($v){
-    foreach($v as $module => $content){
-      echo '<div class="front_block_'.$module.'">'.$content.'</div>';
-    }
-  }
+// $Id$
+// print_r($front);
+?>
+
+<?php if($front->content) : ?>
+  <?php echo $front->content ?>
+<?php endif; ?>

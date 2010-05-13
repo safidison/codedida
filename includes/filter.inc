@@ -3,6 +3,14 @@
 
 /**
  * 格式化内容
+ * @param (string) $text
+ *  原始字符串
+ * @param (int) $format
+ *  输入格式 id
+ * @param (string) $type
+ *  自定义类型，一般用于缓存
+ * @param (int) $id
+ *  自定义 id，一般用于缓存
  */
 function filter_view($text, $format = NULL, $type = NULL, $id = NULL){
   global $conf;

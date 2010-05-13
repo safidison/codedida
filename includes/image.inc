@@ -1,19 +1,23 @@
 <?php
 // $Id$
 
-/*
-  获取缩略图，若不存在，则生成。
-  $filepath：原图路径。
-  $fid：图片 fid。
-  $size：缩略图尺寸长宽，如800x600
-  $v['s']：缩略图格式
-  缩略图前缀使用长宽加样式，如：800x600_scale_and_crop
-*/
+/**
+ * 获取缩略图，若不存在，则生成，返回缩略图路径，若生成不成功，返回原图。原图不存在，返回错误图片
+ * @param (int or string) $fid
+ *  图片 id，一般指定 files 表 fid，也可自定义，用于创建缩略图存放目录
+ * @param (string) $filepath
+ *  图片路径，相对路径
+ * @param (string) $size
+ *  缩略图大小，如：100x100
+ * @param (string) $style
+ *  缩略图风格，scale、scale_resize、scale_and_crop、crop、resize 几种可选
+ */
 function image_get_thumb($fid, $filepath, $size, $style = 'scale'){
   static $files;
   if(!isset($files[$fid][$size][$style])){
     if(is_file($filepath)){
-      $files[$fid] = array();
+      $files[$fid][$size][$style] = $filepath;
+      
       $filename = end(explode('/', $filepath));
       $ext = end(explode('.', basename($filepath)));
       $thumb = $size. '_'.$style;

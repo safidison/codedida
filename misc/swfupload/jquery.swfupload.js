@@ -74,7 +74,25 @@ var Su = {};
 	Su.swfLoaded = function(){
 	  var s = this.customSettings;
 	  if(Su.loaded[this.movieName] != 1){
-	  	$(s.fileLists).append('<div class="su_files_table"><table><thead><tr><th>文件名称</th><th>文件类型</th><th>文件大小</th><th>状态</th><th>操作</th></tr><thead><tbody></tbody></table></div><div class="su_status">请选择文件</div><div class="su_loading"></div><div class="su_loading_mark"></div>');
+	  	var html = '<div class="su_files_table fieldset-wrapper"><table><thead><tr>';
+	  	if(!s.not_filename){
+	  		html += '<th>文件名称</th>';
+	  	}
+	  	if(!s.not_filetype){
+	  		html += '<th>文件类型</th>';
+	  	}
+	  	if(!s.not_filesize){
+	  		html += '<th>文件大小</th>';
+	  	}
+	  	if(!s.not_status){
+	  		html += '<th>状态</th>';
+	  	}
+	  	if(!s.not_op){
+	  		html += '<th>操作</th>';
+	  	}
+	  	html += '</tr><thead><tbody></tbody></table></div>';
+	  	
+	  	$(s.fileLists).append(html + '<div class="su_status">请选择文件</div><div class="su_loading"></div><div class="su_loading_mark"></div>');
 		  var opt = {'disabled' : true, 'alt' : this.movieName};
 		  $(s.wrapper +' .su_start_upload').attr(opt).addClass('su_button_disabled').click(function(){
 		  	Su.startUpload($(this).attr('alt'));
@@ -112,10 +130,16 @@ var Su = {};
 	  	c += ' odd';
 	  }
 	  var html = '<tr class="su_file_list su_file_list_queued'+c+'" id="'+file.id+'">';
-	  html += '<td class="su_file_name su_file_name_queued">'+file.name+'</td>';
-	  html += '<td class="su_file_type su_file_type_queued">'+file.type+'</td>';
+	  if(!s.not_filename){
+	  	html += '<td class="su_file_name su_file_name_queued">'+file.name+'</td>';
+	  }
+	  if(!s.not_filetype){
+	  	html += '<td class="su_file_type su_file_type_queued">'+file.type+'</td>';
+	  }
 	  if(file.size){
-	    html += '<td class="su_file_size su_file_size_queued">'+(file.size/1024).toFixed(2)+' k</td>';
+	  	if(!s.not_filesize){
+	  		html += '<td class="su_file_size su_file_size_queued">'+(file.size/1024).toFixed(2)+' k</td>';
+	  	}
 	    if(r == 0){
 	      html += '<td class="su_file_status su_file_status_queued">等待上传</td>';
 	      html += '<td class="su_file_op su_file_op_queued"><a href="javascript:void(0);" class="su_cancel_upload" alt="'+file.id+'" title="取消" onclick="Su.cancelUpload(\''+this.movieName+'\', \''+file.id+'\');">取消</a></td>';
@@ -125,7 +149,9 @@ var Su = {};
 	      this.cancelUpload(file.id, false);
 	    }
 	  }else{
-	    html += '<td class="su_file_size su_file_size_queued">0 k</td>';
+	  	if(!s.not_filesize){
+	  		html += '<td class="su_file_size su_file_size_queued">0 k</td>';
+	  	}
 	    this.cancelUpload(file.id, false);
 	    html += '<td class="su_file_status_error">已取消(<span class="su_error_msg">空文件</span>)</td>';
 	    html += '<td class="su_file_op_queued">'+Su.getDel('#' + file.id)+'</td>';
@@ -140,14 +166,23 @@ var Su = {};
 	  if(file !== null){
 	    var s = this.customSettings;
 	    var html = '<tr class="su_file_list su_file_list_queued" id="'+file.id+'">';
-	    html += '<td class="su_file_name su_file_name_queued">'+file.name+'</td>';
-	    html += '<td class="su_file_type su_file_type_queued">'+file.type+'</td>';
-	    if(file.size){
-	      html += '<td class="su_file_size su_file_size_queued">'+(file.size/1024).toFixed(2)+' k</td>';
-	    }else{
-	      html += '<td class="su_file_size su_file_size_queued">0 k</td>';
+	    if(!s.not_filename){
+	    	html += '<td class="su_file_name su_file_name_queued">'+file.name+'</td>';
 	    }
-	    html += '<td class="su_file_status su_file_status_queued" colspan="2">加入失败(<span class="su_error_msg">'+Su.error(this, error)+'</span>)</td>';
+	    if(!s.not_filetype){
+	    	html += '<td class="su_file_type su_file_type_queued">'+file.type+'</td>';
+	    }
+	    
+	    if(!s.not_filesize){
+		    if(file.size){
+		      html += '<td class="su_file_size su_file_size_queued">'+(file.size/1024).toFixed(2)+' k</td>';
+		    }else{
+		      html += '<td class="su_file_size su_file_size_queued">0 k</td>';
+		    }
+	    }
+	    if(!s.not_filestatus){
+	    	html += '<td class="su_file_status su_file_status_queued" colspan="2">加入失败(<span class="su_error_msg">'+Su.error(this, error)+'</span>)</td>';
+	    }
 	    html += '</tr>';
 	    $(s.fileLists + ' tbody').append(html);
 	  }else{

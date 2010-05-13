@@ -105,9 +105,7 @@ function dd_get_form($form_id) {
   
   // 处理当前提交的表单
   if($_POST['form_id'] == $form_id){
-    
-    $form_values = $_POST;
-    
+    $form_values = &$_POST;
     if($settings['#values_object']){
       $form_values['_dida_values'] = (object) $_POST;
     }
@@ -124,7 +122,7 @@ function dd_get_form($form_id) {
         }
       }
       
-      if($error){
+      if($error && is_array($error)){
         $error = array_filter($error);
       }
       
@@ -158,7 +156,7 @@ function dd_get_form($form_id) {
   	dd_set_form_cache($form);
   }
   
-  $fields = dd_form_sort(dd_form_field($form, $_POST, $error));
+  $fields = dd_form_sort(dd_form_field($form, $form_values, $error));
   
   $output .= '<form '.dd_attributes($form['#args']).'>';
   if($settings['#title']){
@@ -223,25 +221,29 @@ function _form_save_submit($fields, $subvalue, &$value){
  * ___args settings 
  */
 function dd_ajax_validate($uid, $form_id, $form_token){
-  
 	if($cache = dd_get_form_cache($uid, $form_id, $form_token)){
 	  $form = call_user_func_array($form_id, $cache['__args']);
+	  $form['__args'] = $cache['__args'];
 		module_alter_all('form_alter', $form_id, $form_token, $form);
+		
 		$form['#form_id'] = $form_id;
     $form['#form_token'] = $form_token;
     
-		if($error = dd_form_required($form, $_POST)){
+    $form_values = &$_POST;
+	  if($cache['settings']['#values_object']){
+      $form_values['_dida_values'] = (object) $_POST;
+    }
+		if($error = dd_form_required($form, $form_values)){
 			return $error;
 		}else if($cache['settings'] && is_array($cache['settings']['#validate'])){
       foreach($cache['settings']['#validate'] as $function){
-        if($error = $function($form, $_POST)){
+        if($error = $function($form, $form_values)){
           return $error;
         }
       }
 		}
     
     dd_del_form_cache($uid, $form_id, $form_token);
-    
 	}
 }
 

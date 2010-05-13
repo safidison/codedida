@@ -8,7 +8,7 @@
   <?php echo $scripts; ?>
 </head>
 <body<?php echo $sidebars_class;?>>
-	<div id="wrapper"><div id="<?php echo $args_id;?>">
+	<div id="wrapper"><div class="<?php echo $args_id;?>">
 		<div id="header">
       <div class="menu"><?php echo $menu; ?></div>
       <a href="/" title="回到 <?php echo $site_global->name; ?> 首页" class="logo" alt="<?php echo $site_global->name; ?>">

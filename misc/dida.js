@@ -261,7 +261,7 @@ $(function(){
   				}
   			},
   			open: function(){
-  				$(this).append('<div id="dialog_wrapper_loading">加载中…</div><iframe id="dialog_iframe_wrapper" frameborder="no" border="0" src="'+url+'" width="100%" height="100%" style="display:none"></iframe>');
+  				$(this).append('<div id="dialog_wrapper_loading"><img align="absmiddle" src="'+settings.base_path+'misc/images/loading.gif" />加载中，请稍候…</div><iframe id="dialog_iframe_wrapper" frameborder="no" border="0" src="'+url+'" width="100%" height="100%" style="display:none"></iframe>');
         	$('#dialog_iframe_wrapper').load(function(){
             $('#dialog_wrapper_loading').hide();
             $('#dialog_iframe_wrapper').show();
@@ -342,11 +342,11 @@ $(function(){
     }
   }
   if(settings.edit){
-    var element = settings.edit;
-    $(element).each(function() {
+    $(settings.edit).each(function() {
     	$(this.dom).editable(null, this.opt);
     });
   }
+  
   $('.pager_form_go_input').blur(function(){
     var id = $(this).attr('alt');
     var s = settings.pager[id];

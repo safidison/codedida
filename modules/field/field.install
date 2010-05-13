@@ -266,6 +266,11 @@ function field_schema(){
 function field_install() {
   $ret = array();
   $ret = module_install_schema('install', 'field');
+  
+  /**
+   * 创建一个头像字段
+   */
+  
   return $ret;
 }
 
