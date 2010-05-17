@@ -253,6 +253,12 @@ function user_set_settings(){
     '#default_value' => var_get_key('user', 'redirect'),
     '#description' => t('user', '可使用 user、system 通配符，<a href="!url">通配符列表</a>', array('!url' => url('admin/token')))
   );
+  $form['fields']['user']['default_avatar'] = array(
+    '#type' => 'textfield',
+    '#title' => t('user', '用户默认头像'),
+    '#required' => 1,
+    '#default_value' => var_get_key('user', 'default_avatar', 'misc/images/avatar.gif'),
+  );
   $form['fields']['user']['default_role'] = array(
     '#type' => 'select',
     '#title' => t('user', '用户默认角色'),
@@ -440,6 +446,7 @@ function _user_field_test(){
         'multi' => 1,
         'filesize' => 1024,
         'filename' => '[uid]',
+        'extension' => 'jpg',
         'savepath' => 'avatar',
         'thumbs' => array(
           'thumb' => '85x85',

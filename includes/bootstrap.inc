@@ -360,23 +360,25 @@ function dd_attributes($attributes) {
 
 /**
  * 日志记录
- * @param $type = String
+ * @param (string) $type
  *  类型，自定义
- * @param $value = String
+ * @param (string) $value
  *  内容
- * @param $link = string
+ * @param (string) $link
  *  发生地址，默认为当前地址
- * @param $status = int
+ * @param (int) $status
  *  状态，0、普通，1、警告，2、严重
- * @param $uid = int
+ * @param (int) $uid
  *  用户 id，默认为当前用户
  */
-function dd_log($type, $value, $link = NULL, $status = NULL, $uid = NULL){
+function dd_log($type, $value, $ext_id = NULL, $link = NULL, $status = NULL, $uid = NULL){
   if($value){
-    if(!$uid) $uid = $GLOBALS['user']->uid;
+    if(!isset($uid)) $uid = $GLOBALS['user']->uid;
     if(!$status) $status = 0;
+    if(!isset($ext_id)) $ext_id = 0;
     
-    db_exec('INSERT INTO {logs} (uid, type, status, value, url, timestamp, host) VALUES (?, ?, ?, ?, ?, ?, ?)', array($uid, $type, $status, $value, ($link ? $link : $_SERVER['REQUEST_URI']), $_SERVER['REQUEST_TIME'], ip_address()));
+    db_exec('INSERT INTO {logs} (uid, ext_id, type, status, value, url, timestamp, host) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+    array($uid, $ext_id, $type, $status, $value, ($link ? $link : $_SERVER['REQUEST_URI']), $_SERVER['REQUEST_TIME'], ip_address()));
   }
 }
 

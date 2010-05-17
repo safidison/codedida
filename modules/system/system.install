@@ -1,6 +1,28 @@
 <?php
 // $Id$
 
+/**
+ * @Implement of hook_update_x()
+ *  logs 表增加一个扩展 id，删除多个索引
+ */
+function system_update_1(){
+  db_drop_index('logs', 'uid');
+  db_drop_index('logs', 'status');
+  db_drop_index('logs', 'timestamp');
+  $ext_id = array(
+    'type' => 'int',
+    'not null' => TRUE,
+    'unsigned' => TRUE,
+    'default' => 0,
+    'description' => '扩展 id'
+  );
+  
+  $ret = db_add_field('logs', 'ext_id', $ext_id);
+  db_add_index('logs', 'tex', array('type', 'ext_id'));
+  
+  return $ret;
+}
+
 //注册模块时创建的数据表，调用接口函数 hook_schema
 function system_schema() {
   $schema['variable'] = array(
@@ -361,6 +383,13 @@ function system_schema() {
         'not null' => TRUE,
         'description' => '用户 uid'
       ),
+      'ext_id' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+        'default' => 0,
+        'description' => '扩展 id'
+      ),
       'type' => array(
         'type' => 'varchar',
         'length' => 16,
@@ -403,9 +432,7 @@ function system_schema() {
     ),
     'indexes' => array(
       'type' => array('type'),
-      'status' => array('status'),
-      'timestamp' => array('timestamp'),
-      'uid' => array('uid')
+      'tex' => array('type', 'ext_id'),
     ),
     'primary key' => array('sid'),
   );

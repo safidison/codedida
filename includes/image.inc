@@ -139,9 +139,33 @@ function image_crop($source, $destination, $x, $y, $width, $height, $mark = NULL
   return image_gd_crop($source, $destination, $x, $y, $width, $height, $mark);
 }
 
-/*
-  GD库接口
-*/
+/**
+ * 转换图片格式
+ * @param (string) $source
+ *  原图片
+ * @param (string) $ext
+ *  原扩展名
+ * @param (string) $newext
+ *  新扩展名
+ * @param (string) $newsource
+ *  新的位置
+ */
+function image_to_type_data($source, $ext, $newext, $newsource){
+  if($ext != $newext){
+    $function = 'imagecreatefrom'.$ext;
+    $functionnew = 'imagecreatefrom'.$newext;
+    if(function_exists($function) && function_exists($functionnew)){
+      if($im = $function($source)){
+        $functionnew($im, $newsource);
+        imagedestroy($im);
+      }
+    }
+  }
+}
+
+/**
+ * GD 库接口
+ */
 
 /**
  * 裁剪，固定大小

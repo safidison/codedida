@@ -35,6 +35,7 @@ h2.system_no_content{
 .breadcrumb{
   border: 1px solid #DBEDB9;
   padding: 5px;
+  margin-bottom: 5px;
 }
 .status{
   color: #437C0D;
