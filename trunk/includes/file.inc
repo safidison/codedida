@@ -362,16 +362,22 @@ function file_create_name(&$file, $validate = NULL, $rename = 1){
   }
   
   if($validate['filename']){
-    if(strpos($validate['filename'], '.') === false){
-      // 名称不包含扩展名
-      if($validate['extension']){
-        $file->extension = $validate['extension'];
-      }else if($file->filename){
-        $file->extension = strtolower(end(explode('.', $file->filename)));
+    // 指定扩展名
+    if($validate['extension']){
+      $file->extension = strtolower($validate['extension']);
+      if(in_array($file->extension, array('jpg', 'jpeg', 'png', 'gif'))){
+        $extension = strtolower(end(explode('.', $file->filename)));
+        if($extension && $file->extension != $extension){
+          $file->imagetotype = array($extension, $file->extension);
+        }
       }
+      
       $file->filename = $validate['filename'] .'.'. $file->extension;
-    }else{
+    }else if(strpos($validate['filename'], '.') !== false){
       $file->filename = $validate['filename'];
+    }else{
+      $file->extension = strtolower(end(explode('.', $file->filename)));
+      $file->filename = $validate['filename'].'.'.$file->extension;
     }
   }
   
@@ -389,16 +395,12 @@ function file_create_name(&$file, $validate = NULL, $rename = 1){
     $file->uid = $GLOBALS['user']->uid;
   }
   
-  if($file->extension){
-    if(!$validate['extension']){
-      $file->extension = $validate['extension'];
-    }else if(!$file->extension){
-      $file->extension = strtolower(end(explode('.', $file->filename)));
-    }
+  if(!$file->extension){
+    $file->extension = strtolower(end(explode('.', $file->filename)));
   }
   
   if($validate['filetype'] && !file_validate_mime($file, $validate['filetype'])){
-    dd_set_message(t('system', '1只允许 %string 类型的文件', array('%string' => implode(' ', $validate['filetype']))), 'error');
+    dd_set_message(t('system', '只允许 %string 类型的文件', array('%string' => implode(' ', $validate['filetype']))), 'error');
     return false;
   }
   

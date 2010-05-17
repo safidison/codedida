@@ -126,16 +126,27 @@ function db_mysql_query($sql, $args = array(), $opt = array()){
  */
 function db_mysql_exec($sql, $args = array(), $opt = array()){
   global $db;
+  static $transaction;
   
   if($opt['transaction']){
     switch($opt['transaction']){
       case 'start':
         $db[$opt['target']]->beginTransaction();
+        $transaction = true;
+        
         if(!$sql) return true;
       break;
       case 'end':
         $db[$opt['target']]->commit();
+        $transaction = false;
+        
         if(!$sql) return true;
+      break;
+      case 'back':
+        $db[$opt['target']]->rollBack();
+        $transaction = false;
+        
+        return true;
     }
   }
   

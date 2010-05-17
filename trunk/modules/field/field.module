@@ -823,6 +823,12 @@ function field_field_call_form($field, &$form){
       '#default_value' => $field->data['filename'],
       '#description' => t('field', '指定文件名称，可使用<a href="!url">通配符</a>，建议留空', array('!url' => url('admin/token')))
     );
+    $form['fields']['data']['extension'] = array(
+      '#type' => 'textfield',
+      '#title' => t('field', '扩展'),
+      '#default_value' => $field->data['extension'],
+      '#description' => t('field', '指定文件扩展名，建议留空')
+    );
     $form['fields']['data']['thumbs']['thumb'] = array(
       '#type' => 'textfield',
       '#title' => t('field', '小图'),
@@ -2324,6 +2330,12 @@ function field_get_node_data($nid, $type = 'term', $clear = NULL){
  *  节点对象
  */
 function field_get_node_load($module, $type, & $node, $ac = NULL){
+  
+  if($cache = cache_get($module.$type.$node->nid, 'cache_field')){
+    $node->fields = $cache->data;
+    return;
+  }
+  
   if(!$datas = field_get_cache_field_group($module, $type)) return;
   // 分组下可能有 1 个或多个字段
   $term_type = field_get_term_type();
@@ -2394,6 +2406,8 @@ function field_get_node_load($module, $type, & $node, $ac = NULL){
       $data->field_func('load', $data, $node);
     }
   }
+  
+  cache_set($module.$type.$node->nid, $node->fields, 'cache_field');
 }
 
 /**
@@ -2720,7 +2734,11 @@ function field_get_node_form($module, $type, $node = NULL, &$form = NULL, $field
               foreach($node->fields[$data->field_key] as $files){
                 $description .= '<span class="field_file_list">';
                 if(strpos($files->filemime, 'image') !== false){
-                  $description .= l(img(image_get_thumb($files->fid, $files->filepath, $data->data['thumbs']['thumb'])), f($files->filepath), array('html' => true, 'attributes' => array('target' => '_blank')));
+                  if($data->data['thumbs']['thumb']){
+                    $description .= l(img(image_get_thumb($files->fid, $files->filepath, $data->data['thumbs']['thumb'])), f($files->filepath), array('html' => true, 'attributes' => array('target' => '_blank')));
+                  }else{
+                    $description .= l(img($files->filepath), f($files->filepath), array('html' => true, 'attributes' => array('target' => '_blank')));
+                  }
                 }else{
                   $description .= l(t('field', '下载'), f($fields->filepath), array('html' => true, 'attributes' => array('target' => '_blank', 'title' => $files->filename)));
                 }
@@ -2966,8 +2984,13 @@ function field_get_node_view($module, $type, &$node, $view_type = 0){
           case 'file':
             $content = NULL;
             foreach($node->fields[$data->field_key] as $file){
-              $content .= l(img(image_get_thumb($file->fid, $file->filepath, $data->data['thumbs']['medium'])), f($file->filepath),
-              array('html' => 1, 'attributes' => array('target' => '_blank', 'title' => $file->filename, 'alt' => $file->filename)));
+              if($data->data['thumbs']['medium']){
+                $content .= l(img(image_get_thumb($file->fid, $file->filepath, $data->data['thumbs']['medium'])), f($file->filepath),
+                array('html' => 1, 'attributes' => array('target' => '_blank', 'title' => $file->filename, 'alt' => $file->filename)));
+              }else{
+                $content .= l(img($file->filepath), f($file->filepath),
+                array('html' => 1, 'attributes' => array('target' => '_blank', 'title' => $file->filename, 'alt' => $file->filename)));
+              }
             }
             if($view_type){
               $node->field_view[$data->field_key] = array(
@@ -3087,6 +3110,11 @@ function field_get_node_save($module, $type, $value, $node = NULL, $form = NULL)
                     }else{
                       $validate['filename'] = NULL;
                     }
+                    if($data->data['extension']){
+                      $validate['extension'] = $data->data['extension'];
+                    }else{
+                      $validate['extension'] = NULL;
+                    }
                     $file = array(
                       'name' => $name,
                       'type' => $_FILES['fields']['type'][$data->field_key][$i],
@@ -3094,9 +3122,12 @@ function field_get_node_save($module, $type, $value, $node = NULL, $form = NULL)
                       'tmp_name' => $_FILES['fields']['tmp_name'][$data->field_key][$i],
                       'ext_id' => $data->field_id, // 字段id
                       'ext_id2' => $value->nid, // 节点id
-                      'ext_type' => 'field_file' // 扩展标记
+                      'ext_type' => 'field_file', // 扩展标记
                     );
-                    if(file_save_upload($file, $validate)){
+                    if($newfile = file_save_upload($file, $validate)){
+                      if($newfile->imagetotype){
+                        image_to_type_data($newfile->filepath, $newfile->imagetotype[0], $newfile->imagetotype[1], $newfile->filepath);
+                      }
                       ++$files;
                     }
                   }else if($message !== 4){
@@ -3126,6 +3157,12 @@ function field_get_node_save($module, $type, $value, $node = NULL, $form = NULL)
                   $validate['filename'] = NULL;
                 }
                 
+                if($data->data['extension']){
+                  $validate['extension'] = $data->data['extension'];
+                }else{
+                  $validate['extension'] = NULL;
+                }
+                
                 if(!$message = file_validate_error($_FILES['fields']['error'][$data->field_key])){
                   $file = array(
                     'name' => $_FILES['fields']['name'][$data->field_key],
@@ -3136,7 +3173,11 @@ function field_get_node_save($module, $type, $value, $node = NULL, $form = NULL)
                     'ext_id2' => $value->nid,
                     'ext_type' => 'field_file'
                   );
-                  file_save_upload($file, $validate);
+                  if($newfile = file_save_upload($file, $validate)){
+                    if($newfile->imagetotype){
+                      image_to_type_data($newfile->filepath, $newfile->imagetotype[0], $newfile->imagetotype[1], $newfile->filepath);
+                    }
+                  }
                 }else if($message !== 4){
                   dd_set_message($message, 'error');
                 }
@@ -3170,6 +3211,9 @@ function field_get_node_save($module, $type, $value, $node = NULL, $form = NULL)
 		}
 		db_exec('INSERT INTO {fields_term_node} (tid, nid) VALUES '. implode(',', $nids));
 	}
+	
+	cache_del('cid', $module.$type.$value->nid, 'cache_field');
+	
 }
 
 function field_get_node_delete($module, $type, $node){

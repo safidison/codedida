@@ -2,3 +2,34 @@
 img.form_captcha_img{
   vertical-align:middle;
 }
+#user_term_list_view li{
+	float: left;
+	height: 130px;
+	width: 120px;
+	margin: 2px;
+	text-align: center;
+}
+.user_field_list_avatar{
+  display: block;
+  text-align: center;
+  margin: 0 auto;
+  height: 100px;
+}
+#user_term_list_view li a{
+	padding: 6px 0;
+	display: block;
+}
+#user_field_list_view li{
+  float: left;
+  height: 160px;
+  width: 130px;
+  margin: 2px;
+  text-align: center;
+}
+#user_field_list_view li a{
+  padding: 3px 0;
+  display: block;
+}
+.user_field_list_term a{
+	color: #55504B;
+}

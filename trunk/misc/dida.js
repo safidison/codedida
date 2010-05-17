@@ -180,6 +180,9 @@ $(function(){
                 case 'parent':
                   $$.parent().remove();
                 break;
+                case 'two':
+                  $$.parent().parent().remove();
+                break;
                 case 'own':
                   $$.remove();
                 break;
@@ -331,6 +334,10 @@ $(function(){
     if(confirm('你需要登录才能进行此操作，立即登录？')){
       location.href = Dida.url('user/login', {redirect: location.pathname});
     }
+    return false;
+  });
+  $('.confirm_msg').click(function(){
+    alert($(this).attr('title'));
     return false;
   });
   if(settings.multi){

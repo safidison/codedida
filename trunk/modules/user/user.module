@@ -571,6 +571,10 @@ function user_edit_submit($form, &$value){
     	user_set_roles($ac->uid, $value['_dida_values']->rid);
     }
     
+    if($_FILES['fields']){
+      file_delete_dir(file_directory_path().'/avatar/thumb_'.$ac->uid);
+    }
+    
     module_invoke_all('user_save', $value['_dida_values'], $ac);
     
     field_get_node_save('user', 'field', $value['_dida_values'], $ac);
@@ -1160,7 +1164,7 @@ function _user_login_validate($ac, $value){
 /**
  * 载入用户信息，触发 hook_user_load()
  */
-function user_load($uid, $clear = NULL){
+function user_load($uid, $clear = NULL, $field_loads = true, $module_loads = true){
   static $ac;
   if(!isset($ac[$uid]) || $clear){
   	global $conf;
@@ -1173,6 +1177,7 @@ function user_load($uid, $clear = NULL){
       if(!$ac[$uid]->language || !$conf['languages'][$ac[$uid]->language]){
       	$ac[$uid]->language = NULL;
       }
+      
       $ac[$uid]->roles = user_get_roles($ac[$uid]->uid);
       
       if($ac[$uid]->data) {
@@ -1181,15 +1186,26 @@ function user_load($uid, $clear = NULL){
       	$ac[$uid]->data = array();
       }
       
+      $ac[$uid]->avatar = user_get_avatar($ac[$uid]->uid);
+      $ac[$uid]->title = user_get_current_name($ac[$uid]);
+      
       /**
        * 加载用户信息
        * 触发 hook_user_load();
        */
       $ac[$uid]->nid = $ac[$uid]->uid;
       
-      field_get_node_load('user', 'field', $ac[$uid], $ac[$uid]);
+      if($field_loads){
+        field_get_node_load('user', 'field', $ac[$uid], $ac[$uid]);
+      }
       
-      module_alter_all('user_load', $ac[$uid]);
+      if($module_loads){
+        module_alter_all('user_load', $ac[$uid]);
+      }
+      
+      if(!isset($ac[$uid]->path)){
+        $ac[$uid]->path = 'user/'.$ac[$uid]->uid;
+      }
     }
   }
   return $ac[$uid];
@@ -1219,9 +1235,13 @@ function user_view($account){
     }
   }
   
+  $account->avatar = user_get_avatar($account->uid, '200x200');
+  
   $account->title = t('user', '!name的主页', array('!name' => user_get_current_name($account)));
   
   field_get_node_view('user', 'field', $account, 1);
+  
+  unset($account->field_view['avatar']);
   
   module_alter_all('user_view', $account);
   
@@ -1529,6 +1549,54 @@ function user_field_call_form(&$field, &$form){
 }
 
 /**
+ * @Implement of hook_field_term_view()
+ */
+function user_field_term_view($term){
+  if($fetch = pager_query('SELECT u.uid, u.name FROM {users} u INNER JOIN {fields_term_node} t ON u.uid = t.nid WHERE t.tid = ? ORDER BY u.uid DESC',
+  30, 0, NULL, array($term->tid))){
+    foreach($fetch as $o){
+      $data = '<span class="user_field_list_avatar">'.img(user_get_avatar($o->uid, '100x100'), $o->name, $o->name).'</span>';
+      $data .= '<span class="user_field_list_user">'.theme('username', $o).'</span>';
+      $items[] = $data;
+    }
+    
+    $output = theme('item_list', $items, NULL, 'ul', array('id' => 'user_term_list_view'));
+    $output .= pager_view();
+  }else{
+    $output = system_no_content();
+  }
+  
+  dd_add_css('modules/user/user.css');
+  
+  return $output;
+}
+
+/**
+ * @Implement of hook_field_view()
+ */
+function user_field_view($field){
+  if($fetch = pager_query('SELECT DISTINCT(t.nid), u.uid, u.name, f.tid, f.name AS term FROM {users} u INNER JOIN {fields_term_node} 
+  t ON u.uid = t.nid INNER JOIN {fields_term} f ON f.tid = t.tid WHERE f.field_id = ? 
+  ORDER BY u.uid DESC', 30, 0, NULL, array($field->field_id))){
+    foreach($fetch as $o){
+      $data = '<span class="user_field_list_avatar">'.img(user_get_avatar($o->uid, '100x100'), $o->name, $o->name).'</span>';
+      $data .= '<span class="user_field_list_term">'.l($o->term, 'category/'.$o->tid).'</span>';
+      $data .= '<span class="user_field_list_user">'.theme('username', $o).'</span>';
+      $items[] = $data;
+    }
+    
+    $output = theme('item_list', $items, NULL, 'ul', array('id' => 'user_field_list_view'));
+    $output .= pager_view();
+  }else{
+    $output = system_no_content();
+  }
+  
+  dd_add_css('modules/user/user.css');
+  
+  return $output;
+}
+
+/**
  * 查询是否设置了头像字段，默认头像字段为 avatar
  */
 function user_get_avatar_fid(){
@@ -1542,6 +1610,30 @@ function user_get_avatar_fid(){
     }
   }
   return $fid;
+}
+
+/**
+ * 获取用户头像
+ * @param (int) $uid
+ *  用户 id
+ */
+function user_get_avatar($uid, $size = NULL){
+  static $data;
+  if(!isset($data[$uid])){
+    $data[$uid] = var_get_key('user', 'default_logo', 'misc/images/avatar.gif');
+    
+    $filepath = file_directory_path().'/avatar/'.$uid.'.jpg';
+    
+    if(is_file($filepath)){
+      $data[$uid] = $filepath;
+    }
+  }
+  
+  if($size && $data[$uid] != var_get_key('user', 'default_logo')){
+    $data[$uid] = image_get_thumb('thumb_'.$uid, $data[$uid], $size);
+  }
+  
+  return $data[$uid];
 }
 
 /**

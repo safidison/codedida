@@ -62,20 +62,18 @@ function dd_get_form($form_id) {
   
   $form['#form_id'] = $form_id;
   $form['#form_token'] = $form_token;
-
-  $settings = $form['settings'];
   
-  if(!$settings['#redirect'] && $form['#args']['#action']){
-  	$settings['#redirect'] = $form['#args']['#action'];
+  if(!$form['settings']['#redirect'] && $form['#args']['#action']){
+  	$form['settings']['#redirect'] = $form['#args']['#action'];
   }
   
   $fields = $form['fields'];
   
   //如果表单请求ajax验证，则载入以下js。
-  if($settings['#ajax_validate']){
+  if($form['settings']['#ajax_validate']){
     dd_add_js('misc/jquery.validate.js');
     dd_add_js('misc/jquery.metadata.js');
-    if(isset($settings['#ajax_submit'])){
+    if(isset($form['settings']['#ajax_submit'])){
       //如请求验证完成后ajax提交，则载入以下js。
       //ajax默认提交到当前url，可在表单中设置
       /*
@@ -90,15 +88,15 @@ function dd_get_form($form_id) {
         ),
       */
       //ajax验证和提交将跳过系统默认验证，应在ajax页面调用dd_ajax_validate()来验证
-      if($settings['#ajax_submit']['des']){
+      if($form['settings']['#ajax_submit']['des']){
         $output = '<div id="ajax_description" class="description"></div>';
       }
       dd_add_js('misc/jquery.form.js');
     }
     $value = array(
       'form_id' => $form_id,
-      'ajax_submit' => isset($settings['#ajax_submit']),
-      'options' => $settings['#ajax_submit']['options'],
+      'ajax_submit' => isset($form['settings']['#ajax_submit']),
+      'options' => $form['settings']['#ajax_submit']['options'],
     );
     dd_add_js(theme('form_ajax', $value), 'inline');
   }
@@ -106,7 +104,7 @@ function dd_get_form($form_id) {
   // 处理当前提交的表单
   if($_POST['form_id'] == $form_id){
     $form_values = &$_POST;
-    if($settings['#values_object']){
+    if($form['settings']['#values_object']){
       $form_values['_dida_values'] = (object) $_POST;
     }
     
@@ -114,8 +112,8 @@ function dd_get_form($form_id) {
     if(!$error = dd_form_required($form, $form_values)){
     	// 回调表单验证函数
     	
-      if(is_array($settings['#validate'])){
-        foreach($settings['#validate'] as $function){
+      if(is_array($form['settings']['#validate'])){
+        foreach($form['settings']['#validate'] as $function){
           if($error = $function($form, $form_values)){
             break;
           }
@@ -142,8 +140,8 @@ function dd_get_form($form_id) {
         
         if($_GET['redirect']){
         	$redirect = $_GET['redirect'];
-        }else if($settings['#redirect']){
-        	$redirect = $settings['#redirect'];
+        }else if($form['settings']['#redirect']){
+        	$redirect = $form['settings']['#redirect'];
         }else{
         	$redirect = url($_GET['q']);
         }
@@ -159,11 +157,11 @@ function dd_get_form($form_id) {
   $fields = dd_form_sort(dd_form_field($form, $form_values, $error));
   
   $output .= '<form '.dd_attributes($form['#args']).'>';
-  if($settings['#title']){
-    $output .= '<h3>'.$settings['#title'].'</h3>';
+  if($form['settings']['#title']){
+    $output .= '<h3>'.$form['settings']['#title'].'</h3>';
   }
-  if($settings['#description']) {
-    $output .= '<div class="description form_description form_setting_description">'.$settings['#description'].'</div>';
+  if($form['settings']['#description']) {
+    $output .= '<div class="description form_description form_setting_description">'.$form['settings']['#description'].'</div>';
   }
   
   $output .= dd_form_html($form, $fields);
@@ -188,7 +186,7 @@ function dd_get_form($form_id) {
  * 可通过如下方式在提交函数中处理异常：
  * 	发现异常后重定向到某个页面，脱离默认表单处理流程。
 */
-function form_save_submit($form, &$value){
+function form_save_submit(&$form, &$value){
   foreach($form['fields'] as $key => $field){
     if(strpos($key, '#') === false){
       if(($field['#type'] == 'submit') && $value[$key]){
