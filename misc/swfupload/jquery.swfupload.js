@@ -277,7 +277,12 @@ var Su = {};
 	  var top = parseInt($('.su_files_table').attr('scrollTop'));
 	  $('.su_files_table').attr('scrollTop', (top + 20));
 	}
-
+	
+	Su.uploadQueueComplete = function(obj){
+		alert('结束');
+		alert(obj);
+	}
+	
 	//debug
 	Su.debug = function(message){
 	}

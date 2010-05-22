@@ -5,12 +5,6 @@ $(function(){
   },function(){
     $(this).removeClass('inputhover');
   })
-  $('.fieldset-hide').children('.fieldset-wrapper').hide();
-  $('fieldset.collapsible > legend.collapse-processed').click(function() {
-    $(this).toggleClass('asc').toggleClass('desc').parent().toggleClass('fieldset-hide');
-    $(this).next('.fieldset-wrapper').slideToggle(100);
-    return false;
-  });
   /*
   $('.form_field_input_captcha').one('click', function(){
     $(this).next('.form_captcha').trigger('click');

@@ -1050,6 +1050,7 @@ function user_login_form($url = NULL){
   $form['settings'] = array(
     '#validate' => array('user_login_validate'),
     '#ajax_validate' => true,
+    '#values_object' => true,
     '#ajax_submit' => array(
       'des' => true,
       'options' => array(
@@ -1113,10 +1114,24 @@ function user_login_form($url = NULL){
 /**
  * 登录验证
  */
-function user_login_validate($form, $value){
-  if($user = db_query('SELECT uid, status FROM {users} WHERE mail = ? AND pass = ?', array($value['mail'], md5($value['pass'])), array('return' => 'one'))){
-    if(!$error = module_invoke_all('user_login_validate', $form, $value)){
-      if($msg = _user_login_validate($user, $value)){
+function user_login_validate(&$form, &$value){
+  $value['_dida_values']->pass = md5($value['_dida_values']->pass);
+  
+  if(strpos($value['_dida_values']->mail, '@') !== false){
+    $value['_dida_values']->name = NULL;
+    $user = db_query('SELECT uid, status FROM {users} WHERE mail = ? AND pass = ?',
+    array($value['_dida_values']->mail, $value['_dida_values']->pass), array('return' => 'one'));
+  }else{
+    $value['_dida_values']->name = $value['_dida_values']->mail;
+    $value['_dida_values']->mail = NULL;
+    
+    $user = db_query('SELECT uid, status FROM {users} WHERE name = ? AND pass = ?',
+    array($value['_dida_values']->name, $value['_dida_values']->pass), array('return' => 'one'));
+  }
+  
+  if($user){
+    if(!$error = module_invoke_all('user_login_validate', $form, $value['_dida_values'])){
+      if($msg = _user_login_validate($user, $value['_dida_values'])){
         if($msg === true){
           if($_GET['ajax'] != 'submit'){
             dd_goto(dd_get_token(var_get_key('user', 'redirect', 'user/' . $_SESSION['user']->uid), $_SESSION['user'], array('user')));
@@ -1132,10 +1147,11 @@ function user_login_validate($form, $value){
   }else{
     $error['pass']['#error'][] = t('user', '帐号与密码不匹配');
   }
+  
   return $error;
 }
 
-function _user_login_validate($ac, $value){
+function _user_login_validate($ac, &$value){
   if($ac->uid){
     switch($ac->status){
       case 0:
@@ -1148,10 +1164,12 @@ function _user_login_validate($ac, $value){
         $t['name']['#error'][] = t('user', '账号已注销');
     }
     if($t) return $t;
-    if(!$value['his'][1]) {
+    
+    if(!$value->his[1]) {
       global $cookie_domain;
       setcookie(session_name(), session_id(), -1, '/', $cookie_domain);
     }
+    
     if(user_login(user_load($ac->uid))){
       return true;
     }
@@ -1398,10 +1416,9 @@ function user_site_menu(&$menu){
     if($user->uid == 1){
       $menu['admin'] = array(
         '#weight' => 999,
-        '#data' => l(t('user', '管理'), 'admin'),
+        '#data' => l(t('user', '网站管理'), 'admin'),
         '#childrens' => array(
           l(t('user', '缓存管理'), 'admin/cache'),
-          l(t('user', '模块管理'), 'admin/modules'),
           l(t('user', '主题管理'), 'admin/themes'),
           l(t('user', '模块管理'), 'admin/modules'),
           l(t('user', '用户设置'), 'admin/users/settings'),
@@ -1629,7 +1646,7 @@ function user_get_avatar($uid, $size = NULL){
     }
   }
   
-  if($size && $data[$uid] != var_get_key('user', 'default_logo')){
+  if($size && $data[$uid] != var_get_key('user', 'default_logo', 'misc/images/avatar.gif')){
     $data[$uid] = image_get_thumb('thumb_'.$uid, $data[$uid], $size);
   }
   

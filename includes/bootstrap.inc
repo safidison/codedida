@@ -217,7 +217,7 @@ function dd_get_access(){
   global $user;
   if($user->uid > 0){
     if($GLOBALS['conf']['page_access_history']){
-      dd_set_message(t('system', '抱歉，没有权限访问该 %string', array('%string' => dd_get_absolute_url())), 'error');
+      dd_set_message(t('system', '抱歉，没有权限访问该地址 %string', array('%string' => dd_get_absolute_url())), 'error');
       dd_goto(dd_get_history());
     }else{
       echo theme('print', custom_get('page_access_html'));
@@ -1425,17 +1425,20 @@ function dd_jqui($theme = 'base'){
  */
 function dd_jqedit($v = array()){
   $args = array(
-    'indicator' => '<img src="/misc/loading.gif">',
-    'submit' => '确定',
-    'cancel' => '取消',
-    'tooltip' => '点此编辑',
+    'indicator' => '<img src="'.f('misc/images/loading.gif').'">',
+    'submit' => t('system', '确定'),
+    'cancel' => t('system', '取消'),
+    'tooltip' => t('system', '点此编辑'),
   );
   
   $v['opt'] = array_merge($args, $v['opt']);
   
   if($v['limit']) $v['opt']['charcounter']['characters'] = $v['limit'];
-  dd_add_js(array('edit' => $v), 'setting');
+  
+  dd_add_js(array('edit' => array($v)), 'setting');
+  
   dd_add_js('misc/jquery.jeditable.mini.js');
+  
   switch($v['opt']['type']){
     case 'charcounter':
       dd_add_js('misc/jquery.jeditable.charcounter.js');

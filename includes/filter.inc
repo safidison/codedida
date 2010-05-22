@@ -179,6 +179,7 @@ function filter_get_filters($fid = NULL){
                 if($tags = explode(' ', $o->body)){
                   foreach($tags as $tag){
                     $o->tags[$tag] = 1;
+                    $o->strip_tags .= '<'.$tag.'>';
                   }
                 }
               break;
