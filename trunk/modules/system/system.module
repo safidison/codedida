@@ -468,31 +468,36 @@ function system_filter($op, $delta = NULL, $format = NULL, $value = NULL, $filte
             if($filter->tags){
               $filter_tags_type = var_get('filter_system_type_'.$filter->fid);
               if($filter->delta == 0){
-                preg_match_all('/<[\/|\s]*([0-9a-z]*?)[\s|>|\/|.*>]/ims', $value, $matches);
-                if($matches){
-                  foreach($matches[1] as $key => $matche){
-                    if(!$filter->tags[$matche]){
-                      if(!$filter_tags_type){
-                        $value = str_replace($matches[0][$key], check_plain($matches[0][$key]), $value);
-                      }else{
-                        $value = strip_tags($value, '<'.$matche.'>');
-                      }
-                    }
-                  }
-                }
-              }else{
-                // 不被允许
+                // 被允许的标签
                 if(!$filter_tags_type){
-                  preg_match_all('/<[\/|\s]*([0-9a-z]*?)[\s|>|\/|.*>]/ims', $value, $matches);
+                  
+                  preg_match_all('/<([\/|\s]*)([0-9a-z]*).*?>/ims', $value, $matches);
+                  
                   if($matches){
-                    foreach($matches[1] as $key => $matche){
-                      if($filter->tags[$matche]){
+                    foreach($matches[2] as $key => $matche){
+                      if(!$filter->tags[mb_strtolower($matche)]){
                         $value = str_replace($matches[0][$key], check_plain($matches[0][$key]), $value);
                       }
                     }
                   }
                 }else{
-                  $value = strip_tags($value, _system_filter_tags($filter->fid, $filter->tags));
+                  $value = strip_tags($value, $filter->strip_tags);
+                }
+              }else{
+                // 不被允许的标签
+                
+                preg_match_all('/<([\/|\s]*)([0-9a-z]*).*?>/ims', $value, $matches);
+                
+                if($matches){
+                  foreach($matches[2] as $key => $matche){
+                    if($filter->tags[mb_strtolower($matche)]){
+                      if(!$filter_tags_type){
+                        $value = str_replace($matches[0][$key], check_plain($matches[0][$key]), $value);
+                      }else{
+                        $value = str_replace($matches[0][$key], '', $value);
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -786,7 +791,7 @@ function dd_get_editor($dom, $v = array()){
 		dd_add_js('var toolbar = '.dd_to_js($toolbar).';', 'inline_nojq', 0, 'footer');
 	}
   if(!isset($v['extraPlugins'])){
-    $v['extraPlugins'] = 'swfupload,autosave,bodybreak,insertcode';
+    $v['extraPlugins'] = 'swfupload,autosave,bodybreak,insertcode,smiley';
   }
   
 	if(strpos($v['extraPlugins'], 'swfupload') !== false){
@@ -912,7 +917,7 @@ function dd_get_swfupload($dom = NULL, $v = array(), $html = 1){
 		'upload_progress_handler' => 'Su.uploadProgress',
 		'upload_error_handler' => 'Su.uploadError',
 		'upload_success_handler' => 'Su.uploadSuccess',
-    'upload_complete_handler' => 'Su.uploadComplete'
+    'upload_complete_handler' => 'Su.uploadComplete',
 	);
 	
 	if($v['html_config']){

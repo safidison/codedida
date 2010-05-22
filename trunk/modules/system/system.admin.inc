@@ -524,30 +524,33 @@ function system_site_error(){
       t('system', '写入日志并仅对超级管理员显示'),
     ),
   );
+ 
   $form['fields']['page_not_history'] = array(
     '#type' => 'radio',
     '#title' => t('system', '404错误'),
     '#required' => true,
     '#default_value' => var_get('page_not_history', 0),
     '#options' => array(
-      1 => t('system', '返回上一页或首页'),
-      0 => t('system', '显示以下错误信息')
+      t('system', '显示以下错误信息'),
+      t('system', '返回上一页或首页'),
     )
   );
+  
   $form['fields']['page_not_html'] = array(
     '#type' => 'textarea',
     '#title' => t('system', '404错误信息'),
     '#default_value' => custom_get('page_not_html', '当前页面不存在'),
     '#description' => t('system', '支持 HTML')
   );
+  
   $form['fields']['page_access_history'] = array(
     '#type' => 'radio',
     '#title' => t('system', '403错误'),
     '#required' => true,
-    '#default_value' => var_get('page_acess_history', 0),
+    '#default_value' => var_get('page_access_history', 0),
     '#options' => array(
-      1 => t('system', '返回上一页或首页'),
-      0 => t('system', '显示以下错误信息')
+      t('system', '显示以下错误信息'),
+      t('system', '返回上一页或首页'),
     )
   );
   $form['fields']['page_access_html'] = array(
@@ -571,7 +574,8 @@ function system_site_error(){
 }
 
 function system_site_error_submit($form, $v){
-  unset($v['image_error']);
+  unset($v['image_error'], $v['submit'], $v['form_id'], $v['form_toke']);
+  
   foreach($v as $key => $value){
     if($key == 'page_access_html' || $key == 'page_not_html' || $key == 'site_offline_html'){
       custom_set($key, $value);

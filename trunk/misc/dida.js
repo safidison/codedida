@@ -1,5 +1,5 @@
 // $Id$
-var Dida ={};
+var Dida = {cache: {}};
 Dida.dejson = function(data){
   if ((data.substring(0, 1) != '{') && (data.substring(0, 1) != '[')) {
     return false;
@@ -153,6 +153,7 @@ $(function(){
     Dida.favorite($(this).attr('title'), $(this).attr('href'));
     return false;
   });
+  
   $('.confirm').click(function(){
     msg = $(this).attr('alt');
     if(!confirm((msg ? msg : '确认此操作吗？'))){
@@ -161,6 +162,7 @@ $(function(){
       location.href = $(this).attr('href');
     }
   });
+  
   $('.confirmajax').click(function(){
     msg = $(this).attr('alt');
     if(confirm((msg ? msg : '确认此操作吗？'))){
@@ -168,32 +170,33 @@ $(function(){
       var url = $$.attr('href');
       $.get(url, {'timestamp': Dida.gettime()}, function(data){
         if($$.attr('type') != 'js'){
-          var fun = $$.attr('fun');
-          if(data == 1){
-            var text = $$.attr('replace');
-            if(fun){
-              eval(fun + '('+data+');');
-            }else if(text){
-              $$.attr('href', '#').unbind('click').text(text);
-            }else{
-              switch($$.attr('level')){
-                case 'parent':
-                  $$.parent().remove();
-                break;
-                case 'two':
-                  $$.parent().parent().remove();
-                break;
-                case 'own':
-                  $$.remove();
-                break;
-                default:
-                  $$.parents('tr').remove();
-              }
-            }
-          }else if(data && fun){
-            eval(fun + '('+data+');');
-          }else{
-            alert(data ? data : '操作失败');
+          switch(data){
+	          case 'parent':
+	            $$.parent().remove();
+	          break;
+	          case 'two':
+	            $$.parent().parent().remove();
+	          break;
+	          case 'own':
+	            $$.remove();
+	          break;
+	          case 'tr':
+	            $$.parents('tr').remove();
+	          break;
+	          default:
+		          var fun = $$.attr('fun');
+		          if(data == 1){
+		            var text = $$.attr('replace');
+		            if(fun){
+		              eval(fun + '('+data+');');
+		            }else if(text){
+		              $$.attr('href', '#').unbind('click').text(text);
+		            }
+		          }else if(data && fun){
+		            eval(fun + '('+data+');');
+		          }else{
+		            alert(data ? data : '操作失败');
+		          }
           }
         }else{
           eval(data);
@@ -202,6 +205,32 @@ $(function(){
     }
     return false;
   });
+  
+  $('.dd_form_ajax_field').change(function(){
+  	var href = $(this).attr('href');
+  	
+  	if($(this).hasClass('changeconfirm') && !confirm('确认此操作吗？')){
+  		return false;
+  	}
+  	
+  	if(href){
+  		var $$ = $(this);
+  		$.ajax({
+        type: 'POST',
+        url: href,
+        dataType: 'html',
+        data: 'id='+$(this).attr('alt')+'&value=' + $(this).val(),
+        success: function(data){
+  				if(data == -1){
+  					alert('操作失败');
+  				}else if(data == 'two'){
+  					$$.parent().parent().remove();
+  				}
+        }
+  		});
+  	}
+  });
+  
   $('.form_all_check').click(function(){
     dom = $(this).attr('alt');
     $('.' + dom).attr('checked', this.checked ? true : false);
@@ -233,6 +262,13 @@ $(function(){
 	  	});
   	};
   	return false;
+  });
+  
+  $('.fieldset-hide').children('.fieldset-wrapper').hide();
+  $('fieldset.collapsible > legend.collapse-processed').click(function() {
+    $(this).toggleClass('asc').toggleClass('desc').parent().toggleClass('fieldset-hide');
+    $(this).next('.fieldset-wrapper').slideToggle(100);
+    return false;
   });
   
 	$('.thickbox, .dialog').click(function(){

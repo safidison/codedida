@@ -46,21 +46,4 @@ $(function(){
     }
     return false;
   });
-  
-  $('.dd_form_ajax_field').change(function(){
-  	var href = $(this).attr('href');
-  	if(href){
-  		$.ajax({
-        type: 'POST',
-        url: href,
-        dataType: 'html',
-        data: 'id='+$(this).attr('alt')+'&value=' + $(this).val(),
-        success: function(data){
-  				if(data == -1){
-  					alert('操作失败');
-  				}
-        }
-  		});
-  	}
-  });
 });
