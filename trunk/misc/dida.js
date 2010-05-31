@@ -486,14 +486,27 @@ $(function(){
          change: function(event, ui) {$('.sort_messages').show().text('提示：排序已变动，请提交保存'); $(this.dom).sortable("serialize"); }
       });
     });
-  }
+  };
+  
+  // ajax 验证
+  if(settings.ajax_validate){
+  	$(settings.ajax_validate).each(function(i) {
+  		var o = this;
+  		if(o.ajax_submit){
+  			o.submitHandler = function(form) {
+  				$(form).ajaxSubmit(o.options);
+  			};
+  		}
+  		$('#'+o.form_id).validate(o);
+  	});
+  };
   
   //时间控件
   if(settings.uidata){
     $.datepicker.setDefaults($.datepicker.regional['zh-CN']);
     var element = settings.uidata;
     $(element).each(function(i) {
-      o = this;
+      var o = this;
 	    o.showStatus = true;
 	    o.showOn = "both";
 	    o.buttonImage = "/misc/images/calendar.gif";

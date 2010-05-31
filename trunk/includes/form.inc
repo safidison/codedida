@@ -93,12 +93,14 @@ function dd_get_form($form_id) {
       }
       dd_add_js('misc/jquery.form.js');
     }
+    
     $value = array(
       'form_id' => $form_id,
       'ajax_submit' => isset($form['settings']['#ajax_submit']),
       'options' => $form['settings']['#ajax_submit']['options'],
     );
-    dd_add_js(theme('form_ajax', $value), 'inline');
+    
+    dd_add_js(array('ajax_validate' => array($value)), 'setting');
   }
   
   // 处理当前提交的表单
