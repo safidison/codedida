@@ -867,7 +867,7 @@ function dd_form_select($field){
   $output = dd_form_label($field) . '<select name="'.$field['#name'].'"'.dd_attributes($field['#attributes']).'>';
   foreach($field['#options'] as $key => $op){
     $output .= '<option';
-    if($field['#value'] == (string) $key) $output .= ' selected="selected"';
+    if(isset($field['#value']) && (string)$field['#value'] == (string)$key) $output .= ' selected="selected"';
     $output .= ' value="'.$key.'">'.$op."</option>\n";
   }
   $output .= "</select>\n";

@@ -37,3 +37,7 @@
   font-size: 14px;
   font-weight: bold;
 }
+/*themes*/
+.admin_themes_table td{
+  text-align: center;
+}

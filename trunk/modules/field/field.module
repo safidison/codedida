@@ -291,6 +291,8 @@ function field_field_type_textfield($op, $type = NULL, $field = NULL, $v = NULL)
             dd_add_js(array('uidata' => array($js)), 'setting');
           }
           
+          dd_jqui();
+          
         return array('#attributes' => array('class' => 'ui_data_click '.$dom));
         case 'custom_ok':
           $dom = 'ui_field_textfield_autocomplete_'.$i;
@@ -1573,27 +1575,52 @@ function field_term_is_level($pid, $level){
 function field_term_options($field, $level = NULL, $data = 0){
   if(!$level || $level > 10) $level = 10;
   
+  $key = 'field_cache_options_'.$field->field_id.'_'.$level.'_'.$data;
+  
+  if($cache = cache_get($key, 'cache_field')){
+    return $cache->data;
+  }
+  
   $options[0] = $field->name;
   if($fetch = db_query('SELECT pid, tid, name FROM {fields_term} WHERE field_id = ? ORDER BY pid ASC, weight ASC, tid ASC', array($field->field_id))){
-    $i = '--';
-    $j = 2;
-    $pid = 0;
     foreach($fetch as $o){
-      if($pid != $o->pid){
-        $pid = $o->pid;
-        $i .= '--';
-        ++$j;
-      }
+      $datas[$o->pid][$o->tid] = $o;
+    }
+    
+    foreach($datas[0] as $o){
       if(!$data){
         if($j > $level) break;
-        $options[$o->tid] = $i.$o->name;
+        $options[$o->tid] = '--'.$o->name;
       }else{
-        $o->name = $i.$o->name;
+        $o->name = '--'.$o->name;
         $options[$o->tid] = $o;
+      }
+      
+      if($datas[$o->tid]){
+        _field_term_options($o->tid, $datas, $options, $data);
       }
     }
   }
+  
+  cache_set($key, $options, 'cache_field');
+  
   return $options;
+}
+
+function _field_term_options($tid, $datas, &$options, $data, $i = '--'){
+  $i .= '--';
+  foreach($datas[$tid] as $o){
+    $o->name = $i.$o->name;
+    if(!$data){
+      $options[$o->tid] = $o->name;
+    }else{
+      $options[$o->tid] = $o;
+    }
+    
+    if($datas[$o->tid]){
+      _field_term_options($o->tid, $datas, $options, $data, $i);
+    }
+  }
 }
 
 /**
@@ -1618,7 +1645,7 @@ function field_term_lists($field, $term = NULL){
   dd_set_title(array($term->name, $field->name, $group['title']));
   
   if(!$_GET['field_term_lists']){
-    $fetch = pager_query('SELECT * FROM {fields_term} WHERE field_id = ? AND pid = ?', 10, 0, NULL, array($field->field_id, $term->tid));
+    $fetch = pager_query('SELECT * FROM {fields_term} WHERE field_id = ? AND pid = ?', 20, 0, NULL, array($field->field_id, $term->tid));
   }else if($options = field_term_options($field, $group['level'], 1)){
     array_shift($options);
     $fetch = (object) $options;
@@ -1645,6 +1672,7 @@ function field_term_lists($field, $term = NULL){
       $table[] = array($o->name, dd_imp($links));
     }
     $output = theme('table', $header, $table);
+    $output .= pager_view();
   }else{
     $output = system_no_content();
   }
@@ -1944,6 +1972,7 @@ function field_save_term(&$field, $term, $batch = 0){
   
   if($newterm->tid){
     module_invoke_all('field_call_term_save', $field, $newterm);
+    cache_del('*', 'field_cache_options_', 'cache_field');
     return $newterm;
   }
 }
@@ -2772,6 +2801,172 @@ function field_get_node_form($module, $type, $node = NULL, &$form = NULL, $field
       $data->field_func('form', $data, $node, $form);
     }
   }
+}
+
+/**
+ * 获取多级字段联动表单
+ * @param (object) $field
+ *  字段对象
+ * @param (*) $value
+ *  默认值
+ * @param (array) $form
+ *  表单值
+ */
+function field_get_multi_level_field($field, $value, &$form = NULL){
+  if(!$field->field_id) return;
+  
+  dd_add_js('modules/field/field.js');
+  dd_add_css('modules/field/field.css');
+  global $conf;
+
+  $options = field_get_cache_term($field->module, $field->type);
+  
+  switch($field->field_type){
+    case 'select':
+      if($conf['field_term_children'][$field->field_id]){
+        dd_add_js(array('fields' => array(
+          $field->field_key => array(
+            'url' => url('json/field/'.$field->field_id),
+          )
+        )), 'setting');
+        $form['fields']['fields']['field_root_'.$field->field_key] = array(
+          '#title' => $field->name,
+          '#type' => 'select',
+          '#required' => $field->required,
+          '#attributes' => array(
+            'class' => 'field_option_children field_option_children_'.$field->field_key,
+            'alt' => $field->field_key
+          ),
+          '#options' => field_get_term_options($options[$field->field_id]),
+          '#description' => $field->data['description']
+        );
+        
+        $default_value = NULL;
+        if($_POST['fields'][$field->field_key]){
+          $default_value = $_POST['fields'][$field->field_key];
+        }else if($value){
+          $default_value = $value;
+        }
+        
+        if($default_value && $terms = field_get_term_childrens($default_value)){
+          static $ajaxId;
+          $ajaxId = 0;
+          $terms = array_reverse($terms);
+          $form['fields']['fields']['field_root_'.$field->field_key]['#prefix'] = '<div class="form_item form_item_select" id="form_field_root_'.$field->field_key.'">';
+          $form['fields']['fields']['field_root_'.$field->field_key]['#default_value'] = array_shift($terms);
+          $form['fields']['fields']['field_root_'.$field->field_key]['#description'] = '';
+          foreach($terms as $children){
+            ++$ajaxId;
+            $form['fields']['fields']['_field_root_'.$field->field_key.$ajaxId] = array(
+              '#type' => 'select',
+              '#attributes' => array(
+                'class' => 'field_option_children',
+                'alt' => $field->field_key
+              ),
+              '#suffix' => '',
+              '#default_value' => $children['value'],
+              '#options' => $children['option'],
+            );
+          }
+          $form['fields']['fields']['_field_root_'.$field->field_key.$ajaxId]['#suffix'] = '</div>';
+          $form['fields']['fields']['_field_root_'.$field->field_key.$ajaxId]['#description'] = $field->data['description'];
+        }
+        $form['fields']['fields'][$field->field_key] = array(
+          '#type' => 'hidden',
+          '#default_value' => $default_value,
+          '#required' => $required,
+          '#attributes' => array(
+            'class' => 'field_select_value field_select_value_'.$field->field_key,
+            'alt' => $field->field_key
+          )
+        );
+      }else{
+        $form['fields']['fields'][$field->field_key] = array(
+          '#title' => $field->name,
+          '#type' => 'select',
+          '#default_value' => $value,
+          '#required' => $required,
+          '#options' => field_get_term_options($options[$field->field_id], $required),
+          '#description' => $field->data['description']
+        );
+      }
+    break;
+    case 'selects':
+      if($conf['field_term_children'][$field->field_id]){
+        dd_add_js(array('fields' => array(
+          $field->field_key => array(
+            'url' => url('json/field/'.$field->field_id)
+          )
+        )), 'setting');
+        $form['fields']['fields']['field_root_'.$field->field_key] = array(
+          '#title' => $field->name,
+          '#type' => 'select',
+          '#required' => $node->fields[$field->field_key] ? false : $required,
+          '#attributes' => array(
+            'class' => 'field_option_children field_option_children_'.$field->field_key,
+            'alt' => $field->field_key
+          ),
+          '#prefix' => '<div class="form_item form_item_select form_item_selects" id="user_edit_form_field_field_root_'.$field->field_key.'">',
+          '#field_suffix' => '<input type="button" value="'.t('field', '增加').'" class="form_select_multiple_button" alt="'.$field->field_key.'" />',
+          '#options' => field_get_term_options($options[$field->field_id]),
+          '#description' => $field->data['description']
+        );
+        
+        $defaults = NULL;
+        if($_POST['fields'][$field->field_key]){
+          $defaults = $_POST['fields'][$field->field_key];
+        }else if($value){
+          foreach($value as $de){
+            $defaults[$de->tid] = $de->tid;
+          }
+        }
+        
+        $description = '';
+        
+        if($defaults){
+          foreach($defaults as $default_value){
+            $form['fields']['fields'][$field->field_key][$default_value] = array(
+              '#type' => 'hidden',
+              '#default_value' => $default_value,
+              '#attributes' => array('class' => 'field_form_selects_option_'.$default_value)
+            );
+            if($node->fields[$field->field_key]){
+              $description .= '<span>'.$node->fields[$field->field_key][$default_value]->name;
+              $description .= '<a href="javascript:void(0);" alt="'.$default_value.'" onClick="fields.deleteOption($(this));">('.t('field', '移除').')</a></span>';
+            }
+          }
+        }
+        
+        $form['fields']['fields']['field_root_'.$field->field_key]['#description'] = $field->data['description'] . '<div class="field_form_selects_view">'.$description.'</div>';
+        $form['fields']['fields']['_multiple_'.$field->field_key] = array(
+          '#type' => 'hidden',
+          '#default_value' => $node->fields[$field->field_key] ? 0 : "",
+          '#required' => $required,
+          '#attributes' => array(
+            'class' => 'field_select_value field_select_value_'.$field->field_key,
+            'alt' => $field->field_key
+          ),
+          '#suffix' => '</div>'
+        );
+      }else{
+        $defaults = NULL;
+        if($value){
+          foreach($value as $de){
+            $defaults[$de->tid] = $de->tid;
+          }
+        }
+        $form['fields']['fields'][$field->field_key] = array(
+          '#title' => $field->name,
+          '#type' => 'selects',
+          '#default_value' => $defaults,
+          '#required' => $required,
+          '#options' => field_get_term_options($options[$field->field_id], 1),
+          '#description' => $field->data['description']
+        );
+      }
+    break;
+  }
+  return $form['fields'];
 }
 
 /**

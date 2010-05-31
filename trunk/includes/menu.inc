@@ -481,7 +481,7 @@ function menu_set_item(){
     }
     $masks = array_keys($masks);
     rsort($masks);
-    var_set('menu_masks', $masks, 'variable');
+    var_set('menu_masks', $masks);
   }
   return true;
 }

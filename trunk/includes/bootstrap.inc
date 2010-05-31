@@ -59,17 +59,19 @@ function bootstrap($op, $inc = NULL){
       require_once './includes/image.inc';
       require_once './includes/form.inc';
       require_once './includes/file.inc';
-      require_once DD_CACHE_FILE;
+      require_once var_get('dd_cache_file', './includes/cache.inc');
       require_once './includes/module.inc';
       require_once './includes/menu.inc';
       require_once './includes/pager.inc';
       
       //用户验证
       dd_user_validate();
-      //载入主题
-      theme_init();
+
       //载入模块
       module_init();
+      
+      //载入主题
+      theme_init();
       
       if($_POST['__SETPHPSESSID'] && $_POST['__SETUID']){
         if(!$user->uid && db_query('SELECT name FROM {users} WHERE session = ? AND uid = ? AND host = ?', array($_POST['__SETPHPSESSID'], $_POST['__SETUID'], ip_address()))){

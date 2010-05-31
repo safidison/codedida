@@ -38,7 +38,7 @@ function module_enabled_variable($op = 'all'){
     $themes = array();
     foreach (module_list('theme', 'enabled') as $name => $info) {
       if($info['status'] == -1){
-        var_set('default_theme', $info['filename'], 'variable');
+        var_set('default_theme', $info['filename'], 0);
       }
       $themes[$name] = array(
         'filename' => $info['filename'],
@@ -49,8 +49,17 @@ function module_enabled_variable($op = 'all'){
         'name' => ($info['info']['name'] ? $info['info']['name'] : $info['filename']),
         'language' => $info['info']['language']
       );
+      if($info['info']['logo']){
+        $themes[$name]['logo'] = $info['info']['logo'];
+      }
+      if($info['info']['favicon']){
+        $themes[$name]['favicon'] = $info['info']['favicon'];
+      }
+      if($info['info']['settings']){
+        $themes[$name]['settings'] = $info['info']['settings'];
+      }
     }
-    var_set('themes', $themes, 'variable');
+    var_set('themes', $themes, 0);
   }
   if($op == 'all' || $op == 'module'){
     $modules = array();
@@ -59,10 +68,10 @@ function module_enabled_variable($op = 'all'){
         'filename' => $info['filename'],
         'path' => $info['path'],
         'name' => ($info['info']['name'] ? $info['info']['name'] : $info['filename']),
-        'language' => $info['info']['language']
+        'language' => $info['info']['language'],
       );
     }
-    var_set('modules', $modules, 'variable');
+    var_set('modules', $modules, 0);
   }
 }
 
@@ -114,6 +123,7 @@ function module_set_list($type = 'module'){
         
         $install_file = './'.$array2[$key]['path'].'/'. $key .'.install';
         $info['uninstall'] = false;
+        
         if(is_file($install_file)){
           require_once $install_file;
           if(function_exists($key . '_uninstall')) {
@@ -121,7 +131,10 @@ function module_set_list($type = 'module'){
           }
         }
         
-        db_exec('UPDATE {system} SET weight = :weight, info = :info WHERE filename = :name', array(':weight' => $info['weight'], ':info' => serialize($info), ':name' => $array2[$key]['filename']));
+        $info = array_merge($info, $array2[$key]['info']);
+        
+        db_exec('UPDATE {system} SET weight = :weight, info = :info WHERE filename = :name',
+        array(':weight' => $info['weight'], ':info' => serialize($info), ':name' => $array2[$key]['filename']));
       }
     }
   }
