@@ -1053,14 +1053,6 @@ function system_theme(){
 		  'tpl' => 'front.tpl.php',
 		  'args' => array('front'),
 		),
-		'form_ajax' => array(
-		  'tpl' => 'form_ajax.tpl.php',
-		  'args' => array('value'),
-		),
-		'form_swfu' => array(
-		  'tpl' => 'form_swfu.tpl.php',
-		  'args' => array('value'),
-		),
 		'page' => array(
 		  'tpl' => 'page.tpl.php',
 		  'args' => array('content'),
