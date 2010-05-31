@@ -18,17 +18,7 @@
 
 $installed = false;
 
-/**
- * 缓存文件，相对路径。以此实现不同的缓存方式，比如 memcache
- * 默认文件 includes/cache.inc。
- * 不推荐修改，不正确的修改将导致程序无法运行
- */
-
-define('DD_CACHE_FILE', 'includes/cache.inc');
-
 // 默认数据库连接，安装时按提示输入，或直接在此填写
-
-define('DD_ADMIN_PATH', 'admin'); // 管理路径
 
 /**
  * mysql 为例

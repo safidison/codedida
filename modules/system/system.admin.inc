@@ -228,27 +228,6 @@ function system_site_global(){
     '#description' => t('system', '显示在站点名称的后面'),
     '#default_value' => var_get_key('site_global', 'slogan'),
   );
-  
-  $form['fields']['logo'] = array(
-    '#type' => 'textfield',
-    '#title' => t('system', '站点图标'),
-    '#description' => t('system', '绝对路径，站内、站外链接皆可'),
-    '#attributes' => array('size' => 50),
-    '#default_value' => var_get_key('site_global', 'logo', '/misc/images/logo.png'),
-  );
-  $form['fields']['_logo'] = array(
-    '#type' => 'file',
-    '#title' => t('system', '或上传LOGO'),
-    '#description' => t('system', '若上传成功，以上传的图片为准'),
-  );
-  $form['fields']['favicon'] = array(
-    '#type' => 'textfield',
-    '#title' => t('system', '收藏图标'),
-    '#attributes' => array('size' => 50),
-    '#description' => t('system', '绝对路径，站内、站外链接皆可'),
-    '#required' => true,
-    '#default_value' => var_get_key('site_global', 'favicon', '/misc/images/favicon.ico'),
-  );
   $form['fields']['description'] = array(
     '#type' => 'textarea',
     '#attributes' => array('rows' => 3),
@@ -288,12 +267,6 @@ function system_site_global_submit($form, $v){
   foreach($form['fields'] as $key => $field){
     if($field['#type'] && !in_array($field['#type'], array('hidden', 'submit', 'button', 'file', 'captcha'))){
      $data[$key] = $v[$key];
-    }
-  }
-  if(!$error = file_validate_error($_FILES['_logo']['error'])){
-    if($file = file_save_upload($_FILES['_logo'],
-      array('image' => true, 'savepath' => 'cache', 'no_insert' => 1, 'filename' => 'logo'), 0)){
-      $data['logo'] = $GLOBALS['base_path'] .$file->filepath;
     }
   }
   var_set('site_global', $data, 0);
@@ -600,6 +573,40 @@ function _system_image_error_save($form_id, $name, $file){
 }
 
 /**
+ * 缓存设置
+ */
+function system_cache_settings(){
+  dd_set_tabs(array(
+    l(t('system', '缓存管理'), 'admin/cache'),
+    l(t('system', '缓存设置'), 'admin/cache/settings'),
+  ));
+  
+  $options['./includes/cache.inc'] = t('system', '系统默认');
+  if(is_dir('./includes/cache')){
+    if($objs = glob('./includes/cache/*')){
+      foreach($objs as $obj) {
+        if(strpos($obj, 'cache') !== false){
+          $options[$obj] = next(explode('.', basename($obj), 3));
+        }
+      }
+    }
+  }
+  $form['fields']['dd_cache_file'] = array(
+    '#title' => t('system', '缓存方式'),
+    '#type' => 'select',
+    '#required' => 1,
+    '#default_value' => var_get('dd_cache_file', './includes/cache.inc'),
+    '#options' => $options,
+  );
+  
+  if(function_exists('cache_settings_custom_form')){
+    cache_settings_custom_form($form);
+  }
+  
+  return system_setting_form($form);
+}
+
+/**
  * @Implement of hook_system_cache_clear()
  */
 function system_system_cache_clear($op = 'list', $v = NULL){
@@ -623,6 +630,10 @@ function system_system_cache_clear($op = 'list', $v = NULL){
  * 缓存管理
  */
 function system_cache_clear(){
+  dd_set_tabs(array(
+    l(t('system', '缓存管理'), 'admin/cache'),
+    l(t('system', '缓存设置'), 'admin/cache/settings'),
+  ));
   $form['fields']['value'] = array(
     '#type' => 'checkbox',
     '#options' => module_invoke_all('system_cache_clear', 'list'),
@@ -633,7 +644,6 @@ function system_cache_clear(){
     '#value' => t('system', '清除缓存'),
     '#submit' => 'system_cache_clear_submit',
   );
-  dd_set_breadcrumb(array(l(t('system', '系统管理'), 'admin'), t('system', '缓存管理')));
   return $form;
 }
 

@@ -6,6 +6,8 @@ function theme_init() {
   $template = !$GLOBALS['user']->theme ? $conf['default_theme'] : $GLOBALS['user']->theme;
   
   $conf['base_theme'] = $base_path . $conf['themes'][$template]['path'];
+  $conf['base_logo'] = $base_path . ($conf['themes'][$template]['logo'] ? $conf['themes'][$template]['logo'] : 'misc/images/logo.png');
+  $conf['base_favicon'] = $base_path . ($conf['themes'][$template]['favicon'] ? $conf['themes'][$template]['favicon'] : 'misc/images/favicon.ico');
   
   if(is_file($conf['themes'][$template]['path'] . '/template.php')){
     require_once $conf['themes'][$template]['path'] . '/template.php';
@@ -160,6 +162,9 @@ function template_preprocess(&$var, $hook){
     $var['site_global'] = (object) $info;
   }
   
+  $var['site_global']->logo = $GLOBALS['conf']['base_logo'];
+  $var['site_global']->favicon = $GLOBALS['conf']['base_favicon'];
+  
   global $user;
   
   if($user->uid > 0){
@@ -173,11 +178,9 @@ function template_preprocess(&$var, $hook){
 
 function template_preprocess_page(&$var, $args){
   global $conf, $user, $base_path;
-  if($conf['site_global']['favicon']){
-    dd_set_html_head('<link rel="shortcut icon" href="'.$conf['site_global']['favicon'].'" type="image/x-icon" />');
-  }else{
-    dd_set_html_head('<link rel="shortcut icon" href="'.$base_path.'misc/images/favicon.ico" type="image/x-icon" />');
-  }
+  
+  dd_set_html_head('<link rel="shortcut icon" href="'.$conf['base_favicon'].'" type="image/x-icon" />');
+  
   if($block = dd_get_block()){
     foreach($block as $reg => $lists){
       $var[$reg] = $lists;

@@ -73,6 +73,21 @@ function system_menu(){
     'page_arguments' => array('system_themes_page'),
     'file' => 'system.module.inc',
   );
+  $items['admin/themes/admin'] = array(
+    'title' => '管理专用主题',
+    'access_arguments' => array('system admin theme'),
+    'page_callback' => 'dd_get_form',
+    'page_arguments' => array('system_themes_admin'),
+    'file' => 'system.module.inc',
+  );
+  $items['admin/themes/setting/%'] = array(
+    'load_functions' => array(3 => '%'),
+    'title' => '主题设置',
+    'access_arguments' => array('system admin theme'),
+    'page_callback' => 'dd_get_form',
+    'page_arguments' => array('system_themes_setting', 3),
+    'file' => 'system.module.inc',
+  );
   $items['admin/status/update'] = array(
     'access_arguments' => array('system view admin'),
     'page_callback' => 'system_status_update',
@@ -87,6 +102,13 @@ function system_menu(){
     'access_arguments' => array('system admin cache'),
     'page_callback' => 'dd_get_form',
     'page_arguments' => array('system_cache_clear'),
+    'file' => 'system.admin.inc'
+  );
+  $items['admin/cache/settings'] = array(
+    'title' => '缓存设置',
+    'access_arguments' => array('system admin cache'),
+    'page_callback' => 'dd_get_form',
+    'page_arguments' => array('system_cache_settings'),
     'file' => 'system.admin.inc'
   );
   $items['admin/lang'] = array(
@@ -186,18 +208,25 @@ function system_perm(){
  */
 function system_init(){
   global $is_admin;
+  
   if(arg(0) == 'admin'){
     system_is_admin();
-    $is_admin = true;
   }
+  
   dd_add_css('modules/system/system.css');
   dd_add_js('modules/system/system.js');
 }
 
-//管理页面基本权限控制
+/**
+ * 管理页面
+ */
 function system_is_admin(){
-  global $user;
-  $template = !$user->theme ? $GLOBALS['conf']['default_theme'] : $user->theme;
+  global $user, $conf;
+  
+  if($conf['theme_admin'] && $conf['themes'][$conf['theme_admin']]){
+    $conf['default_theme'] = $conf['theme_admin'];
+  }
+  
   dd_add_css('modules/system/admin.css');
   dd_add_js('modules/system/admin.js');
   dd_jqui();
@@ -311,113 +340,12 @@ function system_system_admin_menus(){
 }
 
 /**
- * @Implement of hook_field_type_list()
- *  定义字段类型
+ * 将 html 数组解析为  strip_tags 所需的字符串，
+ * @param (int) $fid
+ *  过滤器 id
+ * @param (array) $tags
+ *  允许的 html
  */
-function system_field_type_list(){
-  return array(
-    'checkbox' => t('system', '复选框'),
-    'radio' => t('system', '选项按钮'),
-    'textfield' => t('system', '单行文本'),
-    'textarea' => t('system', '多行文本'),
-    'select' => t('system', '下拉单选框'),
-    'selects' => t('system', '下拉复选框'),
-  );
-}
-
-/**
- * @Implement of hook_field_type_form()
- *  根据字段类型，自定义添加、编辑表单，表单将被分组在 $form['value'] 下
- * @param (string) $field_type
- *  字段类型
- * @param (string) $call_type
- *  标识，由模块自定义，如：news_field、block_tags。不允许重复
- * @param (object) $field
- *  当前值，来自数据表 {fields} 或表单提交 $_POST，以 $field->value['test'] 取值
- * @return
- *  返回一个表单数组
- */
-function system_field_type_form($field_type, $call_type, $field = NULL){
-  switch($field_type){
-    case 'checkbox': case 'selects':
-      $description = t('system', '，多个以 | 分割，如：分类A|分类B');
-    case 'select': case 'radio':
-      $fields['options'] = array(
-        '#type' => 'textarea',
-        '#title' => t('system', '择项'),
-        '#default_value' => $field->value['options'],
-        '#required' => 1,
-        '#attributes' => array('rows' => 10, 'cols' => 60),
-        '#description' => t('system', '字段选择项。一行一个，可以是键、值，以 | 分割。也可以只有值，但这不便于索引')
-      );
-      $fields['default_value'] = array(
-        '#type' => 'textfield',
-        '#title' => t('system', '默认值'),
-        '#default_value' => $field->value['default_value'],
-        '#description' => t('system', '默认值必须是选择项中的一个，只需要填写值部分', array('!string' => $description))
-      );
-    break;
-    case 'textfield': case 'textarea':
-      $fields['default_value'] = array(
-        '#type' => $field_type,
-        '#title' => t('system', '默认值'),
-        '#default_value' => $field->value['default_value'],
-        '#attributes' => array('rows' => 5)
-      );
-      $fields['max'] = array(
-        '#type' => 'textfield',
-        '#title' => t('system', '最大长度'),
-        '#default_value' => $field->value['max'],
-      );
-      $fields['min'] = array(
-        '#type' => 'textfield',
-        '#title' => t('system', '最小长度'),
-        '#default_value' => $field->value['min'],
-      );
-  }
-  return $fields;
-}
-
-/**
- * @Implement of hook_field_type_validate()
- *  验证字段添加\编辑表单数据，参数见 system_field_type_form()
- * @return
- *  可返回表单错误信息，阻止提交
- */
-function system_field_type_validate($field_type, $call_type, $field){
-  if($field->value['max'] && ($field->value['max'] > 250 || preg_match('/[^0-9]/', $field->value['max']))){
-    $error['value']['max']['#error'][] = t('system', '最大数值 %length', array('%length' => 250));
-  }else if($field->value['default_value'] && dd_strlen($field->value['default_value']) > 250){
-  	$error['value']['default_value']['#error'][] = t('system', '不超过 %length 字符', array('%length' => 250));
-  }else if($field->value['min'] && preg_match('/[^0-9]/', $field->value['min'])){
-  	$error['value']['min']['#error'][] = t('system', '只能是数字');
-  }
-  return $error;
-}
-
-/**
- * @Implement of hook_field_type_type_save()
- *  字段添加/编辑保存完毕，回调各模块接口，以完成自定义操作。
- *  请注意，模块自定义表单的内容已保存在数据表表 fields 之中，除非另有用途，一般不需要自行保存
- */
-
-/*
-function system_field_type_save($field_type, $call_type, $field){
-  // 保存完毕，模块自定义操作
-}
-*/
-
-/**
- * @Implement of hook_field_type_delete()
- *  定义字段类型
- * @param $op = string
- *  类型：type_list，call_type，type_form，type_save，type_validate，type_delete
- */
-function system_field_type_delete($op, $field_type = NULL, $call_type = NULL, $field = NULL, $value = NULL){
-  db_query('DELETE FROM {fields_long} WHERE fid = %d', $field->fid);
-  db_query('DELETE FROM {fields_small} WHERE fid = %d', $field->fid);
-}
-
 function _system_filter_tags($fid, array $tags = array()){
   static $cache;
   if(!isset($cache[$fid])){

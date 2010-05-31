@@ -1354,7 +1354,7 @@ function user_session_reg(&$ac) {
   session_regenerate_id();
   
   if(!$_POST['__SETPHPSESSID'] && !$_POST['__SETUID']){
-    db_exec('UPDATE {users} SET login = ?, count = count + 1, session = ?, host = ?, active = ? WHERE uid = ?', array($_SERVER['REQUEST_TIME'], session_id(), ip_address(), $_SERVER['REQUEST_TIME'], $ac->uid));
+    db_exec('UPDATE {users} SET login = ?, count = count + 1, session = ?, host = ?, active = ? WHERE uid = ?', array($_SERVER['REQUEST_TIME'], session_id(), $ac->host, $_SERVER['REQUEST_TIME'], $ac->uid));
   }else{
     $_SESSION['user']->__SETVALIDATE = $_SERVER['REQUEST_TIME'];
   }
@@ -1517,7 +1517,10 @@ function user_field_get_node_access($op, $field, $node = NULL, $ac){
         }
       break;
       case 'update':
+        if(!isset($field->data['access']['input'])) return true;
+        
         if($user->uid == 1) return true;
+        
         if($field->data['access']['input'][3]){
           return $user->uid == 1;
         }else if($ac->uid > 0){
