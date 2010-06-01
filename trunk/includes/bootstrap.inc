@@ -207,6 +207,7 @@ function dd_get_not(){
     dd_set_message(t('system', '抱歉，%string 不存在', array('%string' => dd_get_absolute_url())), 'error');
     dd_goto(dd_get_history());
   }else{
+    dd_set_title(array(t('system', '访问的页面不存在')));
     echo theme('print', custom_get('page_not_html'));
   }
   exit;
@@ -222,9 +223,11 @@ function dd_get_access(){
       dd_set_message(t('system', '抱歉，没有权限访问该地址 %string', array('%string' => dd_get_absolute_url())), 'error');
       dd_goto(dd_get_history());
     }else{
+      dd_set_title(array(t('system', '没有权限访问该页面')));
       echo theme('print', custom_get('page_access_html'));
     }
   }else{
+    dd_set_title(array(t('system', '登录以确认访问权限')));
   	dd_set_message(t('system', '请登录确认权限'), 'error');
     echo theme('print', dd_get_form('user_login_form'));
   }
@@ -1761,7 +1764,7 @@ function dd_get_title() {
 
 function dd_get_breadcrumb(){
   if($breadcrumb = dd_set_breadcrumb()){
-    return '<div class="breadcrumb">' . implode(' › ', array_filter($breadcrumb)). '</div>';
+    return theme('breadcrumb', array_filter($breadcrumb));
   }
 }
 

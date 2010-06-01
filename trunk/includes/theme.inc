@@ -179,6 +179,8 @@ function template_preprocess(&$var, $hook){
 function template_preprocess_page(&$var, $args){
   global $conf, $user, $base_path;
   
+  module_alter_all('template_preprocess_page', $var, $args);
+  
   dd_set_html_head('<link rel="shortcut icon" href="'.$conf['base_favicon'].'" type="image/x-icon" />');
   
   if($block = dd_get_block()){
@@ -244,6 +246,10 @@ function theme_render_tpl($tpl, $var) {
   $contents = ob_get_contents();
   ob_end_clean();
   return $contents;
+}
+
+function theme_breadcrumb($breadcrumb){
+  return '<div class="breadcrumb">' . implode(' › ', $breadcrumb). '</div>';
 }
 
 function theme_item_list($items = array(), $title = NULL, $type = 'ul', $attributes = NULL, $wrapper = 1) {

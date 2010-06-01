@@ -1290,7 +1290,7 @@ function user_view($account){
       }
     }
 
-    $tabs = array(l($account->title, 'user/'.$ac->uid));
+    $tabs = array(l($account->title, 'user/'.$account->uid));
     if($account->uid && $account->uid == $user->uid){
       $tabs[] = l(t('user', '编辑资料'), 'user/edit');
       $tabs[] = l(t('user', '修改密码'), 'user/newpass');
