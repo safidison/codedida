@@ -159,6 +159,11 @@ function menu_get_item($path = NULL) {
     
     if($title) dd_set_title(array($title));
     
+    if($_POST['_dida_ajax_return_body']){
+      echo call_user_func_array($item['page_callback'], $page_args);
+      exit;
+    }
+    
     return call_user_func_array($item['page_callback'], $page_args);
     
   }else{

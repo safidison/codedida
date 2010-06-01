@@ -1006,6 +1006,305 @@ function system_token_replace($text, $value = NULL){
 	return strtr($text, $args);
 }
 
+/*storage*/
+
+/**
+ * 获取数据，按 ext_type
+ */
+function dd_get_storage($ext_type, $clear = NULL){
+  static $storage;
+  if(!isset($storage[$ext_type])){
+    if(!$clear && ($cache = cache_get('storage_cache_'.$ext_type))) {
+      $storage[$ext_type] = $cache->data;
+    }else if($fetch = db_query('SELECT * FROM {storage} WHERE ext_type = ? ORDER BY weight ASC, timestamp DESC', 
+    array($ext_type))){
+      foreach($fetch as $data){
+        $var[$data->ext_type2][$data->id] = unserialize($data->data);
+      }
+      $storage[$ext_type] = $var;
+      
+      cache_set('storage_cache_'.$ext_type, $var);
+    }
+  }
+  return $storage[$ext_type];
+}
+
+/**
+ * 更新内容
+ * @param (object) $v
+ */
+function dd_storage_update($v){
+  if(!$v->id) return false;
+  if(!isset($v->weight)) $v->weight = 0;
+  if(!isset($v->ext_type2)) $v->ext_type2 = '';
+  
+  db_exec('UPDATE {storage} SET data = ?, timestamp = ?, weight = ? WHERE id = ?',
+  array(serialize($v->data), $_SERVER['REQUEST_TIME'], $v->weight, $v->id));
+  
+  return $v;
+}
+
+/**
+ * 写入内容
+ * @param (object) $v
+ */
+function dd_storage_insert($v) {
+  if(!$v->ext_type) return false;
+  if(!isset($v->weight)) $v->weight = 0;
+  if(!isset($v->ext_type2)) $v->ext_type2 = '';
+  
+  if(db_exec('INSERT INTO {storage} (ext_type, ext_type2, data, timestamp, weight) VALUES (?, ?, ?, ?, ?)',
+  array($v->ext_type, $v->ext_type2, serialize($v->data), $_SERVER['REQUEST_TIME'], $v->weight))){
+    $v->id = db_last_insert_id();
+    return $v;
+  }
+}
+
+/**
+ * 清除缓存
+ * @param (string) $ext_type
+ *  若无值，则清除全部缓存
+ */
+function dd_storage_clear_cache($ext_type = NULL){
+  if($ext_type){
+    dd_get_storage($ext_type, 1);
+  }else{
+    cache_del('*', 'storage_cache_');
+  }
+}
+
+/**
+ * 删除数据
+ * @param (object) $v
+ */
+function dd_storage_del($v) {
+  if(!$v->id) return false;
+  if(db_exec('DELETE FROM {storage} WHERE id = ?', array($v->id))){
+    return true;
+  }
+}
+
+/**
+ * 管理界面
+ * @param (string) $ext_type
+ */
+function dd_storage_admin($ext_type, $ext_type2 = NULL){
+  global $pager_total_items;
+  
+  $info = module_invoke_all('dd_storage_info');
+  if(!$info[$ext_type]) return false;
+  
+  dd_set_sub_tabs(array(l(t('system', '清除缓存'), $_GET['q'], array('query' => 'storage_op=cache'))));
+  
+  if($_GET['storage_op']){
+    if($_GET['storage_id']){
+      switch($_GET['storage_op']){
+        case 'update':
+          $v = db_query('SELECT * FROM {storage} WHERE id = ? AND ext_type = ?',
+          array($_GET['storage_id'], $ext_type), array('return' => 'one'));
+        break;
+        case 'delete':
+          db_exec('DELETE FROM {storage} WHERE id = ? AND ext_type = ?', array($_GET['storage_id'], $ext_type));
+        exit;
+        case 'weight':
+          db_exec('UPDATE {storage} SET weight = ? WHERE id = ? AND ext_type = ?', array($_GET['storage_id'], $ext_type));
+        exit;
+      }
+    }else if($_GET['storage_op'] == 'cache'){
+      
+      dd_storage_clear_cache($ext_type);
+      dd_set_message(t('system', '清除成功'));
+      
+      dd_goto($_GET['q']);
+    }
+  }
+  
+  if($ext_type2){
+    $fetch = pager_query('SELECT * FROM {storage} WHERE ext_type = ? AND ext_type2 = ? ORDER BY weight ASC, timestamp DESC',
+    10, 1, NULL, array($ext_type, $ext_type2));
+  }else{
+    $fetch = pager_query('SELECT * FROM {storage} WHERE ext_type = ? ORDER BY ext_type ASC, timestamp DESC',
+    10, 1, NULL, array($ext_type));
+  }
+  
+  if($fetch){
+    foreach($fetch as $o){
+      
+      if($info[$ext_type][$ext_type2]['admin_view'] && function_exists($info[$ext_type][$ext_type2]['admin_view'])){
+        $view = $function(unserialize($o->data));
+      }else{
+        $items = array();
+        foreach(unserialize($o->data) as $key => $item){
+          if($key == 'title'){
+            $items[] = dd_get_strong('标题').$item;
+          }else if($key == 'path'){
+            $items[] = dd_get_strong('链接').$item;
+          }else if($key == 'file'){
+            $items[] = dd_get_strong('文件').$item;
+          }else{
+            $items[] = $item;
+          }
+        }
+        $view = theme('item_list', $items);
+      }
+      
+      $table[] = array(
+        $view,
+        array('data' =>dd_form_weight(array(
+            '#value' => $o->weight,
+            '#attributes' => array(
+              'class' => 'changeconfirm dd_form_ajax_field',
+              'href' => url($_GET['q'], array('query' => 'storage_op=weight&storage_id='.$o->id))
+            ),
+            '#name' => 'admin_storage_'.$o->id,
+            '#start' => -30,
+            '#end' => 30
+          )
+        ), 'class' => 'center_table'),
+        array('data' => dd_imp(array(
+            l(t('system', '编辑'), $_GET['q'], array('query' => 'storage_op=update&storage_id='.$o->id)),
+            l(t('system', '删除'), $_GET['q'], array(
+              'query' => 'storage_op=delete&storage_id='.$o->id,
+              'attributes' => array('class' => 'confirmajax')
+            ))
+          )), 'class' => 'center_table'
+        )
+      );
+    }
+    
+    $output = theme('table', array(t('system', '内容'), t('system', '排序'), t('system', '操作')), $table);
+    
+  }
+  
+  if($ext_type2 && $info[$ext_type][$ext_type2]){
+    if($_GET['storage_op'] == 'update' && $_GET['storage_id']){
+      
+      $output .= dd_get_form('dd_storage_form', $v);
+      
+    }else if(!$info[$ext_type]['limit'] || $pager_total_items[1] < $info[$ext_type]['limit']){
+      $v = new stdClass;
+      $v->ext_type = $ext_type;
+      $v->ext_type2 = $ext_type2;
+      
+      $output .= dd_get_form('dd_storage_form', $v);
+    }
+  }
+  return $output;
+}
+
+/**
+ * 内容表单
+ * @param (object) $v
+ *  若有值，则为编辑状态
+ * @param (array) $default_field
+ *  默认字段设置
+ * @param (array) $fields
+ *  表单附加字段
+ */
+function dd_storage_form($v = NULL){
+  $form['fields']['data']['title'] = array(
+    '#type' => 'textfield',
+    '#title' => t('system', '标题'),
+    '#default_value' => $v->data['title'],
+    '#required' => 1,
+  );
+
+  $form['fields']['data']['path'] = array(
+    '#type' => 'textfield',
+    '#title' => t('system', '链接'),
+    '#default_value' => $v->data['path'],
+    '#required' => 1,
+  );
+  
+  $form['fields']['weight'] = array(
+    '#type' => 'weight',
+    '#title' => t('system', '排序'),
+    '#required' => 1,
+    '#default_value' => $v->weight,
+    '#start' => -30,
+    '#end' => 30
+  );
+  
+  $form['fields']['file'] = array(
+    '#type' => 'file',
+    '#title' => t('system', '文件'),
+    '#options' => array('image' => true)
+  );
+  
+  $form['fields']['id'] = array(
+    '#type' => 'hidden',
+    '#default_value' => $v->id,
+    '#constant' => 1
+  );
+  $form['fields']['ext_type2'] = array(
+    '#type' => 'hidden',
+    '#default_value' => $v->ext_type2,
+    '#constant' => 1
+  );
+  $form['fields']['ext_type'] = array(
+    '#type' => 'hidden',
+    '#default_value' => $v->ext_type,
+    '#constant' => 1
+  );
+  
+  module_alter_all('dd_storage_form', $v, $form);
+  
+  $form['fields']['submit']['#type'] = 'submit';
+  
+  $form['settings'] = array(
+    '#title' => $v->id ? t('system', '编辑内容') : t('system', '添加内容'),
+    '#validate' => array('dd_storage_form_validate'),
+    '#values_object' => true,
+    '#ajax_validate' => true,
+    '#redirect' => $_GET['redirect'] ? $_GET['redirect'] : $_SERVER['REQUEST_URI']
+  );
+  
+  return $form;
+}
+
+function dd_storage_form_validate(&$form, &$v){
+  if(!$t = module_invoke_all('dd_storage_validate', $v['_dida_values'])){
+    $validate = NULL;
+    if($form['fields']['file'] && $_FILES['file']){
+      if(is_array($form['fields']['file']['#options'])){
+        $validate = $form['fields']['file']['#options'];
+      }
+      
+      $validate['no_insert'] = true;
+      $validate['savepath'] = 'storage';
+    }
+    if(!$v['_dida_values']->id){
+      if($obj = dd_storage_insert($v['_dida_values'])){
+        if($validate){
+          $validate['filename'] = $obj->id;
+          if($file = file_save_upload($_FILES['file'], $validate, 0)){
+            $obj->data['file'] = $file->filepath;
+            dd_storage_update($obj);
+          }
+        }
+        
+        module_invoke_all('dd_storage_save', $obj);
+        
+        dd_set_message(t('system', '添加成功'));
+      }
+    }else{
+      if($validate){
+        $validate['filename'] = $v['_dida_values']->id;
+        if($file = file_save_upload($_FILES['file'], $validate, 0)){
+          $v['_dida_values']->data['file'] = $file->filepath;
+        }
+      }
+      if($obj = dd_storage_update($v['_dida_values'])){
+        module_invoke_all('dd_storage_save', $obj);
+        dd_set_message(t('system', '编辑成功'));
+      }
+    } 
+  }
+  return $t;
+}
+
+/*storage end*/
+
 /**
  * @Implement of hook_token_list()
  */
@@ -1060,6 +1359,10 @@ function system_theme(){
 		'item_list' => array(
 		  'fun' => 'theme_item_list',
       'args' => array('items', 'title', 'type', 'attributes'),
+		),
+		'breadcrumb' => array(
+      'fun' => 'theme_breadcrumb',
+      'args' => array('breadcrumb'),
 		),
 		'table' => array(
 		  'fun' => 'theme_table',

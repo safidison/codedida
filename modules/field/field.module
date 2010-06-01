@@ -2204,6 +2204,8 @@ function field_get_cache_field($field_id = NULL, $clear = 0){
           $o->field_module = $lists[$o->field_type]['module'];
           module_alter_all('field_call_load', $o);
           $data[$o->field_id] = $o;
+        }else{
+          $data[$o->field_id]->not_cache = true;
         }
       }
     }
@@ -2211,7 +2213,7 @@ function field_get_cache_field($field_id = NULL, $clear = 0){
   }
   
   if($field_id && $data[$field_id] && $data[$field_id]->not_cache){
-    if($o = db_query('SELECT * FROM {fields} field_id = ?', array($field_id), array('return' => 'one'))){
+    if($o = db_query('SELECT * FROM {fields} WHERE field_id = ?', array($field_id), array('return' => 'one'))){
       $o->not_cache = true;
       if($o->access) $o->access = unserialize($o->access);
       if($o->data) $o->data = unserialize($o->data);
@@ -2373,7 +2375,6 @@ function field_get_node_load($module, $type, & $node, $ac = NULL){
       // 至少有浏览权限，才能加载数据
       continue;
     }
-    
     /**
      * (object)$data 字段配置对象，见 fields 表结构说明
      */
@@ -2498,6 +2499,8 @@ function field_get_node_form($module, $type, $node = NULL, &$form = NULL, $field
     if(is_array($fieldset)){
       $form['fields']['fields'] = array_merge($form['fields']['fields'], $fieldset);
     }
+  }else{
+    $form['fields']['fields']['#weight'] = -3;
   }
   
   dd_add_js('modules/field/field.js');
@@ -2600,7 +2603,7 @@ function field_get_node_form($module, $type, $node = NULL, &$form = NULL, $field
               $form['fields']['fields'][$data->field_key] = array(
                 '#title' => $data->name,
                 '#type' => 'select',
-                '#default_value' => $node->fields[$data->field_key] ? current($node->fields[$data->field_key])->tid : '',
+                '#default_value' => $node->fields[$data->field_key] ? $node->fields[$data->field_key]->tid : '',
                 '#required' => $required,
                 '#options' => field_get_term_options($options[$field_id], $required),
                 '#description' => $data->data['description']
@@ -3408,7 +3411,6 @@ function field_get_node_save($module, $type, $value, $node = NULL, $form = NULL)
 	}
 	
 	cache_del('cid', $module.$type.$value->nid, 'cache_field');
-	
 }
 
 function field_get_node_delete($module, $type, $node){
@@ -3481,7 +3483,9 @@ function field_system_cache_clear($op = 'list', $v = NULL){
       'fields' => t('field', '清除字段缓存，当字段信息发生更改时应选择此项'),
     );
     case 'submit':
-      field_get_cache_field(NULL, 1);
-      field_set_cache_term();
+      if($v['value']['fields']){
+        field_get_cache_field(NULL, 1);
+        field_set_cache_term();
+      }
   }
 }

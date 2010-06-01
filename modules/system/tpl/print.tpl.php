@@ -7,15 +7,13 @@
   <?php echo dd_get_css(); ?>
   <?php echo dd_get_js('header'); ?>
 </head>
-<body>
-  <div id="print">
-    <?php echo dd_get_breadcrumb(); ?>
-    <?php echo dd_get_tabs(); ?>
-    <?php echo dd_get_sub_tabs(); ?>
-    <?php echo dd_get_message(); ?>
-    <?php echo dd_get_help(); ?>
-    <?php echo $content; ?>
-  </div>
+<body id="print">
+  <?php echo dd_get_breadcrumb(); ?>
+  <?php echo dd_get_tabs(); ?>
+  <?php echo dd_get_sub_tabs(); ?>
+  <?php echo dd_get_message(); ?>
+  <?php echo dd_get_help(); ?>
+  <?php echo $content; ?>
 	<?php echo dd_get_js('footer'); ?>
 </body>
 </html>

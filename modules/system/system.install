@@ -3,6 +3,20 @@
 
 /**
  * @Implement of hook_update_x()
+ *  添加 storage 表，可方便的用于首页、频道等定制
+ */
+function system_update_2(){
+  $ret = array();
+  
+  if($storage = module_get_table('system', 'storage')){
+    $ret = db_create_table('storage', $storage);
+  }
+  
+  return $ret;
+}
+
+/**
+ * @Implement of hook_update_x()
  *  logs 表增加一个扩展 id，删除多个索引
  */
 function system_update_1(){
@@ -44,8 +58,58 @@ function system_schema() {
     ),
     'primary key' => array('name'),
   );
+  
   $schema['custom'] = $schema['variable'];
   $schema['custom']['description'] = '定制数据，供模块使用';
+  
+  $schema['storage'] = array(
+    'description' => '自定义存储表',
+    'fields' => array(
+      'id' => array(
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'ext_type' => array(
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => '扩展类型1'
+      ),
+      'ext_type2' => array(
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => '扩展类型2'
+      ),
+      'weight' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => '权重'
+      ),
+      'timestamp' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => '时间'
+      ),
+      'data' => array(
+        'type' => 'text',
+        'not null' => TRUE,
+        'size' => 'big',
+        'description' => '内容'
+      )
+    ),
+    'indexes' => array(
+      'ewt' => array('ext_type', 'weight', 'timestamp'),
+    ),
+    'primary key' => array('id'),
+  );
+  
   $schema['files'] = array(
     'description' => '文件表',
     'fields' => array(

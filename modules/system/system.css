@@ -49,6 +49,9 @@ h2.system_no_content{
 #dialog_wrapper{
   display: none;
 }
+.center_table, .center{
+	text-align: center;
+}
 /*system print.tpl.php*/
 #print_dialog{
   padding: 5px 12px;
