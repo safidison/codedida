@@ -94,13 +94,17 @@ function dd_get_form($form_id) {
       dd_add_js('misc/jquery.form.js');
     }
     
-    $value = array(
-      'form_id' => $form_id,
-      'ajax_submit' => isset($form['settings']['#ajax_submit']),
-      'options' => $form['settings']['#ajax_submit']['options'],
-    );
+    $ajax_js_value = array();
     
-    dd_add_js(array('ajax_validate' => array($value)), 'setting');
+    if(is_array($form['settings']['#ajax_validate'])){
+      $ajax_js_value = $form['settings']['#ajax_validate'];
+    }
+    
+    $ajax_js_value['form_id'] = $form_id;
+    $ajax_js_value['ajax_submit'] = isset($form['settings']['#ajax_submit']);
+    $ajax_js_value['options'] = $form['settings']['#ajax_submit']['options'];
+    
+    dd_add_js(array('ajax_validate' => array($ajax_js_value)), 'setting');
   }
   
   // 处理当前提交的表单
@@ -222,6 +226,10 @@ function _form_save_submit($fields, $subvalue, &$value){
  */
 function dd_ajax_validate($uid, $form_id, $form_token){
 	if($cache = dd_get_form_cache($uid, $form_id, $form_token)){
+	  $form_values = $_POST;
+	  
+	  $_POST = NULL;
+	  
 	  $form = call_user_func_array($form_id, $cache['__args']);
 	  $form['__args'] = $cache['__args'];
 		module_alter_all('form_alter', $form_id, $form_token, $form);
@@ -229,10 +237,12 @@ function dd_ajax_validate($uid, $form_id, $form_token){
 		$form['#form_id'] = $form_id;
     $form['#form_token'] = $form_token;
     
-    $form_values = &$_POST;
 	  if($cache['settings']['#values_object']){
-      $form_values['_dida_values'] = (object) $_POST;
+      $form_values['_dida_values'] = (object) $form_values;
     }
+    
+    $_POST = &$form_values;
+    
 		if($error = dd_form_required($form, $form_values)){
 			return $error;
 		}else if($cache['settings'] && is_array($cache['settings']['#validate'])){

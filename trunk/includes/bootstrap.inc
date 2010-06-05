@@ -96,12 +96,10 @@ function bootstrap($op, $inc = NULL){
       // 读取缓存
       if(!$_POST && ($conf['dd_cache_page'] == 2
       || ($conf['dd_cache_page'] == 1 && $user->uid == 0))){
-        
         if($page_cache = cache_get_page((dd_is_front() ? '[front]' : $_GET['q']))){
           echo $page_cache;
           exit;
         }
-        
       }
       
       //载入模块
