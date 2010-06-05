@@ -780,7 +780,7 @@ function system_cache_clear_submit($form, $value){
     dd_set_message(t('system', '管理菜单缓存清除成功'));
   }
   if($value['value']['front_cache']){
-    cache_clear_page('[front*');
+    cache_clear_page('[front]');
   }
   module_invoke_all('system_cache_clear', 'submit', $value);
   var_init();
