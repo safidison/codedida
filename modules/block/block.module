@@ -303,43 +303,43 @@ function dd_get_block($theme = NULL, $region = NULL){
           
           $block_value = $block_title = NULL;
           
-          $att = array();
-          
           if(is_array($b)){
-            foreach($b as $key => $val){
-              if($val){
-                switch($key){
-                  case 'content':
-                    $block_value = $val;
-                  break;
-                  case 'title':
-                    $block_title = '<h3 class="block_title">'.check_plain($val).'</h3>';
-                  break;
-                  default:
-                    $att[$key] = $val;
-                }
-              }
+            if($b['content']){
+              $block_value = $b['content'];
+            }
+            if($b['title']){
+              $block->title = check_plain($b['title']);
             }
           }else{
             $block_value = $b;
           }
+          
           if(!$block_value){
           	continue;
           }
-          if(!$att['class']){
-            $att['class'] = 'block';
-          }
-          if(!$att['id']){
-            $att['id'] = 'block_' . $reg . '_' .$module . '_' . $block->delta;
-          }
           
-          $output[$reg] .= '<div'. dd_attributes($att) .'>'. $block_title .'<div class="block_content">'.$block_value."</div></div>\n";
+          $block->region = $reg;
+          $block->module = $module;
+          $block->content = $block_value;
           
+          $output[$reg] .= theme('block', $block)."\n";    
         }
       }
     }
   }
   return $output;
+}
+
+/**
+ * @Implement of hook_theme()
+ */
+function block_theme(){
+  return array(
+    'block' => array(
+      'tpl' => 'block.tpl.php',
+      'args' => array('block'),
+    )
+  );
 }
 
 function block_path_display($type, $text){

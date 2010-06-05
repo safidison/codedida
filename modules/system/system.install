@@ -3,6 +3,20 @@
 
 /**
  * @Implement of hook_update_x()
+ *  添加 cache_page_list 表，用于生成静态
+ */
+function system_update_3(){
+  $ret = array();
+  
+  if($cache_page_list = module_get_table('system', 'cache_page_list')){
+    $ret = db_create_table('cache_page_list', $cache_page_list);
+  }
+  
+  return $ret;
+}
+
+/**
+ * @Implement of hook_update_x()
  *  添加 storage 表，可方便的用于首页、频道等定制
  */
 function system_update_2(){
@@ -379,7 +393,7 @@ function system_schema() {
       )
      ),
     'indexes' => array('tid' => array('type', 'tid')),
-    'uniqid' => array('alias' => array('alias')),
+    'unique keys' => array('alias' => array('alias')),
     'primary key' => array('path'),
   );
   
@@ -424,6 +438,7 @@ function system_schema() {
     'indexes' => array('expire' => array('expire')),
     'primary key' => array('cid'),
   );
+  
   $schema['cache_page'] = $schema['cache'];
   $schema['cache_page']['description'] = '页面缓存';
   $schema['cache_menu'] = $schema['cache'];
@@ -432,6 +447,28 @@ function system_schema() {
   $schema['cache_form']['description'] = '表单缓存';
   $schema['cache_field'] = $schema['cache'];
   $schema['cache_field']['description'] = '字段缓存';
+  
+  $schema['cache_page_list'] = array(
+    'description' => '静态页路径表',
+    'fields' => array(
+      'path' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => '系统路径'
+      ),
+      'dirname' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => '文件路径'
+      )
+     ),
+    'unique keys' => array('pd' => array('path', 'dirname'))
+  );
+  
   $schema['logs'] = array(
     'description' => '操作日志',
     'fields' => array(

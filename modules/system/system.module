@@ -111,6 +111,13 @@ function system_menu(){
     'page_arguments' => array('system_cache_settings'),
     'file' => 'system.admin.inc'
   );
+  $items['admin/cache/clearpage'] = array(
+    'title' => '页面缓存清除',
+    'access_arguments' => array('system admin cache'),
+    'page_callback' => 'dd_get_form',
+    'page_arguments' => array('system_cache_clearpage'),
+    'file' => 'system.admin.inc'
+  );
   $items['admin/lang'] = array(
     'title' => '语言设置',
     'access_arguments' => array('system admin lang'),
@@ -1030,6 +1037,32 @@ function dd_get_storage($ext_type, $clear = NULL){
 }
 
 /**
+ * 获取实时数据
+ * @param (string) $ext_type
+ * @param (string) $ext_type2
+ */
+function dd_storage_get_data($ext_type, $ext_type2 = NULL){
+  $fetch = $data = NULL;
+  
+  if($ext_type2){
+    $fetch = db_query('SELECT * FROM {storage} WHERE ext_type = ? AND ext_type2 = ? 
+    ORDER BY weight ASC, timestamp DESC', array($ext_type, $ext_type2));
+  }else{
+    $fetch = db_query('SELECT * FROM {storage} WHERE ext_type = ? 
+    ORDER BY weight ASC, timestamp DESC', array($ext_type));
+  }
+  
+  if($fetch){
+    foreach($fetch as $o){
+      $o->data = unserialize($o->data);
+      $data[$o->ext_type2][] = $o;
+    }
+  }
+  
+  return $data;
+}
+
+/**
  * 更新内容
  * @param (object) $v
  */
@@ -1102,6 +1135,9 @@ function dd_storage_admin($ext_type, $ext_type2 = NULL){
         case 'update':
           $v = db_query('SELECT * FROM {storage} WHERE id = ? AND ext_type = ?',
           array($_GET['storage_id'], $ext_type), array('return' => 'one'));
+          if($v->data){
+            $v->data = unserialize($v->data);
+          }
         break;
         case 'delete':
           db_exec('DELETE FROM {storage} WHERE id = ? AND ext_type = ?', array($_GET['storage_id'], $ext_type));
@@ -1130,20 +1166,12 @@ function dd_storage_admin($ext_type, $ext_type2 = NULL){
   if($fetch){
     foreach($fetch as $o){
       
-      if($info[$ext_type][$ext_type2]['admin_view'] && function_exists($info[$ext_type][$ext_type2]['admin_view'])){
-        $view = $function(unserialize($o->data));
+      if($info[$ext_type][$o->ext_type2]['admin_view'] && function_exists($info[$o->ext_type][$o->ext_type2]['admin_view'])){
+        $view = call_user_func($info[$o->ext_type][$o->ext_type2]['admin_view'], unserialize($o->data));
       }else{
         $items = array();
         foreach(unserialize($o->data) as $key => $item){
-          if($key == 'title'){
-            $items[] = dd_get_strong('标题').$item;
-          }else if($key == 'path'){
-            $items[] = dd_get_strong('链接').$item;
-          }else if($key == 'file'){
-            $items[] = dd_get_strong('文件').$item;
-          }else{
-            $items[] = $item;
-          }
+          $items[] = _system_get_option_name($key, $info[$o->ext_type][$o->ext_type2]['options']) . $item;
         }
         $view = theme('item_list', $items);
       }
@@ -1162,8 +1190,8 @@ function dd_storage_admin($ext_type, $ext_type2 = NULL){
           )
         ), 'class' => 'center_table'),
         array('data' => dd_imp(array(
-            l(t('system', '编辑'), $_GET['q'], array('query' => 'storage_op=update&storage_id='.$o->id)),
-            l(t('system', '删除'), $_GET['q'], array(
+            l(t('system', '编辑'), $_GET['q'].'/'.$o->ext_type2, array('query' => 'storage_op=update&storage_id='.$o->id)),
+            l(t('system', '删除'), $_GET['q'].'/'.$o->ext_type2, array(
               'query' => 'storage_op=delete&storage_id='.$o->id,
               'attributes' => array('class' => 'confirmajax')
             ))
@@ -1173,6 +1201,7 @@ function dd_storage_admin($ext_type, $ext_type2 = NULL){
     }
     
     $output = theme('table', array(t('system', '内容'), t('system', '排序'), t('system', '操作')), $table);
+    $output .= pager_view(array(), 10, 1);
     
   }
   
@@ -1190,6 +1219,20 @@ function dd_storage_admin($ext_type, $ext_type2 = NULL){
     }
   }
   return $output;
+}
+
+function _system_get_option_name($key, $options = NULL){
+  $args = array(
+    'title' => t('system', '标题'),
+    'path' => t('system', '链接'),
+    'file' => t('system', '文件'),
+  );
+  
+  if($options){
+    $args += $options;
+  }
+  
+  return dd_get_strong($args[$key] ? $args[$key] : $key);
 }
 
 /**
@@ -1248,6 +1291,8 @@ function dd_storage_form($v = NULL){
   );
   
   module_alter_all('dd_storage_form', $v, $form);
+  
+  if(!$form) return false;
   
   $form['fields']['submit']['#type'] = 'submit';
   

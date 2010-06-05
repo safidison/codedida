@@ -17,6 +17,17 @@
   padding: 20px;
   border: 1px solid #ccc;
 }
+#dd_database_debug{
+	text-align: left;
+	white-space:normal;
+	table-layout:fixed
+}
+.dd_database_debug_args1{
+	word-break:break-all;
+	word-wrap:break-word;
+  width:450px;
+  overflow:hidden;
+}
 #dialog_wrapper_loading{
 	height: 100px;
 	line-height: 100px;
