@@ -774,7 +774,7 @@ function user_default_validate_name($name){
   }else if(strstr($name, '　') || !preg_match("/^[\w\x80-\xff-]+$/", $name)){
      $t['name']['#error'][] = t('user', '昵称含有非法字符');
   }else if(db_query('SELECT name FROM {users} WHERE name = ?', array($name), array('return' => 'column'))){
-    $t['name']['#error'][] = t('user', '%name 已经存在', array('%name' => $name));
+    $t['name']['#error'][] = t('user', '!name 已经存在', array('!name' => $name));
   }
   return $t;
 }
@@ -786,7 +786,7 @@ function user_default_validate_mail($mail){
   if($msg = form_vali_mail($mail)){
     $t['mail']['#error'][] = $msg;
   }else if(db_query('SELECT mail FROM {users} WHERE mail = ?', array($mail), array('return' => 'column'))){
-     $t['mail']['#error'][] = t('user', '%name 已经存在', array('%name' => $mail));
+     $t['mail']['#error'][] = t('user', '!name 已经存在', array('!name' => $mail));
   }
   return $t;
 }
@@ -1134,7 +1134,7 @@ function user_login_validate(&$form, &$value){
       if($msg = _user_login_validate($user, $value['_dida_values'])){
         if($msg === true){
           if($_GET['ajax'] != 'submit'){
-            dd_goto(dd_get_token(var_get_key('user', 'redirect', 'user/' . $_SESSION['user']->uid), $_SESSION['user'], array('user')));
+            dd_goto(dd_get_token(var_get_key('user', 'redirect', 'user/' . $_SESSION['user']->uid), $_SESSION['user'], array('user', 'system')));
           }
         }else{
           $error = $msg;
