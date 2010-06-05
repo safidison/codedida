@@ -572,6 +572,18 @@ function _system_image_error_save($form_id, $name, $file){
   custom_set('image_error', $file->filepath);
 }
 
+function _system_cache_htaccess(){
+  $filepath = $GLOBALS['conf_dir'].'/cache/.htaccess';
+  if(!is_file($filepath)){
+    $h = "#禁止下载\n";
+    $h .= '<FilesMatch "\.*$">';
+    $h .= "\nOrder allow,deny\n";
+    $h .= '</FilesMatch>';
+    @file_put_contents($filepath, $h);
+    chmod($filepath, 0644);
+  }
+}
+
 /**
  * 缓存设置
  */
@@ -782,6 +794,9 @@ function system_cache_clear_submit($form, $value){
   if($value['value']['front_cache']){
     cache_clear_page('[front]');
   }
+  
+  _system_cache_htaccess();
+  
   module_invoke_all('system_cache_clear', 'submit', $value);
   var_init();
 }

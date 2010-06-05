@@ -2390,7 +2390,7 @@ function dd_page_cache_header($timestamp){
   header("Last-Modified: $last_modified");
   header("ETag: $etag");
 
-  header("Expires: Thu, 9 Sep 1999 05:00:00 GMT");
+  header("Expires: ".gmdate('D, d M Y H:i:s', ($_SERVER['REQUEST_TIME']+864000))." GMT");
   header("Cache-Control: must-revalidate");
   
   return true;

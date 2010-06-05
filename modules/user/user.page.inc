@@ -238,7 +238,7 @@ function user_page_register(){
         if($_GET['redirect'] && strpos($_GET['redirect'], 'user/login') === false && strpos($_GET['redirect'], 'user/register') === false){
           $rediect = $_GET['redirect'];
         }else{
-          $rediect = url(dd_get_token(var_get_key('user', 'redirect', 'user/' . $account->uid), $account, array('user')));
+          $rediect = url(dd_get_token(var_get_key('user', 'redirect', 'user/' . $account->uid), $account, array('user', 'system')));
         }
         if($account->status == 1){
           dd_set_message(t('user', '恭喜，注册成功了'));
