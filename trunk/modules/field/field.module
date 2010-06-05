@@ -1323,6 +1323,7 @@ function field_export($field_id = NULL, $module = NULL, $type = NULL){
   
   if($fields){
     foreach($fields as $field){
+      module_alter_all('field_call_export', $field);
       $output .= '###'.$field->name."###\n";
       $output .= '[start]'.base64_encode(serialize($field))."[end]\n";
     }
@@ -1479,6 +1480,47 @@ function field_lists($module = NULL, $type = NULL){
   $output = theme('table', $header, $table, array('id' => 'field_admin_list'));
   $output .= pager_view();
   return $output;
+}
+
+/**
+ * @Implement of hook_field_call_export()
+ */
+function field_field_call_export(&$field){
+  
+  if(in_array($field->field_type, field_get_term_type())){
+    if($fetch = db_query('SELECT tid, pid, weight, name, description FROM {fields_term} WHERE field_id = ?',
+    array($field->field_id), array('fetch' => 'array'))){
+      
+      foreach($fetch as $o){
+        $terms[$o['pid']][$o['tid']] = $o;
+      }
+      
+      foreach($terms[0] as $a){
+        $rows = $a;
+        if($sub = _field_field_call_export($a['tid'], $terms)){
+          $rows['childrens'] = $sub;
+        }
+        $items[] = $rows;
+      }
+      
+      if($items){
+        $field->children = $items;
+      }
+    }
+  }
+}
+
+function _field_field_call_export($tid, $terms){
+  if($terms[$tid]){
+    foreach($terms[$tid] as $a){
+      $rows = $a;
+      if($sub = _field_field_call_export($a['tid'], $terms)){
+        $rows['childrens'] = $sub;
+      }
+      $items[] = $rows;
+    }
+  }
+  return $items;
 }
 
 /**
@@ -2145,9 +2187,13 @@ function field_field_call_group($type = NULL){
  */
 function field_set_cache_term($module = NULL, $type = NULL){
   if($module && $type){
-    $fetch = db_query('SELECT t.*, f.module, f.type, f.field_type FROM {fields_term} t INNER JOIN {fields} f ON t.field_id = f.field_id WHERE f.type = ? AND f.module = ? AND f.field_type != ? ORDER BY t.weight ASC, t.tid ASC', array($type, $module, 'tags'));
+    $fetch = db_query('SELECT t.*, f.module, f.type, f.field_type, f.field_key FROM {fields_term} 
+    t INNER JOIN {fields} f ON t.field_id = f.field_id WHERE f.type = ? AND f.module = ? AND 
+    f.field_type != ? ORDER BY t.weight ASC, t.tid ASC', array($type, $module, 'tags'));
   }else{
-    $fetch = db_query('SELECT t.*, f.module, f.type, f.field_type FROM {fields_term} t INNER JOIN {fields} f ON t.field_id = f.field_id WHERE f.field_type != ? ORDER BY t.weight ASC, t.tid ASC', array('tags'));
+    $fetch = db_query('SELECT t.*, f.module, f.type, f.field_type, f.field_key FROM {fields_term} 
+    t INNER JOIN {fields} f ON t.field_id = f.field_id WHERE f.field_type != ? 
+    ORDER BY t.weight ASC, t.tid ASC', array('tags'));
   }
   
   if($fetch){
@@ -3449,6 +3495,7 @@ function field_get_node_delete($module, $type, $node){
         $data->field_func('delete', $datas[$field_id], $node);
       }
     }
+    cache_del('cid', $module.$type.$node->nid, 'cache_field');
   }
 }
 

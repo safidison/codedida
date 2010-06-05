@@ -10,7 +10,7 @@ function bootstrap($op, $inc = NULL){
   
   if ($called) return;
   
-  global $user, $database, $dbc, $db, $conf, $conf_dir, $installed, $cache_file;
+  global $user, $database, $dbc, $db, $conf, $conf_dir, $installed;
   
   if(is_file('sites/config.php')){
     require_once 'sites/config.php';
@@ -45,6 +45,32 @@ function bootstrap($op, $inc = NULL){
   
   set_error_handler('dd_php_error');
   
+  if($_GET['_didaCssOrJsCache']){
+    
+    dd_page_cache_header($conf['cache_css_and_js_timestamp']);
+    
+    $filepath = $_SERVER['DOCUMENT_ROOT'] . $_SERVER['REQUEST_URI'];
+    
+    if(is_file($filepath)){
+      
+      if($_GET['type'] == 'js'){
+        header('Content-Type:text/javascript');
+      }else{
+        header('Content-Type:text/css');
+      }
+      
+      echo file_get_contents($filepath);
+      
+    }else{
+      
+      // 物理文件不存在
+      
+      header('HTTP/1.1 403 Forbidden');
+      
+    }
+    exit;
+  }
+  
   switch ($op){
     case 'full':
       require_once './includes/database.inc';
@@ -66,7 +92,18 @@ function bootstrap($op, $inc = NULL){
       
       //用户验证
       dd_user_validate();
-
+      
+      // 读取缓存
+      if(!$_POST && ($conf['dd_cache_page'] == 2
+      || ($conf['dd_cache_page'] == 1 && $user->uid == 0))){
+        
+        if($page_cache = cache_get_page((dd_is_front() ? '[front]' : $_GET['q']))){
+          echo $page_cache;
+          exit;
+        }
+        
+      }
+      
       //载入模块
       module_init();
       
@@ -112,7 +149,7 @@ function bootstrap($op, $inc = NULL){
       // session 及配置
       conf_init();
       
-      require_once DD_CACHE_FILE;
+      require_once var_get('dd_cache_file', './includes/cache.inc');
       
       if(is_array($inc)){
         foreach($inc as $filename){
@@ -1498,31 +1535,6 @@ function dd_dialog_att($height = 400, $width = 600, $iframe = 'true', $inlineId 
 }
 
 /**
- * flash上传
- */
-function dd_swfup($value){
-  dd_add_js('misc/swfupload/swfupload.js');
-  dd_add_js('misc/swfupload/swfupload.queue.js');
-  dd_add_js('misc/swfupload/fileprogress.js');
-  dd_add_js('misc/swfupload/handlers.js');
-  dd_add_css('misc/upload/uploadify.css');
-  
-  if(!$value['flash_id']) $value['flash_id'] = 'spanButtonPlaceHolder';
-  if(!$value['target']) $value['target'] = 'fsUploadProgress'; 
-  if(!$value['cancel']) $value['cancel'] = 'btnCancel'; 
-  
-  dd_add_js(theme('form_swfu', $value), 'inline');
-  $t = '<div class="form_swfup"><div class="form_swfup_button">';
-  $t .= '<div><span id="'.$value['flash_id'].'"></span></div>';
-  $t .= '<input id="startUpload" class="form_swfu_button" type="button" onclick="swfu.startUpload()" value="开始上传" disabled="disabled" />';
-  $t .= '<input id="'.$value['cancel'].'" type="button" value="取消上传" onclick="swfu.cancelQueue();" disabled="disabled" class="form_swfu_button" /></div>';
-  $t .= '<span id="spanButtonPlaceHolder"></span>';
-  $t .= '<div id="divStatus"></div><div class="fieldset flash" id="'.$value['target'].'"></div></div>';
-  
-  return $t;
-}
-
-/**
  * 写入提示信息
  */
 function dd_set_message($message = NULL, $type = 'status', $repeat = TRUE) {
@@ -1570,18 +1582,11 @@ function dd_get_message() {
 }
 
 function dd_array_to_string($array){
-  if(is_array($array)){
-    foreach($array as $key => $value){
-      if(is_array($value) || is_object($value)){
-        dd_array_to_string($value);
-      }else{
-        $args .= '['.$key.'] => ' . $value;
-      }
-    }
-    return $args;
-  }else{
-    return $array;
-  }
+  ob_start();
+  var_dump($array);
+  $output = ob_get_contents();
+  ob_end_clean();
+  return $output;
 }
 
 function dd_set_help($help = NULL){
@@ -1814,7 +1819,7 @@ function dd_get_css($css = NULL) {
             $css_path[$type][] = $file;
             $filename .= $file;
           }else{
-            $gets[$type] .= '<link type="text/css" rel="stylesheet" media="'. $media .'" href="'. $base_path . $file.'?'.$GLOBALS['conf']['cache_css_and_js_timestamp'].'" />'."\n";
+            $gets[$type] .= '<link type="text/css" rel="stylesheet" media="'. $media .'" href="'. $base_path . $file.'" />'."\n";
          }
         }
       }
@@ -1837,7 +1842,7 @@ function dd_get_css($css = NULL) {
       }
       _file_save_data(cssmin::minify($contents), $filepath);
     }
-    return '<link type="text/css" rel="stylesheet" media="all" href="'. $base_path . $filepath.'?'.$GLOBALS['conf']['cache_css_and_js_timestamp'].'" />'."\n";
+    return '<link type="text/css" rel="stylesheet" media="all" href="'. $base_path . $filepath.'" />'."\n";
   }
   return $gets['core'] . $gets['module'] . $gets['theme'];
 }
@@ -1964,13 +1969,13 @@ function dd_get_js($scope = 'header', $javascript = NULL) {
                 $filename .= $path;
               }else{
                 if(strpos($path, 'http://') === false && strpos($path, 'https://') === false){
-                  $path = $base_path .$path .'?'.$GLOBALS['conf']['cache_css_and_js_timestamp'];
+                  $path = $base_path .$path;
                 }
                 $preprocess .= '<script type="text/javascript"'. ($info['defer'] ? ' defer="defer"' : '') .' src="'. $path."\"></script>\n";
               }
             }else{
               if(strpos($path, 'http://') === false && strpos($path, 'https://') === false){
-                $path = $base_path .$path .'?'.$GLOBALS['conf']['cache_css_and_js_timestamp'];
+                $path = $base_path .$path;
               }
               $preprocess .= '<script type="text/javascript"'. ($info['defer'] ? ' defer="defer"' : '') .' src="'. $path."\"></script>\n";
             }
@@ -1987,7 +1992,7 @@ function dd_get_js($scope = 'header', $javascript = NULL) {
       }
       _file_save_data(JSMin::minify($contents), $filepath);
     }
-    $preprocess .= '<script type="text/javascript" src="'. $base_path .$filepath .'?'.$conf['cache_css_and_js_timestamp'].'"></script>'."\n";
+    $preprocess .= '<script type="text/javascript" src="'. $base_path .$filepath .'"></script>'."\n";
   }
   if($output){
     $output = "<script type=\"text/javascript\">\n<!--//--><![CDATA[//><!--\n" . $output['inline'] . $output['inline_nojq'] . "\n//--><!]]>\n</script>";
@@ -2350,11 +2355,47 @@ function dd_range_str(){
   return $a[rand(0, 25)]  . rand(1, 99) . $b[rand(0, 25)]. rand(99, 999);
 }
 
-//不缓存文本header
-function _dd_text_cache(){
-  dd_set_header('Content-Type: text/plain; charset=utf-8');
-  dd_set_header('Cache-Control: no-cache, must-revalidate');
-  dd_set_header('Expires: Sat, 26 Jul 1997 05:00:00 GMT');
+/**
+ * 默认 header
+ */
+function dd_page_header() {
+  header("Expires: Thu, 9 Sep 1999 05:00:00 GMT");
+  header("Last-Modified: ". gmdate("D, d M Y H:i:s") ." GMT");
+  header("Cache-Control: store, no-cache, must-revalidate");
+  header("Cache-Control: post-check=0, pre-check=0", false);
+}
+
+/**
+ * 缓存页面 header
+ * @param (int) $timestamp
+ *  上次缓存时间
+ */
+function dd_page_cache_header($timestamp){
+  $last_modified = gmdate('D, d M Y H:i:s', $timestamp) .' GMT';
+  $etag = '"'. $timestamp .'"';
+
+  $if_modified_since = isset($_SERVER['HTTP_IF_MODIFIED_SINCE']) ? $_SERVER['HTTP_IF_MODIFIED_SINCE'] : FALSE;
+  $if_none_match = isset($_SERVER['HTTP_IF_NONE_MATCH']) ? stripslashes($_SERVER['HTTP_IF_NONE_MATCH']) : FALSE;
+  
+  if ($if_modified_since && $if_none_match
+      && strpos($if_none_match, $etag) !== false 
+      && $if_modified_since == $last_modified) {
+    
+    // 客户端版本有效
+    
+    header('HTTP/1.1 304 Not Modified');
+    header("Etag: $etag");
+    
+    exit;
+  }
+  
+  header("Last-Modified: $last_modified");
+  header("ETag: $etag");
+
+  header("Expires: Thu, 9 Sep 1999 05:00:00 GMT");
+  header("Cache-Control: must-revalidate");
+  
+  return true;
 }
 
 /**

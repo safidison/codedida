@@ -372,7 +372,7 @@ function user_get_current_name($ac){
   if($GLOBALS['user']->uid == $ac->uid){
     return t('user', '我');
   }else{
-    return theme('username', $ac, 0);
+    return $ac->name;
   }
 }
 /**
@@ -1737,4 +1737,60 @@ function user_theme(){
       'args' => array('account'),
     ),
   );
+}
+
+/**
+ * @Implement of hook_cache_page_enabled()
+ * 
+ * 这是一个可中断的接口，以 module_invoke_first() 方式调用，遇到首个返回值，即中断
+ * 
+ * 判断当前页是否需要缓存，若需要缓存，则返回一个非空值。
+ * 若确定当前页面属于本模块所定义，且不需要缓存，可返回 false，结束 hook 调用过程
+ * @param (string) $path
+ *  系统路径
+ * @param (int) &$expire
+ *  默认缓存有效时间，以秒为单位
+ *  
+ * 若不想对传入的路径做任何操作，请返回 NULL
+ */
+function user_cache_page_enabled($path, &$expire){
+  $args = arg(NULL, $path);
+  
+  if($args[0] == 'user'){
+    if($args[1] == 'edit' || $args[1] == 'login' || $args[1] == 'register'){
+      
+      /**
+       * 表单，中断 hook，禁用缓存
+       * 除此之外，所有路径均不打断，也不做静态处理，其它模块可自定义
+       */
+      
+      return false;
+      
+    }
+    
+  }
+  
+  return NULL;
+}
+
+/**
+ * @Implement of hook_cache_page_disable()
+ * 
+ * 判断当前页是否禁用缓存，若需要禁用，则返回一个非空值
+ * 若确定当前页面需要缓存，并且不希望再有模块干扰，则返回  false，中断 hook 的执行
+ * @param (string) $path
+ *  系统路径
+ * @param (int) &$expire
+ *  默认缓存有效时间，以秒为单位
+ *  
+ * 若不想对传入的路径做任何操作，请返回 NULL
+ */
+function user_cache_page_disable($path, &$expire){
+  $args = arg(NULL, $path);
+  
+  if($args[0] == 'user'){
+    return $args[1] == 'edit' || $args[1] == 'login' || $args[1] == 'register';
+  }
+  
+  return NULL;
 }

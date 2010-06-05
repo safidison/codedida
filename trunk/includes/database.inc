@@ -388,15 +388,15 @@ function db_debug(){
   if($debug = debug_backtrace()){
     foreach($debug as $de){
       if($de['function'] == 'db_query' || $de['function'] == 'db_exec'){
-        $rows[] = $de['args'][0];
+        $rows[] = array('data' => $de['args'][0], 'class' => 'dd_database_debug_args0');
         
         if($de['args'][1]){
-          $rows[] = dd_array_to_string($de['args'][1]);
+          $rows[] = array('data' => dd_array_to_string($de['args'][1]), 'class' => 'dd_database_debug_args1');
         }else{
           $rows[] = '';
         }
         if($de['args'][2]){
-          $rows[] = dd_array_to_string($de['args'][2]);
+          $rows[] = array('data' => dd_array_to_string($de['args'][2]), 'class' => 'dd_database_debug_args2');
         }else{
           $rows[] = '';
         }

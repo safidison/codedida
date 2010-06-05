@@ -579,24 +579,65 @@ function system_cache_settings(){
   dd_set_tabs(array(
     l(t('system', '缓存管理'), 'admin/cache'),
     l(t('system', '缓存设置'), 'admin/cache/settings'),
+    l(t('system', '页面缓存清理'), 'admin/cache/clearpage'),
   ));
   
   $options['./includes/cache.inc'] = t('system', '系统默认');
+  
   if(is_dir('./includes/cache')){
     if($objs = glob('./includes/cache/*')){
       foreach($objs as $obj) {
-        if(strpos($obj, 'cache') !== false){
+        if(strpos($obj, '.inc') !== false){
           $options[$obj] = next(explode('.', basename($obj), 3));
         }
       }
     }
   }
+  
   $form['fields']['dd_cache_file'] = array(
     '#title' => t('system', '缓存方式'),
     '#type' => 'select',
     '#required' => 1,
     '#default_value' => var_get('dd_cache_file', './includes/cache.inc'),
     '#options' => $options,
+  );
+  
+  $item[] = t('system', '开启静态页面，将跳过模块初始化，直接输出静态文件，所有动态逻辑判断均不会执行。');
+  $item[] = t('system', '除非有极端性能需求，且对站点所使用的模块极为了解，否则不建议开启这个选项。');
+  $item[] = t('system', '当然，开启这个选项，并不意味着所有页面都将缓存，模块可以根据实际情况，禁止或者允许某些页面缓存');
+  $item[] = t('system', '在模块层，对于某个页面是否使用缓存，是完全可控的，参见 hook_cache_page_disable() 与  hook_cache_page_enabled()');
+  $item[] = t('system', '这也意味着，当启用或禁用了一个模块后，应该清除静态页面，以应用可能的规则变化，除非你确认完全没有变化');
+  $form['fields']['dd_cache_page'] = array(
+    '#title' => t('system', '静态页面'),
+    '#type' => 'select',
+    '#required' => 1,
+    '#default_value' => var_get('dd_cache_page', 0),
+    '#options' => array(
+      t('system', '关闭'),
+      t('system', '对匿名用户开启'),
+      t('system', '对所有用户开启'),
+    ),
+    '#description' => theme('item_list', $item)
+  );
+  
+  $form['fields']['dd_cache_page_type'] = array(
+    '#title' => t('system', '生成方式'),
+    '#type' => 'select',
+    '#required' => 1,
+    '#options' => array(
+      'disable' => t('system', '1.默认所有页面均生成静态，询问模块是否禁用'),
+      'enabled' => t('system', '2.默认所有页面均禁用静态，询问模块是否启用'),
+    ),
+    '#default_value' => var_get('dd_cache_page_type', 'enabled'),
+    '#description' => t('system', '此设置仅对匿名用户有效，对于登录用户，总是使用第 2 种方式')
+  );
+  
+  $form['fields']['dd_cache_page_expire'] = array(
+    '#title' => t('system', '有效时间'),
+    '#type' => 'textfield',
+    '#required' => 1,
+    '#default_value' => var_get('dd_cache_page_expire', 600),
+    '#description' => t('system', '默认静态文件缓存时间，以秒为单位，最大不超过 31536000，即 365 天')
   );
   
   if(function_exists('cache_settings_custom_form')){
@@ -620,10 +661,56 @@ function system_system_cache_clear($op = 'list', $v = NULL){
       'cache_menu' => t('system', '清除cache_menu缓存表，当旧的 url 权限变动时应选择此项'),
       'admin_menus' => t('system', '清除管理菜单缓存表，当有新的管理菜单注册时应选择此项'),
       'cache_css_and_js' => t('system', '清除js和css缓存'),
+      'front_cache' => t('system', '清除首页缓存，仅当开启了页面缓存才需要此操作'),
     	'cache_hook' => t('system', '清除 hook 缓存，当有模块变动时应选择此项')
     );
     // case 'submit':
   }
+}
+
+function system_cache_clearpage(){
+  dd_set_tabs(array(
+    l(t('system', '缓存管理'), 'admin/cache'),
+    l(t('system', '缓存设置'), 'admin/cache/settings'),
+    l(t('system', '页面缓存清理'), 'admin/cache/clearpage'),
+  ));
+  
+  $form['fields']['all'] = array(
+    '#title' => t('system', '清除全部'),
+    '#type' => 'radio',
+    '#options' => array(t('system', '否'), t('system', '是')),
+    '#description' => t('system', '所有静态缓存将被清除，若缓存文件较多，建议通过 ftp 直接删除，位于：%dir',
+    array('%dir' => $GLOBALS['conf_dir'].'/cache/page'))
+  );
+  
+  dd_set_help(t('system', '一般情况下，各个模块将会自行判断何时应当清除它所创建的缓存，你不需要在此操作。当然，以下所有操作，并没有危险性，当某些页面迟迟不能更新时，你可以放心在此清除它'));
+  
+  $item[] = t('system', '完整路径，如：user/1，严格匹配，仅清除 user/1 单个页面');
+  $item[] = t('system', '通配符 *，如：user/*，将清除 user/1、user/2、user/n的所有页面，但将跳过子文件夹，如：user/1/test');
+  $item[] = t('system', '通配符 *all，如：user/*all，与 user/* 相同，但将删除所有子文件夹');
+  $item[] = t('system', '特殊说明：[front] - 清除匿名用户的首页缓存，[front* - 清除所有用户的首页缓存');
+  
+  $form['fields']['path'] = array(
+    '#title' => t('system', '按路径清除'),
+    '#type' => 'textfield',
+    '#description' => theme('item_list', $item)
+  );
+  
+  $form['fields']['submit'] = array(
+    '#type' => 'submit',
+    '#submit' => 'system_cache_clearpage_submit',
+  );
+  return $form;
+}
+
+function system_cache_clearpage_submit($form, $v){
+  if($v['all']){
+    cache_clear_page('*');
+  }else if($v['path']){
+    cache_clear_page(trim($v['path']));
+  }
+  
+  dd_set_message(t('system', '操作成功'));
 }
 
 /**
@@ -633,6 +720,7 @@ function system_cache_clear(){
   dd_set_tabs(array(
     l(t('system', '缓存管理'), 'admin/cache'),
     l(t('system', '缓存设置'), 'admin/cache/settings'),
+    l(t('system', '页面缓存清理'), 'admin/cache/clearpage'),
   ));
   $form['fields']['value'] = array(
     '#type' => 'checkbox',
@@ -691,7 +779,9 @@ function system_cache_clear_submit($form, $value){
     cache_del('*', 'admin_menus_');
     dd_set_message(t('system', '管理菜单缓存清除成功'));
   }
-  
+  if($value['value']['front_cache']){
+    cache_clear_page('[front*');
+  }
   module_invoke_all('system_cache_clear', 'submit', $value);
   var_init();
 }

@@ -826,11 +826,15 @@ function file_delete_file($filepath, $fid = NULL){
  * @return
  *  静默，并屏蔽错误抛出
  */
-function file_delete_dir($dir){
+function file_delete_dir($dir, $recursive = 1){
   if(is_dir($dir)){
     if($objs = glob($dir.'/*')){
       foreach($objs as $obj) {
-        is_dir($obj) ? file_delete_dir($obj) : @unlink($obj);
+        if(is_dir($obj)){
+          if($recursive) file_delete_dir($obj, $recursive);
+        }else{
+          @unlink($obj);
+        }
       }
     }
     @rmdir($dir);

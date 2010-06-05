@@ -170,6 +170,8 @@ ul.top-menu li a:hover, ul.top-menu li a.active{
 /*pager*/
 .pager{
   margin: 5px 0;
+  height: 26px;
+  line-height:26px;
   overflow: hidden;
 }
 .pager li{
