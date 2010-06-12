@@ -2210,6 +2210,10 @@ function field_set_cache_term($module = NULL, $type = NULL){
     foreach($p as $k => $data){
       cache_set('field_term_'.$k, $data);
     }
+    
+    // 删除每个字段单独的缓存
+    cache_del('*', 'field_term_key_cache_');
+    
     if($children){
       var_set('field_term_children', $conf['field_term_children']);
     }
@@ -2228,11 +2232,33 @@ function field_get_cache_term($module, $type){
     if($cache = cache_get($key)){
       $term[$key] = $cache->data;
     }else if($data = field_set_cache_term($module, $type)){
-      $term[$key] = $data[$key];
+      $term[$key] = $data;
     }
   }
   return $term[$key];
 }
+
+/**
+ * 获取指定 key 的分类缓存数据
+ */
+function field_get_cache_term_key($module, $type, $field_key){
+  static $term;
+  $key = 'field_term_key_cache_'.$module.'_'.$type;
+  if(!isset($term[$key])){
+    $term[$key] = array();
+    if($cache = cache_get($key)){
+      $term[$key] = $cache->data;
+    }else if($data = field_get_cache_term($module, $type)){
+      $term[$key] = array();
+      if($field = field_get_cache_field_key($module, $type, $field_key)){
+        $term[$key] = $data[$field->field_id];
+      }
+      cache_set($key, $term[$key]);
+    }
+  }
+  return $term[$key];
+}
+
 
 /**
  * 获取（清除）所有字段缓存数据
@@ -2568,7 +2594,7 @@ function field_get_node_form($module, $type, $node = NULL, &$form = NULL, $field
             $form['fields']['fields'][$data->field_key] = array(
               '#title' => $data->name,
               '#type' => $data->field_type,
-              '#default_value' => $node->fields[$field_id] ? $node->fields[$data->field_key]->tid : '',
+              '#default_value' => $node->fields[$data->field_key] ? $node->fields[$data->field_key]->tid : '',
               '#required' => $required,
               '#options' => field_get_term_options($options[$field_id], $required),
               '#description' => $data->data['description']
@@ -3021,7 +3047,7 @@ function field_get_multi_level_field($field, $value, &$form = NULL){
 /**
  * 节点回调字段验证
  */
-function field_get_node_validate($module, $type, $value, $node, $form = NULL){
+function field_get_node_validate($module, $type, $value, $node = NULL, $form = NULL){
   if(!$group = module_invoke($module, 'field_call_group', $type)){
     return;
   }
@@ -3269,6 +3295,12 @@ function field_get_node_save($module, $type, $value, $node = NULL, $form = NULL)
   }
   
   if(!$datas = field_get_cache_field_group($module, $type)) return;
+  
+  if(!isset($node)){
+    $node = new stdClass();
+    $node->nid = $value->nid;
+    field_get_node_load($module, $type, $node);
+  }
   
   global $conf;
   $cids = $tids = array();

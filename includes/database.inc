@@ -86,13 +86,34 @@ function db_query($sql, $args = array(), $opt = array()){
  * @return (int) $count 影响的列数
  *
  */
-function db_exec($sql, $args = array(), $opt = array()){
+function db_exec($sql, $args = array(), array $opt = array()){
   $opt = db_default_options($opt);
   
   if($sql) $sql = db_prefix_tables($sql, $opt);
   
   $function = 'db_' . $opt['driver'].'_exec';
   $fetch = $function($sql, $args, $opt);
+  
+  db_debug();
+  return $fetch;
+}
+
+/**
+ * 插入或替换记录，对应 mysql REPLACE INTO 用法，其它数据库类型，根据自身特性实现
+ * @param (string)$table
+ *  数据表名
+ * @param (object or array) &$o
+ *  待写入的数据，可以是 object 或 array。其单元对应字段名称
+ * @param (array) $opt
+ *   数据库属性设置
+ * @return
+ *  影响的列数
+ */
+function db_replace($table, $args, array $opt = array()){
+  $opt = db_default_options($opt);
+  
+  $function = 'db_' . $opt['driver'].'_replace';
+  $fetch = $function($table, $args, $opt);
   
   db_debug();
   return $fetch;
@@ -365,7 +386,7 @@ function db_drop_index($table, $name, $target = 'default') {
 /**
  * 更新字段
  */
-function db_change_field($table, $field, $field_new, $spec, $keys_new, $target = 'default'){
+function db_change_field($table, $field, $field_new, $spec, $keys_new = array(), $target = 'default'){
   global $dbc;
   if(empty($dbc[$target])) db_connect($target);
   return call_user_func('db_' . $dbc[$target]['driver'].'_change_field', $table, $field, $field_new, $spec, $keys_new, $target);
@@ -379,22 +400,204 @@ function db_get_placeholder($array = array()){
 }
 
 /**
+ * 快捷的数据库 insert、update 操作接口，适合较多字段的表写入、更新操作，可为模块开发者减少 sql 代码量
+ * @param (string)$table
+ *  数据表名
+ * @param (object or array) &$o
+ *  待写入的数据，可以是 object 或 array。其单元对应字段名称。若成功，将附加一个 _db_write_record 单元
+ * @param (array) $wheres
+ *  如果是更新操作，应当传递做为条件的字段名称，字段之间的关系只能是 AND
+ * @param (array) $opt
+ *   db_exec() 接口 $opt 参数
+ * @return
+ *  成功返回 true，update 时影响的列数，将赋给 _db_write_record 单元，失败返回 false。
+ */
+function db_write_record($table, &$o, $wheres = array(), array $opt = array()){
+  $tables = module_get_schema($table);
+  
+  if(!is_array($tables['fields'])){
+    dd_set_message(t('system', '无效的数据表 !string', array('!string' => $table)), 'error');
+    return false;
+  }
+  
+  if(is_object($o)){
+    $o = (array) $o;
+    $toObject = true;
+  }else{
+    $toObject = false;
+  }
+  
+  if(!is_array($o)){
+    dd_set_message(t('system', '待写入内容必须是对象或数组'), 'error');
+    return false;
+  }
+  
+  $args = array();
+  
+  // 自增字段标记
+  $insert_id = NULL;
+  
+  // 操作状态，$wheres 有值，则意味着 update，反之则为 insert
+  $o['_db_write_record_is_update'] = count($wheres);
+  
+  foreach($tables['fields'] as $field => $info){
+    
+    // 自增字段且处于 insert 状态，跳过
+    if($info['type'] == 'serial' && !$o['_db_write_record_is_update']){
+      $insert_id = $field;
+      continue;
+    }
+    
+    if(isset($o[$field])){
+      // 字段与值均存在
+      if(!$info['serialize']){
+        $args[$field] = $o[$field];
+      }else{
+        $args[$field] = serialize($o[$field]);
+      }
+      
+    }else if(!$o['_db_write_record_is_update']){
+      /**
+       * 字段存在，无值，且处于 insert 状态，才试着为字段生成默认值
+       */
+      
+      // 若字段设置了默认值，不做处理，无默认值，根据类型设置默认值
+      if(!isset($info['default'])){
+        
+        // 自增字段，添加标记
+        if($info['type'] == 'serial'){
+          $insert_id = $field;
+          continue;
+        }
+        
+        // 不允许 null
+        if($info['not null']){
+          
+          if($info['type'] == 'int' || $info['type'] == 'float' || $info['type'] == 'numeric'){
+            // 数字类型，默认值设为 0
+            $args[$field] = 0;
+          }else{
+            // 文本或其它
+            $args[$field] = '';
+          } 
+        }else{
+          // 允许 null
+          $args[$field] = NULL;
+        }
+      }
+    }
+    
+  }
+  
+  /**
+   * 更新操作，获取执行条件
+   * $wheres 是一个由执行条件的字段名称构成的数组
+   */
+  if($o['_db_write_record_is_update']){
+    
+    foreach($args as $field_name => $value){
+      $placeholder = ':'.$field_name;
+      
+      if(in_array($field_name, $wheres)){
+        $where[] = $field_name .' = '.$placeholder;
+      }else{
+        $sets[] = $field_name .' = '.$placeholder;
+      }
+      
+      $sql_args[$placeholder] = $value;
+    }
+    
+    if($where){
+      $sql = 'UPDATE {'.$table.'} SET '. implode(',', $sets) . ' WHERE '.implode(' AND ', $where);
+      
+      if(!isset($opt['return'])){
+        $opt['return'] = true;
+      }
+      if($count = db_exec($sql, $sql_args, $opt)){
+        if($count === true){
+          $o['_db_write_record'] = 0;
+        }else{
+          $o['_db_write_record'] = $count;
+        }
+        
+      }else{
+        dd_set_message(t('system', '更新失败'), 'error');
+        return false;
+      }
+    }else{
+      dd_set_message(t('system', '更新条件不正确'), 'error');
+      return false;
+    }
+    
+  }else{
+    
+    foreach($args as $field_name => $value){
+      $placeholder = ':'.$field_name;
+      $fields[] = $field_name;
+      $placeholders[] = $placeholder;
+      $sql_args[$placeholder] = $value;
+    }
+    
+    $sql = 'INSERT INTO {'.$table.'} ';
+    $sql .= '('.implode(',', $fields).') VALUES ';
+    $sql .= '('.implode(',', $placeholders).')';
+    
+    if(db_exec($sql, $sql_args, $opt)){
+      
+      if($insert_id){
+        $o[$insert_id] = db_last_insert_id();
+      }
+      
+    }else{
+      dd_set_message(t('system', '写入失败'), 'error');
+      return false;
+    }
+  }
+  
+  if($toObject){
+    $o = (object) $o;
+  }
+  
+  return true;
+}
+
+/**
  * 在页脚显示查询语句
  */
 function db_debug(){
   if(!$GLOBALS['conf']['sql_info']) return;
   if($GLOBALS['conf']['sql_info'] == 2 && $GLOBALS['user']->uid != 1) return;
   
+  static $items, $repeats;
+  
   if($debug = debug_backtrace()){
-    foreach($debug as $de){
+    foreach(array_reverse($debug) as $i => $de){
+      if(strpos($de['file'], 'index.php') === false && $de['function'] != 'db_debug'){
+        if($de['file']){
+          $items[] = t('system', '文件：@file(@line 行，函数 @fun)',
+          array('@file' => $de['file'], '@line' => $de['line'], '@fun' => $de['function']));
+        }
+      }
+      
       if($de['function'] == 'db_query' || $de['function'] == 'db_exec'){
+        
+        $args_string = dd_array_to_string($de['args'][1]);
+        $keys = md5($de['args'][0].$args_string);
+        
+        if(!isset($repeats[$keys])){
+          $repeats[$keys] = array('sql' => $de['args'][0].'<br />args：'.$args_string, 'count' => 1);
+        }else{
+          $repeats[$keys]['count'] += 1;
+        }
+        
         $rows[] = array('data' => $de['args'][0], 'class' => 'dd_database_debug_args0');
         
         if($de['args'][1]){
-          $rows[] = array('data' => dd_array_to_string($de['args'][1]), 'class' => 'dd_database_debug_args1');
+          $rows[] = array('data' => $args_string, 'class' => 'dd_database_debug_args1');
         }else{
           $rows[] = '';
         }
+        
         if($de['args'][2]){
           $rows[] = array('data' => dd_array_to_string($de['args'][2]), 'class' => 'dd_database_debug_args2');
         }else{
@@ -403,7 +606,23 @@ function db_debug(){
         
         $_SESSION['database_debug'][] = $rows;
         
-        $_SESSION['database_debug'][][] = array('data' => t('system', '文件：@file(@line 行)', array('@file' => $de['file'], '@line' => $de['line'])),'colspan' => 3);
+        $_SESSION['database_debug'][][] = array(
+          'data' => theme('item_list', $items),
+          'colspan' => 3
+        );
+        
+        $items = array();
+      }
+    }
+    
+    if($repeats){
+      foreach($repeats as $key => $sql){
+        if($sql['count'] > 1){
+          $_SESSION['database_debug_count'][$key] = array(
+            'data' => t('system', '!sql 执行了 %count 次', array('!sql' => $sql['sql'], '%count' => $sql['count'])),
+            'colspan' => 3
+          );
+        }
       }
     }
   }

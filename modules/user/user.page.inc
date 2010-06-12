@@ -11,6 +11,25 @@ function user_default(){
 }
 
 /**
+ * 用户 ajax 搜索 
+ */
+function user_page_json(){
+  if($_POST['value']){
+    $json['error'] = 0;
+    if($fetch = db_query('SELECT name FROM {users} WHERE name LIKE ?',
+    array('%'.$_POST['value'].'%'), array('limit' => 10))){
+      foreach($fetch as $o){
+        $json['contents'][] = $o->name;
+      }
+    }
+    echo json_encode($json);
+  }else{
+    echo '{"error": 1}';
+  }
+  exit;
+}
+
+/**
  * 找回密码
  */
 function user_page_pass(){

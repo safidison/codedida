@@ -350,7 +350,7 @@ function user_admin_roles(){
           $perm, $o->count,
           dd_imp(array(
             l(t('user', '权限'), 'admin/users/perms'),
-            '<a href=?op=delete&rid='.$o->rid.'" class="confirmajax">'.t('user', '删除').'</a>'
+            '<a href="?op=delete&rid='.$o->rid.'" class="confirmajax">'.t('user', '删除').'</a>'
           ))
         );
       }

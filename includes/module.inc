@@ -158,6 +158,7 @@ function module_set_list($type = 'module'){
       $c = db_exec('INSERT INTO {system} (filename, path, type, status, install, weight, info) VALUES (:name, :path, :type, 0, -1, :weight, :info)', array(':name' => $key, ':path' => $path, ':type' => $type, ':weight' => $info['weight'], ':info' => serialize($info)));
     }
   }
+  
   return true;
 }
 
@@ -194,6 +195,7 @@ function module_install_schema($type, $module){
       }
     }
   }
+  
   return $ret;
 }
 
@@ -348,6 +350,7 @@ function module_clear_cache(){
   cache_del('cid', 'cache_hook');
   cache_del('empty', NULL, 'cache_menu');
   cache_del('*', 'admin_menus_');
+  module_get_schema('users', 1);
   var_init();
   menu_set_item();
 }
@@ -418,6 +421,10 @@ function module_set_enabled($list, $type, $modules = array()) {
       }
       
     }
+    
+    // 清除缓存
+    module_clear_cache();
+    
     if($query){
       return $query;
     }else{
@@ -682,4 +689,37 @@ function module_get_table($module, $table = NULL){
     $schema = $function();
     return !$table ? $schema : $schema[$table];
   }
+}
+
+function module_get_schema($table, $clear = NULL){
+  static $tables;
+  if(!isset($tables)){
+    if($clear || !$cache = cache_get('schema')){
+      module_load_install();
+      $_tables = db_show_tables();
+      
+      if($lists = _module_invoke_all('schema')){
+        foreach($lists as $module => $ts){
+          foreach($ts as $name => $fields){
+            if(in_array($name, $_tables)){
+              if($fields['fields']){
+                $_fields = array('module' => $module);
+                foreach($fields['fields'] as $field_name => $field){
+                  unset($field['description']);
+                  $_fields['fields'][$field_name] = $field;
+                }
+                $tables[$name] = $_fields;
+              }
+            }
+          }
+        }
+      }
+      
+      cache_set('schema', $tables);
+    }else{
+      $tables = $cache->data;
+    }
+  }
+  
+  return $tables[$table] ? $tables[$table] : NULL;
 }

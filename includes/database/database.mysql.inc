@@ -98,6 +98,45 @@ function db_mysql_query($sql, $args = array(), $opt = array()){
 }
 
 /**
+ * db_replace()
+ */
+function db_mysql_replace($table, $args, array $opt = array()){ 
+  $tables = module_get_schema($table);
+  
+  if(!is_array($tables['fields'])){
+    dd_set_message(t('system', '无效的数据表 !string', array('!string' => $table)), 'error');
+    return false;
+  }
+  
+  if(is_object($args)){
+    $args = (array) $args;
+  }
+  
+  if(!is_array($args)){
+    dd_set_message(t('system', '待写入内容必须是对象或数组'), 'error');
+    return false;
+  }
+  
+  foreach($args as $field => $value){
+    if(!isset($tables['fields'][$field])){
+      unset($args[$field]);
+    }
+  }
+  
+  foreach($args as $field_name => $value){
+    $placeholder = ':'.$field_name;
+    $fields[] = $field_name;
+    $placeholders[] = $placeholder;
+    $sql_args[$placeholder] = $value;
+  }
+  
+  $sql = 'REPLACE INTO {'.$table.'} ';
+  $sql .= '('.implode(',', $fields).') VALUES ';
+  $sql .= '('.implode(',', $placeholders).')';
+  
+  return db_exec($sql, $sql_args, $opt);
+}
+/**
  * db_exec()
  * @example 写入一条
  *  db_exec("INSERT INTO {test} (name) VALUES (:value)", array(':value' => 'test'));
@@ -152,6 +191,8 @@ function db_mysql_exec($sql, $args = array(), $opt = array()){
   
   $db[$opt['target']]->setAttribute(PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, false);
   
+  $rowCount = 0;
+  
   if($args){
     $smt = $db[$opt['target']]->prepare($sql);
     if(!$args['values']){
@@ -164,7 +205,6 @@ function db_mysql_exec($sql, $args = array(), $opt = array()){
         }
       }
     }else{
-      $rowCount = 0;
       foreach($args['values'] as $values){
         if(!$args['placeholder']){
           $smt->execute($values);
@@ -193,10 +233,10 @@ function db_mysql_exec($sql, $args = array(), $opt = array()){
     return $rowCount;
   }else if(isset($rowCount)){
     /**
-     * 有时候 update 没有受影响的列数，但请求者需要知道语句是否成功执行。
-     * 此处返回 true，只表示语句已成功执行
+     * 有时候 update 没有受影响的列数，但请求者想要知道语句是否成功执行。
+     * 若没有受影响的列数，返回 true，只表示语句已成功执行
      */
-    return true;
+    return $rowCount ? $rowCount : true;
   }
 }
 

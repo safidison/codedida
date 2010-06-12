@@ -68,6 +68,7 @@ function block_schema() {
         'type' => 'text',
         'not null' => FALSE,
         'size' => 'big',
+        'serialize' => true,
         'description' => '其它设置'
       )
     ),

@@ -125,6 +125,64 @@ Dida.callFunc = function(cb) {
   }
 }
 
+Dida.dialog = function(o){
+	
+	$('#dialog_wrapper').remove();
+  $('body').append('<div id="dialog_wrapper" style="display: none;"></div>');
+  
+	var url = o.url || location.href;
+	var page_title = o.text || '';
+	var queryString = url.replace(/^[^\?]*\??/,'');
+	var params = Dida.parseQuery(queryString);
+	
+  if(params['iframe']){
+		$('#dialog_wrapper').dialog({
+			title: page_title,
+			closeText: '关闭',
+			width: parseInt(params['width']) || 700,
+			height: parseInt(params['height']) || 450,
+      modal: params['modal'] || false,
+			autoOpen: true,
+			bgiframe: true,
+			close: function(event, ui) {
+        $('#dialog_wrapper').remove();
+				$(this).dialog('destroy');
+        
+        if(params['closeCall']){
+          Dida.callFunc(params['closeCall'], event, ui, params);
+        }
+        
+				if(params['reload']){
+					location.reload();
+				}
+			},
+			open: function(){
+				$(this).append('<div id="dialog_wrapper_loading"><img align="absmiddle" src="'+settings.base_path+'misc/images/loading.gif" />加载中，请稍候…</div><iframe id="dialog_iframe_wrapper" frameborder="no" border="0" src="'+url+'" width="100%" height="100%" style="display:none"></iframe>');
+      	$('#dialog_iframe_wrapper').load(function(){
+          $('#dialog_wrapper_loading').hide();
+          $('#dialog_iframe_wrapper').show();
+        });
+			}
+		});
+  }else if(params['inlineId']){
+		$('#'+params['inlineId']).dialog({
+			title: page_title,
+			closeText: '关闭',
+			width: params['width'] || 700,
+			height: params['height'] || 450,
+			autoOpen: true,
+			bgiframe: true,
+			close: function(event, ui) {
+				$(this).dialog('destroy');
+				if(params['reload']){
+					location.reload();
+				}
+			}
+		});
+  }
+	return false;
+}
+
 function In_array(str, array) {
   for (i = 0; i < array.length; i++) {
     thisEntry = array[i].toString();
@@ -172,16 +230,20 @@ $(function(){
         if($$.attr('type') != 'js'){
           switch(data){
 	          case 'parent':
+	          	// 删除父级
 	            $$.parent().remove();
 	          break;
 	          case 'two':
+	          	// 删除祖级
 	            $$.parent().parent().remove();
 	          break;
 	          case 'own':
+	          	// 删除本身
 	            $$.remove();
 	          break;
 	          case 'tr':
-	            $$.parents('tr').remove();
+	          	// 删除上级中第一个匹配的 tr
+	            $$.closest('tr').remove();
 	          break;
 	          default:
 		          var fun = $$.attr('fun');
@@ -272,57 +334,12 @@ $(function(){
   });
   
 	$('.thickbox, .dialog').click(function(){
-    $('body').append('<div id="dialog_wrapper" style="display: none;"></div>');
 		var o = $(this);
-		var url = $(this).attr('href');
-		var queryString = url.replace(/^[^\?]*\??/,'');
-    
-		var params = Dida.parseQuery(queryString);
-    if(params['iframe']){
-  		$('#dialog_wrapper').dialog({
-  			title: o.attr('title') || o.text(),
-  			closeText: '关闭',
-  			width: parseInt(params['width']) || 700,
-  			height: parseInt(params['height']) || 450,
-        modal: params['modal'] || false,
-  			autoOpen: true,
-  			bgiframe: true,
-  			close: function(event, ui) {
-          $('#dialog_wrapper').remove();
-  				$(this).dialog('destroy');
-          
-          if(params['closeCall']){
-            Dida.callFunc(params['closeCall'], event, ui, params);
-          }
-          
-  				if(params['reload']){
-  					location.reload();
-  				}
-  			},
-  			open: function(){
-  				$(this).append('<div id="dialog_wrapper_loading"><img align="absmiddle" src="'+settings.base_path+'misc/images/loading.gif" />加载中，请稍候…</div><iframe id="dialog_iframe_wrapper" frameborder="no" border="0" src="'+url+'" width="100%" height="100%" style="display:none"></iframe>');
-        	$('#dialog_iframe_wrapper').load(function(){
-            $('#dialog_wrapper_loading').hide();
-            $('#dialog_iframe_wrapper').show();
-          });
-  			}
-  		});
-    }else if(params['inlineId']){
-  		$('#'+params['inlineId']).dialog({
-  			title: o.attr('title') || o.text(),
-  			closeText: '关闭',
-  			width: params['width'] || 700,
-  			height: params['height'] || 450,
-  			autoOpen: true,
-  			bgiframe: true,
-  			close: function(event, ui) {
-  				$(this).dialog('destroy');
-  				if(params['reload']){
-  					location.reload();
-  				}
-  			}
-  		});
-    }
+		o.url = $(this).attr('href');
+		o.text = $(this).attr('title') || $(this).text();
+		
+		Dida.dialog(o);
+		
 		return false;
 	});
   

@@ -49,25 +49,28 @@ function bootstrap($op, $inc = NULL){
     
     dd_page_cache_header($conf['cache_css_and_js_timestamp']);
     
-    $filepath = $_SERVER['DOCUMENT_ROOT'] . $_SERVER['REQUEST_URI'];
+    $filepath = $_SERVER['DOCUMENT_ROOT'] . $_SERVER['REDIRECT_URL'];
     
-    if(is_file($filepath)){
-      
-      if($_GET['type'] == 'js'){
-        header('Content-Type:text/javascript');
+    if(!is_file($filepath)){
+      if(strpos($filepath, '?') !== false){
+        $filepath = current(explode('?', $filepath));
+        if(!is_file($filepath)){
+          header('HTTP/1.1 403 Forbidden');
+          exit;
+        }
       }else{
-        header('Content-Type:text/css');
+        header('HTTP/1.1 403 Forbidden');
+        exit;
       }
-      
-      echo file_get_contents($filepath);
-      
-    }else{
-      
-      // 物理文件不存在
-      
-      header('HTTP/1.1 403 Forbidden');
-      
     }
+    
+    if($_GET['type'] == 'js'){
+      header('Content-Type:text/javascript');
+    }else{
+      header('Content-Type:text/css');
+    }
+    echo file_get_contents($filepath);
+    
     exit;
   }
   
@@ -101,6 +104,8 @@ function bootstrap($op, $inc = NULL){
           exit;
         }
       }
+      
+      dd_page_header();
       
       //载入模块
       module_init();
@@ -434,19 +439,20 @@ function dd_log($type, $value, $ext_id = NULL, $link = NULL, $status = NULL, $ui
  */
 function var_set($name, $value, $clear = 1) {
   global $conf;
-  $serialized_value = serialize($value);
-  if(!db_exec('UPDATE {variable} SET value = ? WHERE name = ?', array($serialized_value, $name)) && !db_query('SELECT name FROM {variable} WHERE name = ?', array($name), array('return' => 'column'))) {
-    db_exec('INSERT INTO {variable} (name, value) VALUES (?, ?)', array($name, $serialized_value));
+  $v = array(
+    'value' => serialize($value),
+    'name' => $name
+  );
+  
+  if(db_replace('variable', $v)){
+    $conf[$name] = $value;
+    if($clear) var_init();
   }
-  $conf[$name] = $value;
-  if($clear) var_init();
+  
 }
 
 function custom_set($name, $value) {
-  $serialized_value = serialize($value);
-  if(!db_exec('UPDATE {custom} SET value = ? WHERE name = ?', array($serialized_value, $name)) && !db_query('SELECT name FROM {custom} WHERE name = ?', array($name), array('return' => 'column'))) {
-    db_exec('INSERT INTO {custom} (name, value) VALUES (?, ?)', array($name, $serialized_value));
-  }
+  return db_replace('custom', array('name' => $name, 'value' => serialize($value)));
 }
 
 /**
@@ -2304,7 +2310,7 @@ function format_interval($timestamp, $granularity = 5) {
 }
 
 /**
- * 日期转时间戳，日期格式：2010-05-25 或 2010/05/25
+ * 日期转时间戳，日期格式：2010-05-25 或 2010/05/25 或 2010-05-25 12:24:32
  */ 
 function format_date_mktime($text){
   static $data;
@@ -2341,7 +2347,7 @@ function format_date_mktime($text){
 function format_get_current(){
   static $time;
   if(!isset($time)){
-    $time = format_date_iso(format_date(time(), 'custom', 'Y-m-d'));
+    $time = format_date_mktime(format_date(time(), 'custom', 'Y-m-d'));
   }
   return $time;
 }
@@ -2369,6 +2375,13 @@ function dd_page_header() {
  *  上次缓存时间
  */
 function dd_page_cache_header($timestamp){
+  
+  if(var_get('site_mode', 1)){
+    // 开发模式，不允许浏览器缓存
+    dd_page_header();
+    return;
+  }
+  
   $last_modified = gmdate('D, d M Y H:i:s', $timestamp) .' GMT';
   $etag = '"'. $timestamp .'"';
 
@@ -2608,17 +2621,20 @@ function temp_get($tid){
 }
 
 function temp_set($tid, $data, $type = NULL){
-  $serialized = 0;
+  $v = array(
+    'serialized' => 0,
+    'data' => $data,
+    'tid' => $tid,
+    'timstamp' => $_SERVER['REQUEST_TIME'],
+    'type' => $type
+  );
+  
   if (is_object($data) || is_array($data)) {
-    $data = serialize($data);
-    $serialized = 1;
+    $v['data'] = serialize($data);
+    $v['serialized'] = 1;
   }
   
-  if(!db_exec('UPDATE {temp} SET data = ?, timestamp = ?, type = ?, serialized = ? WHERE tid = ?', array($data, $_SERVER['REQUEST_TIME'], $type, $serialized, $tid))){
-    return db_exec('INSERT INTO {temp} (tid, data, type, serialized, uid, timestamp) VALUES (?, ?, ?, ?, ?, ?)', array($tid, $data, $type, $serialized, $GLOBALS['user']->uid, $_SERVER['REQUEST_TIME']));
-  }else{
-    return true;
-  }
+  return db_replace('temp', $v);
 }
 
 function temp_del($tid){

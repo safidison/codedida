@@ -211,12 +211,20 @@ function template_preprocess_page(&$var, $args){
   $var['footer'] = dd_get_footer();
   
   if($_SESSION['database_debug']){
+    
+    $table = $_SESSION['database_debug'];
+    if($_SESSION['database_debug_count']){
+      $table[] = $_SESSION['database_debug_count'];
+      unset($_SESSION['database_debug_count']);
+    }
+    
     $var['debug'] = theme('table', array(
       array('data' => 'sql('.(count($_SESSION['database_debug'])/2).')', 'class' => 'dd_database_debug_args0'),
       array('data' => 'args', 'class' => 'dd_database_debug_args1'),
       array('data' => 'options',  'class' => 'dd_database_debug_args2')
     ),
-    $_SESSION['database_debug'], array('id' => 'dd_database_debug'));
+    $table, array('id' => 'dd_database_debug'));
+    
     unset($_SESSION['database_debug']);
   }
   

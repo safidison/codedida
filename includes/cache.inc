@@ -47,8 +47,8 @@ function cache_del($type = 'cid', $cid = NULL, $table = 'cache') {
  */
 function cache_get($cid, $table = 'cache') {
   $cache = db_query('SELECT data, created, expire, serialized FROM {'. $table .'} WHERE cid = ?', array($cid), array('return' => 'one'));
-  if (isset($cache->data)) {
-    if (!$cache->expire || $cache->expire > $_SERVER['REQUEST_TIME']) {
+  if(isset($cache->created)) {
+    if(!$cache->expire || $cache->expire > $_SERVER['REQUEST_TIME']) {
       if ($cache->serialized) {
         $cache->data = unserialize($cache->data);
       }
@@ -70,21 +70,27 @@ function cache_get($cid, $table = 'cache') {
  *  过期时间，以当前日期为基础，秒为单位。如：500，表示 500 秒后过期。默认为 0，即永不过期
  */
 function cache_set($cid, $data, $table = 'cache', $expire = NULL) {
-  $serialized = 0;
+  $cache = array();
+  
+  $cache['serialized'] = 0; // 序列化
+  
   if (is_object($data) || is_array($data)) {
     $data = serialize($data);
-    $serialized = 1;
+    $cache['serialized'] = 1;
   }
+  
+  $cache['data'] = $data;
   
   if($expire) {
-    $expire += $_SERVER['REQUEST_TIME'];
+    $cache['expire'] += $_SERVER['REQUEST_TIME'];
   }else{
-    $expire = 0;
+    $cache['expire'] = 0;
   }
   
-  if(!db_exec('UPDATE {'. $table .'} SET data = ?, created = ?, expire = ?, serialized = ? WHERE cid = ?', array($data, $_SERVER['REQUEST_TIME'], $expire, $serialized, $cid))){
-    @db_exec('INSERT INTO {'. $table .'} (cid, data, created, expire, serialized) VALUES (?, ?, ?, ?, ?)', array($cid, $data, $_SERVER['REQUEST_TIME'], $expire, $serialized));
-  }
+  $cache['cid'] = $cid;
+  $cache['created'] = $_SERVER['REQUEST_TIME'];
+  
+  return db_replace($table, $cache);
 }
 
 /**

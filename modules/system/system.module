@@ -687,7 +687,7 @@ function dd_get_highlighter(){
 function system_setting_form_submit($form, $value){
   if(is_array($value)){
     foreach($value as $key => $val){
-      if($form['fields'][$key]['#type'] && !in_array($form['fields'][$key]['#type'], array('hidden', 'submit', 'button', 'file', 'captcha'))){
+      if(!in_array($form['fields'][$key]['#type'], array('hidden', 'submit', 'button', 'file', 'captcha'))){
         var_set($key, $val, 0);
       }
     }
@@ -699,7 +699,13 @@ function system_setting_form_submit($form, $value){
   }
 }
 
-//编辑器
+/**
+ * 获取可视化编辑器
+ * @param (string) $dom
+ *  html dom
+ * @param (array) $v
+ *  编辑器配置
+ */
 function dd_get_editor($dom, $v = array()){
 	static $i;
 	
@@ -779,6 +785,36 @@ function dd_get_editor($dom, $v = array()){
 	}
 	dd_add_js('CKEDITOR.replace(\''.$dom.'\', '.dd_to_js($v).');', 'inline_nojq', 0, 'footer');
 	$i = 1;
+}
+
+/**
+ * 使用 swfobject 加载 flash 
+ * @param (string) $flash
+ *  flash 物理路径
+ * @param (int) $width
+ *  宽度
+ * @param (int) $height
+ *  高度
+ * @param (string) $id
+ *  div id
+ * @param (object or array) $vars
+ *  传递给 flash 的值
+ * @param (object or array) $params
+ *  传递给 flash 的值
+ * @param (object or array) $attributes
+ *  flash 其它设置参数
+ */
+function dd_get_swfobject($flash, $width, $height, $id = 'myContent', $vars = NULL, $params = NULL, $attributes = NULL){
+  dd_add_js('misc/swfobject/swfobject.js');
+  $install = f('misc/swfobject/expressInstall.swf');
+  
+  $vars = $vars ? json_encode($vars) : '{}';
+  $params = $params ? json_encode($params) : '{}';
+  $attributes = $attributes ? json_encode($attributes) : '{}';
+  
+  dd_add_js("swfobject.embedSWF('$flash', '$id', '$width', '$height', '9.0.0', '$install', $vars, $params, $attributes)", 'inline_nojq', false, 'footer'); 
+  
+  return '<div id="'.$id.'">flash</div>';
 }
 
 /**
@@ -903,7 +939,7 @@ function dd_get_swfupload($dom = NULL, $v = array(), $html = 1){
  * 检查更新，将发送版本信息、站点域名、名称、站长信箱、创建时间到更新服务器
  * 以上信息仅用于检查更新，以及统计程序的安装数量，不涉及任何与注册用户有关的隐私信息
  */
-function system_status_update(){
+function system_status_update($op = NULL){
   if(!$data = cache_get('system_status_update')){
     $value = array(
       'version' => DIDA_VERSION, // 程序版本
@@ -922,7 +958,7 @@ function system_status_update(){
   
   if($data && user_access('system view admin')){
     if($data->version == 0){
-      dd_set_message(t('system', '你使用的是当前最新版本'));
+      if($op != 'cron') dd_set_message(t('system', '你使用的是当前最新版本'));
     }else{
       dd_set_message(t('system', '最新版本为 %ver，请及时升级：!view，!down', array('%ver' => $data->version, '!view' => l(t('dida_tools', '查看'), $data->new_link), '!down' => l(t('dida_tools', '下载'), $data->new_down))));
     }
@@ -1026,7 +1062,8 @@ function dd_get_storage($ext_type, $clear = NULL){
     }else if($fetch = db_query('SELECT * FROM {storage} WHERE ext_type = ? ORDER BY weight ASC, timestamp DESC', 
     array($ext_type))){
       foreach($fetch as $data){
-        $var[$data->ext_type2][$data->id] = unserialize($data->data);
+        $data->data = unserialize($data->data);
+        $var[$data->ext_type2][$data->id] = $data;
       }
       $storage[$ext_type] = $var;
       
@@ -1063,34 +1100,21 @@ function dd_storage_get_data($ext_type, $ext_type2 = NULL){
 }
 
 /**
- * 更新内容
+ * 保存内容
  * @param (object) $v
  */
-function dd_storage_update($v){
-  if(!$v->id) return false;
-  if(!isset($v->weight)) $v->weight = 0;
-  if(!isset($v->ext_type2)) $v->ext_type2 = '';
-  
-  db_exec('UPDATE {storage} SET data = ?, timestamp = ?, weight = ? WHERE id = ?',
-  array(serialize($v->data), $_SERVER['REQUEST_TIME'], $v->weight, $v->id));
-  
-  return $v;
-}
-
-/**
- * 写入内容
- * @param (object) $v
- */
-function dd_storage_insert($v) {
-  if(!$v->ext_type) return false;
-  if(!isset($v->weight)) $v->weight = 0;
-  if(!isset($v->ext_type2)) $v->ext_type2 = '';
-  
-  if(db_exec('INSERT INTO {storage} (ext_type, ext_type2, data, timestamp, weight) VALUES (?, ?, ?, ?, ?)',
-  array($v->ext_type, $v->ext_type2, serialize($v->data), $_SERVER['REQUEST_TIME'], $v->weight))){
-    $v->id = db_last_insert_id();
-    return $v;
+function dd_storage_save(&$v) {
+  $v->timestamp = $_SERVER['REQUEST_TIME'];
+  if($v->id){
+    $args = array('id');
+  }else{
+    $args = NULL;
   }
+  if(db_write_record('storage', $v, $args)){
+    return true;
+  }
+  
+  return false;
 }
 
 /**
@@ -1121,7 +1145,7 @@ function dd_storage_del($v) {
  * 管理界面
  * @param (string) $ext_type
  */
-function dd_storage_admin($ext_type, $ext_type2 = NULL){
+function dd_storage_admin($ext_type, $ext_type2 = NULL, $ext_id = NULL, $fetch = NULL, $limit = NULL){
   global $pager_total_items;
   
   $info = module_invoke_all('dd_storage_info');
@@ -1140,7 +1164,11 @@ function dd_storage_admin($ext_type, $ext_type2 = NULL){
           }
         break;
         case 'delete':
-          db_exec('DELETE FROM {storage} WHERE id = ? AND ext_type = ?', array($_GET['storage_id'], $ext_type));
+          if(db_exec('DELETE FROM {storage} WHERE id = ? AND ext_type = ?', array($_GET['storage_id'], $ext_type))){
+            echo 'tr';
+          }else{
+            echo t('system', '删除失败');
+          }
         exit;
         case 'weight':
           db_exec('UPDATE {storage} SET weight = ? WHERE id = ? AND ext_type = ?', array($_GET['storage_id'], $ext_type));
@@ -1155,15 +1183,23 @@ function dd_storage_admin($ext_type, $ext_type2 = NULL){
     }
   }
   
-  if($ext_type2){
-    $fetch = pager_query('SELECT * FROM {storage} WHERE ext_type = ? AND ext_type2 = ? ORDER BY weight ASC, timestamp DESC',
-    10, 1, NULL, array($ext_type, $ext_type2));
-  }else{
-    $fetch = pager_query('SELECT * FROM {storage} WHERE ext_type = ? ORDER BY ext_type ASC, timestamp DESC',
-    10, 1, NULL, array($ext_type));
+  if(!isset($fetch)){
+  
+    if($ext_id){
+      $fetch = pager_query('SELECT * FROM {storage} WHERE ext_id = ? AND ext_type = ? AND ext_type2 = ? 
+      ORDER BY weight ASC, timestamp DESC', 10, 1, NULL, array($ext_id, $ext_type, $ext_type2));
+    }else if($ext_type2){
+      $fetch = pager_query('SELECT * FROM {storage} WHERE ext_type = ? AND ext_type2 = ? 
+      ORDER BY weight ASC, timestamp DESC', 10, 1, NULL, array($ext_type, $ext_type2));
+    }else{
+      $fetch = pager_query('SELECT * FROM {storage} WHERE ext_type = ? ORDER BY ext_type ASC, timestamp DESC',
+      10, 1, NULL, array($ext_type));
+    }
+    
   }
   
   if($fetch){
+    $redirect = urlencode(url($_GET['q'], array('query' => dd_query_string_encode($_GET, array_merge(array('q', 'storage_op', 'storage_id'), array_keys($_COOKIE))))));
     foreach($fetch as $o){
       
       if($info[$ext_type][$o->ext_type2]['admin_view'] && function_exists($info[$o->ext_type][$o->ext_type2]['admin_view'])){
@@ -1189,9 +1225,10 @@ function dd_storage_admin($ext_type, $ext_type2 = NULL){
             '#end' => 30
           )
         ), 'class' => 'center_table'),
+        
         array('data' => dd_imp(array(
-            l(t('system', '编辑'), $_GET['q'].'/'.$o->ext_type2, array('query' => 'storage_op=update&storage_id='.$o->id)),
-            l(t('system', '删除'), $_GET['q'].'/'.$o->ext_type2, array(
+            l(t('system', '编辑'), $_GET['q'], array('query' => 'storage_op=update&storage_id='.$o->id.'&redirect='.$redirect)),
+            l(t('system', '删除'), $_GET['q'], array(
               'query' => 'storage_op=delete&storage_id='.$o->id,
               'attributes' => array('class' => 'confirmajax')
             ))
@@ -1205,19 +1242,23 @@ function dd_storage_admin($ext_type, $ext_type2 = NULL){
     
   }
   
-  if($ext_type2 && $info[$ext_type][$ext_type2]){
-    if($_GET['storage_op'] == 'update' && $_GET['storage_id']){
-      
-      $output .= dd_get_form('dd_storage_form', $v);
-      
-    }else if(!$info[$ext_type]['limit'] || $pager_total_items[1] < $info[$ext_type]['limit']){
-      $v = new stdClass;
-      $v->ext_type = $ext_type;
-      $v->ext_type2 = $ext_type2;
-      
-      $output .= dd_get_form('dd_storage_form', $v);
-    }
+  $limit = !isset($limit) ? $limit : $pager_total_items[1];
+  
+  if($_GET['storage_op'] == 'update' && $_GET['storage_id'] && $v){
+    
+    $output .= '<div id="dd_storage_form_call_'.$ext_type2.'">'.dd_get_form('dd_storage_form', $v).'</div>';
+    
+  }else if($ext_type2 && $info[$ext_type][$ext_type2] 
+  && (!$info[$ext_type][$ext_type2]['limit'] || $limit < $info[$ext_type][$ext_type2]['limit'])){
+    
+    $v = new stdClass;
+    $v->ext_type = $ext_type;
+    $v->ext_type2 = $ext_type2;
+    $v->ext_id = $ext_id;
+    
+    $output .= '<div id="dd_storage_form_call_'.$ext_type2.'">'.dd_get_form('dd_storage_form', $v).'</div>';
   }
+  
   return $output;
 }
 
@@ -1273,7 +1314,13 @@ function dd_storage_form($v = NULL){
     '#title' => t('system', '文件'),
     '#options' => array('image' => true)
   );
-  
+  if($v->data['file']){
+    $form['fields']['data']['file'] = array(
+      '#type' => 'hidden',
+      '#default_value' => $v->data['file'],
+      '#constant' => 1
+    );
+  }
   $form['fields']['id'] = array(
     '#type' => 'hidden',
     '#default_value' => $v->id,
@@ -1289,7 +1336,11 @@ function dd_storage_form($v = NULL){
     '#default_value' => $v->ext_type,
     '#constant' => 1
   );
-  
+  $form['fields']['ext_id'] = array(
+    '#type' => 'hidden',
+    '#default_value' => $v->ext_id,
+    '#constant' => 1
+  );
   module_alter_all('dd_storage_form', $v, $form);
   
   if(!$form) return false;
@@ -1319,31 +1370,35 @@ function dd_storage_form_validate(&$form, &$v){
       $validate['savepath'] = 'storage';
     }
     if(!$v['_dida_values']->id){
-      if($obj = dd_storage_insert($v['_dida_values'])){
-        if($validate){
-          $validate['filename'] = $obj->id;
-          if($file = file_save_upload($_FILES['file'], $validate, 0)){
-            $obj->data['file'] = $file->filepath;
-            dd_storage_update($obj);
-          }
+      if(db_exec('INSERT INTO {storage} (ext_type, data) VALUES (?, 0)', array($v['_dida_values']->ext_type))){
+        $v['_dida_values']->id = db_last_insert_id();
+      }else{
+        dd_set_message(t('system', '意外错误，写入数据库失败'));
+        return true;
+      }
+    }
+    
+    if($form['fields']['file'] && $_FILES['file']){
+      if(is_array($form['fields']['file']['#options'])){
+        $validate = $form['fields']['file']['#options'];
+      }
+      
+      $validate['no_insert'] = true;
+      $validate['savepath'] = 'storage';
+      $validate['filename'] = $v['_dida_values']->id;
+      if($file = file_save_upload($_FILES['file'], $validate, 0)){
+        if($v['_dida_values']->data['file'] && $file->filepath == $v['_dida_values']->data['file']){
+          file_delete_dir(str_replace(end(explode('/', $file->filepath)), $v['_dida_values']->id, $file->filepath));
         }
-        
-        module_invoke_all('dd_storage_save', $obj);
-        
-        dd_set_message(t('system', '添加成功'));
+        $v['_dida_values']->data['file'] = $file->filepath;
       }
-    }else{
-      if($validate){
-        $validate['filename'] = $v['_dida_values']->id;
-        if($file = file_save_upload($_FILES['file'], $validate, 0)){
-          $v['_dida_values']->data['file'] = $file->filepath;
-        }
-      }
-      if($obj = dd_storage_update($v['_dida_values'])){
-        module_invoke_all('dd_storage_save', $obj);
-        dd_set_message(t('system', '编辑成功'));
-      }
-    } 
+    }
+    
+    if(dd_storage_save($v['_dida_values'])){
+      module_invoke_all('dd_storage_save', $v['_dida_values']);
+      dd_set_message(t('system', '操作成功'));
+    }
+    
   }
   return $t;
 }
@@ -1420,10 +1475,32 @@ function system_theme(){
  * hook_cron
  */
 function system_cron($timestamp){
-  system_status_update(); // 检查更新
+  system_status_update('cron'); // 检查更新
   // 清除过期缓存
   db_exec('DELETE FROM {cache} WHERE expire != 0 AND expire < ?', array($_SERVER['REQUEST_TIME']));
   db_exec('DELETE FROM {cache_page} WHERE expire != 0 AND expire < ?', array($_SERVER['REQUEST_TIME']));
   db_exec('DELETE FROM {cache_menu} WHERE expire != 0 AND expire < ?', array($_SERVER['REQUEST_TIME']));
   db_exec('DELETE FROM {cache_form} WHERE expire != 0 AND expire < ?', array($_SERVER['REQUEST_TIME']));
+  
+  // 清理过期文件，storage 表中不存在的条目，则视为过期
+  
+  $path = file_directory_path() . '/storage';
+  if(is_dir($path)){
+    $d = dir($path);
+    if($fetch = db_query('SELECT id FROM {storage}')){
+      foreach($fetch as $o){
+        $ids[$o->id] = $o->id;
+      }
+    }
+    while(false !== ($entry = $d->read())) {
+      $filepath = $path . '/'. $entry;
+      if(is_file($filepath)){
+        $a = explode('.', $entry, 2);
+        if(!$ids[$a[0]]){
+          file_delete_file($filepath, $a[0]);
+        }
+      }
+    }
+    $d->close();
+  }
 }

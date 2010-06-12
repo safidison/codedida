@@ -224,7 +224,7 @@ function _form_save_submit($fields, $subvalue, &$value){
  * ajax 验证
  * ___args settings 
  */
-function dd_ajax_validate($uid, $form_id, $form_token){
+function dd_ajax_validate($uid, $form_id, $form_token, $clear = 1){
 	if($cache = dd_get_form_cache($uid, $form_id, $form_token)){
 	  $form_values = $_POST;
 	  
@@ -253,7 +253,7 @@ function dd_ajax_validate($uid, $form_id, $form_token){
       }
 		}
     
-    dd_del_form_cache($uid, $form_id, $form_token);
+    if($clear) dd_del_form_cache($uid, $form_id, $form_token);
 	}
 }
 
