@@ -28,6 +28,11 @@ function user_menu(){
     'page_callback' => 'user_default',
     'file' => 'user.page.inc',
   );
+  $items['json/user'] = array(
+    'access_arguments' => array('user use search user'),
+    'page_callback' => 'user_page_json',
+    'file' => 'user.page.inc',
+  );
   $items['user/login'] = array(
     'title' => '登录',
     'access_callback' => 'user_is_not_login',
@@ -387,10 +392,15 @@ function user_edit_form($ac, $op = 'user'){
       '#type' => 'textfield',
       '#default_value' => $ac->name,
       '#required' => 1,
+      '#weight' => -100,
       '#title' => t('user', '昵称'),
     );
   }else{
-    $form['fields']['name'] = array('#value' => $ac->name, '#title' => t('user', '昵称'));
+    $form['fields']['name'] = array(
+      '#value' => $ac->name, 
+      '#weight' => -100,
+      '#title' => t('user', '昵称')
+    );
   }
   
   if(user_access('admin user change mail') || ($user->uid == $ac->uid && user_access('admin user change mail'))){
@@ -398,19 +408,26 @@ function user_edit_form($ac, $op = 'user'){
       '#type' => 'textfield',
       '#default_value' => $ac->mail,
       '#required' => 1,
+      '#weight' => -90,
       '#title' => t('user', '帐号'),
     );
   }else{
-    $form['fields']['mail'] = array('#value' => $ac->mail, '#title' => t('user', '帐号'));
+    $form['fields']['mail'] = array(
+      '#value' => $ac->mail,
+      '#weight' => -90,
+      '#title' => t('user', '帐号')
+    );
   }
   
   $form['fields']['created'] = array('#value' => format_date($ac->created), '#title' => t('user', '注册时间'));
   $form['fields']['host'] = array(
     '#value' => dd_get_ip($ac->host, 1),
+    '#weight' => -80,
     '#title' => t('user', '上次登录主机')
   );
   $form['fields']['login'] = array(
     '#value' => $ac->login ? format_date($ac->login) : '首次登录',
+    '#weight' => -80,
     '#title' => t('user', '上次登录时间')
   );
   
@@ -424,6 +441,7 @@ function user_edit_form($ac, $op = 'user'){
       '#type' => 'password',
       '#title' => t('user', '密码'),
       '#required' => 1,
+      '#weight' => -70,
       '#description' => t('user', '必须验证密码才能修改资料，!link', array('!link' => l(t('user', '修改密码'), 'user/newpass')))
     );
   }
@@ -433,6 +451,7 @@ function user_edit_form($ac, $op = 'user'){
 	    '#type' => 'select',
 	    '#title' => t('user', '语言'),
 	    '#default_value' => $ac->language,
+	    '#weight' => -60,
 	    '#options' => array('' => t('user', '默认')) + $conf['languages'],
 	  );
 	}
@@ -445,6 +464,7 @@ function user_edit_form($ac, $op = 'user'){
 	  $form['fields']['theme'] = array(
 	    '#type' => 'select',
 	    '#title' => t('user', '主题'),
+	    '#weight' => -60,
 	    '#default_value' => $ac->theme,
 	    '#options' => array('' => t('user', '默认')) + $themes,
 	  );
@@ -456,6 +476,7 @@ function user_edit_form($ac, $op = 'user'){
 	  $form['fields']['rid'] = array(
 	    '#type' => 'checkbox',
 	    '#title' => t('user', '角色'),
+	    '#weight' => -60,
 	    '#default_value' => $ac->roles ? array_flip($ac->roles) : NULL,
 	    '#options' => $opt,
 	  );
@@ -687,6 +708,7 @@ function user_register_form($op = 'user'){
     '#type' => 'textfield',
     '#title' => t('user', '邮箱'),
     '#required' => true,
+    '#weight' => -100,
     '#description' => t('user', '该邮箱将用做接收密码等重要信息'),
     '#attributes' => array(
       'class' => "{email:true}"
@@ -696,12 +718,14 @@ function user_register_form($op = 'user'){
     '#type' => 'textfield',
     '#title' => t('user', '昵称'),
     '#required' => true,
+    '#weight' => -90,
     '#description' => t('user', '昵称长度 2-20，中英文皆可'),
   );
   $form['fields']['pass'] = array(
     '#type' => 'password',
     '#title' => t('user', '密码'),
     '#required' => true,
+    '#weight' => -80,
     '#description' => t('user', '密码区分大小写'),
     '#attributes' => array(
       'id' => 'password',
@@ -711,6 +735,7 @@ function user_register_form($op = 'user'){
     '#type' => 'password',
     '#title' => t('user', '确认'),
     '#required' => true,
+    '#weight' => -79,
     '#description' => t('user', '重复一次密码'),
     '#attributes' => array(
       'class' => "{equalTo:'#password'}"
@@ -851,9 +876,8 @@ function user_set_roles($uid, $rid){
  * @param (array) $role
  */
 function user_save_role($role = array()){
-  $name = $role['name'];
-  if(!$rid = db_query('SELECT rid FROM {role} WHERE name = ?', array($name), array('return' => 'column'))){
-    if(db_exec('INSERT INTO {role} (name, perm) VALUES (?, ?)', array($name, ($role['perm'] ? serialize($role['perm']) : '')))){
+  if(!$rid = db_query('SELECT rid FROM {role} WHERE name = ?', array($role['name']), array('return' => 'column'))){
+    if(db_exec('INSERT INTO {role} (name, perm) VALUES (?, ?)', array($role['name'], ($role['perm'] ? serialize($role['perm']) : '')))){
       return db_last_insert_id();
     }
   }else if($role['perm']){
@@ -880,9 +904,10 @@ function user_insert($value){
   $value->created = $_SERVER['REQUEST_TIME'];
   $value->session = $_COOKIE[session_name()];
   $value->host = ip_address();
+  $value->pass = md5($value->pass);
   
-  if(db_exec('INSERT INTO {users} (name, pass, mail, theme, language, created, status, active, login, count, host, session, data) VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, 0, ?, ?, ?)', array($value->name, md5($value->pass), $value->mail, $value->theme, $value->language, $value->created, $value->status, $value->host, $value->session, NULL))){
-    if($value->uid = db_last_insert_id()){
+  if(db_write_record('users', $value)){
+    if($value->uid){
       user_set_roles($value->uid, $value->rid);
       $value->roles = user_get_roles($uid);
       
@@ -1362,6 +1387,8 @@ function user_session_reg(&$ac) {
 }
 
 function user_clear_session($uid){
+  if($GLOBALS['user']->uid != $uid) return false;
+  
   if($_SESSION['user'] = user_load($uid, 1)){
     global $user;
     $user = $_SESSION['user'];

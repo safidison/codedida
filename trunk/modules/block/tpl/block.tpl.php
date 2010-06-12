@@ -5,7 +5,7 @@
  */
 ?>
 
-<div class="block block_<?php echo $block->region ?>_<?php echo $block->module ?>" id="block_<?php echo $block->region ?>_<?php echo $block->module ?>_<?php echo $block->delta ?>">
+<div class="block block_module_<?php echo $block->module ?>" id="block_<?php echo $block->module ?>_<?php echo $block->delta ?>">
   <?php if($block->title) :?>
     <h3 class="block_title"><?php echo $block->title?></h3>
   <?php endif?>

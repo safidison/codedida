@@ -120,7 +120,6 @@ function system_modules_validate($form, $value){
   }
   
   if($enabled || $disabled){
-    module_clear_cache();
     cache_del('cid', 'cache_hook');
     theme_get_cache();
   }

@@ -316,6 +316,14 @@ function system_site_settings(){
     '#default_value' => var_get('sql_info', 1),
     '#options' => array(t('system', '不显示'), t('system', '显示'), t('system', '仅向超级管理员显示')),
   );
+  $form['fields']['site_mode'] = array(
+    '#type' => 'radio',
+    '#title' => t('system', '开发模式'),
+    '#required' => true,
+    '#default_value' => var_get('site_mode', 1),
+    '#description' => t('system', '开发模式将禁用某些缓存，以便于调试'),
+    '#options' => array(t('system', '否'), t('system', '是')),
+  );
   $form['fields']['cache_css_and_js'] = array(
     '#type' => 'radio',
     '#title' => t('system', '合并CSS和JS'),

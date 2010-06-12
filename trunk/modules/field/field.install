@@ -89,6 +89,7 @@ function field_schema(){
         'type' => 'text',
         'not null' => FALSE,
         'size' => 'medium',
+        'serialize' => true,
         'description' => '配置参数'
       ),
     ),

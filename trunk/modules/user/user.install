@@ -20,6 +20,7 @@ function user_schema() {
         'type' => 'text',
         'not null' => FALSE,
         'size' => 'big',
+        'serialize' => true,
         'description' => '角色组对应权限'
       ),
       'count' => array(
@@ -156,6 +157,7 @@ function user_schema() {
         'type' => 'text',
         'not null' => FALSE,
         'size' => 'big',
+        'serialize' => true,
         'description' => '其它数据',
       ),
     ),
