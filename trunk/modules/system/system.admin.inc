@@ -759,6 +759,7 @@ function system_cache_clear_submit($form, $value){
   if($value['value']['modules']){
     module_set_list('module', 'modules');
     module_enabled_variable('module');
+    cache_del('cid', 'schema');
     dd_set_message(t('system', '模块信息缓存清除成功'));
   }
   if($value['value']['themes']){

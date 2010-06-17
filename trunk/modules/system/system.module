@@ -714,19 +714,45 @@ function dd_get_editor($dom, $v = array()){
 		dd_add_js('misc/farbtastic.js');
     dd_add_js('misc/jquery.form.js');
 		$toolbar['full'] = array(
-      array('Source','-','AutoSave','Maximize','Preview','-', 'Templates','Cut','Copy','Paste','PasteText', 'PasteFromWord','-', 'Print', 'SpellChecker', 'Scayt', 'Undo','Redo', '-', 'Find','Replace','-', 'SelectAll','RemoveFormat','Form','Checkbox','Radio','TextField','Textarea','Select','Button','ImageButton','HiddenField'),
+      array(
+        'Source','-','AutoSave','Maximize','Preview','-',
+        'Templates','Cut','Copy','Paste','PasteText', 'PasteFromWord','-',
+        'Print', 'SpellChecker', 'Scayt', 'Undo','Redo', '-','Find','Replace','-',
+        'SelectAll','RemoveFormat','Form','Checkbox','Radio','TextField',
+        'Textarea','Select','Button','ImageButton','HiddenField'),
       '/',
-      array('Bold','Italic','Underline','Strike','-', 'Subscript','Superscript','NumberedList','BulletedList','-', 'Outdent','Indent','Blockquote','JustifyLeft','JustifyCenter','JustifyRight', 'JustifyBlock','Link','Unlink','Anchor','Image','Flash','Table', 'HorizontalRule','Smiley','SpecialChar','PageBreak'),
+      array(
+        'Bold','Italic','Underline','Strike','-',
+        'Subscript','Superscript','NumberedList','BulletedList','-',
+        'Outdent','Indent','Blockquote','JustifyLeft','JustifyCenter','JustifyRight',
+        'JustifyBlock','Link','Unlink','Anchor','Image','Flash','Table', 'HorizontalRule',
+        'Smiley','SpecialChar','PageBreak'),
       '/',
-      array('Styles','Format','Font','FontSize','TextColor', 'BGColor','ShowBlocks','-','MyColor', 'About', 'swfupload', 'insertcode')
+      array(
+        'Styles','Format','Font','FontSize','TextColor',
+        'BGColor','ShowBlocks','-','MyColor', 'About', 'swfupload', 'insertcode'
+      )
     );
     
-		$toolbar['small'] = array(array('Source', 'Maximize', '-', 'Strike', 'Underline', 'Bold', 'Italic','TextColor','BGColor', '-', 'NumberedList', 'BulletedList', '-', 'Link', 'Unlink', '-', 'insertcode'));
+		$toolbar['small'] = array(array(
+  		'Source', 'Maximize', '-', 'Strike', 'Underline', 'Bold',
+  		'Italic','TextColor','BGColor', '-', 'NumberedList', 'BulletedList', '-',
+  		'Link', 'Unlink', '-', 'insertcode', 'Smiley'
+		));
 		
 		$toolbar['medium'] = array(
-			array('Source', 'Maximize', 'AutoSave', '-', 'Strike', 'Underline', 'Bold', 'Italic', 'TextColor','BGColor', '-', 'Cut', 'Copy', 'Paste', 'PasteText','PasteFromWord', 'Undo', 'Redo', '-', 'NumberedList', 'BulletedList', 'BodyBreak'),
+			array(
+  			'Source', 'Maximize', 'AutoSave', '-', 'Strike',
+  			'Underline', 'Bold', 'Italic', 'TextColor','BGColor', '-',
+  			'Cut', 'Copy', 'Paste', 'PasteText','PasteFromWord', 'Undo', 'Redo', '-',
+  			'NumberedList', 'BulletedList', 'BodyBreak'
+			),
 			'/',
-			array('Format','Font','FontSize', '-', 'Link', 'Unlink', 'Image','Table','HorizontalRule', '-', 'RemoveFormat', 'SelectAll', '-', 'Blockquote', 'swfupload', 'insertcode')
+			array(
+  			'Format','Font','FontSize', '-', 'Link', 'Unlink',
+  			'Image','Table','HorizontalRule', '-', 'RemoveFormat', 'SelectAll', '-',
+  			'Blockquote', 'swfupload', 'insertcode', 'Smiley'
+			)
 		);
 		
 		dd_add_js('var toolbar = '.dd_to_js($toolbar).';', 'inline_nojq', 0, 'footer');
@@ -1242,7 +1268,7 @@ function dd_storage_admin($ext_type, $ext_type2 = NULL, $ext_id = NULL, $fetch =
     
   }
   
-  $limit = !isset($limit) ? $limit : $pager_total_items[1];
+  $limit = isset($limit) ? $limit : $pager_total_items[1];
   
   if($_GET['storage_op'] == 'update' && $_GET['storage_id'] && $v){
     
@@ -1250,7 +1276,6 @@ function dd_storage_admin($ext_type, $ext_type2 = NULL, $ext_id = NULL, $fetch =
     
   }else if($ext_type2 && $info[$ext_type][$ext_type2] 
   && (!$info[$ext_type][$ext_type2]['limit'] || $limit < $info[$ext_type][$ext_type2]['limit'])){
-    
     $v = new stdClass;
     $v->ext_type = $ext_type;
     $v->ext_type2 = $ext_type2;
@@ -1266,7 +1291,7 @@ function _system_get_option_name($key, $options = NULL){
   $args = array(
     'title' => t('system', '标题'),
     'path' => t('system', '链接'),
-    'file' => t('system', '文件'),
+    'file' => t('system', '图片'),
   );
   
   if($options){
@@ -1311,7 +1336,7 @@ function dd_storage_form($v = NULL){
   
   $form['fields']['file'] = array(
     '#type' => 'file',
-    '#title' => t('system', '文件'),
+    '#title' => t('system', '图片'),
     '#options' => array('image' => true)
   );
   if($v->data['file']){
@@ -1338,7 +1363,7 @@ function dd_storage_form($v = NULL){
   );
   $form['fields']['ext_id'] = array(
     '#type' => 'hidden',
-    '#default_value' => $v->ext_id,
+    '#default_value' => $v->ext_id ? $v->ext_id : 0,
     '#constant' => 1
   );
   module_alter_all('dd_storage_form', $v, $form);

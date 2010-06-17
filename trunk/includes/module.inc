@@ -350,7 +350,7 @@ function module_clear_cache(){
   cache_del('cid', 'cache_hook');
   cache_del('empty', NULL, 'cache_menu');
   cache_del('*', 'admin_menus_');
-  module_get_schema('users', 1);
+  cache_del('cid', 'schema');
   var_init();
   menu_set_item();
 }
@@ -700,6 +700,7 @@ function module_get_schema($table, $clear = NULL){
       
       if($lists = _module_invoke_all('schema')){
         foreach($lists as $module => $ts){
+          module_alter_all('alter_schema', $module, $ts);
           foreach($ts as $name => $fields){
             if(in_array($name, $_tables)){
               if($fields['fields']){
