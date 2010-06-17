@@ -2620,13 +2620,14 @@ function temp_get($tid){
   return 0;
 }
 
-function temp_set($tid, $data, $type = NULL){
+function temp_set($tid, $data, $type, $uid = NULL){
   $v = array(
     'serialized' => 0,
     'data' => $data,
     'tid' => $tid,
-    'timstamp' => $_SERVER['REQUEST_TIME'],
-    'type' => $type
+    'timestamp' => $_SERVER['REQUEST_TIME'],
+    'type' => $type,
+    'uid' => isset($uid) ? $uid : $GLOBALS['user']->uid
   );
   
   if (is_object($data) || is_array($data)) {

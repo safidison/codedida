@@ -16,6 +16,7 @@
 .js_messageShow{
   padding: 20px;
   border: 1px solid #ccc;
+  background: #fff;
 }
 #dd_database_debug{
 	text-align: left;

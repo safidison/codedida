@@ -87,8 +87,9 @@ function menu_get_item($path = NULL) {
     if($item['load_functions']){
       $load = menu_match(unserialize($item['load_functions']), $item['systemUrl']);
       if($load === false) return MENU_NOT_FOUND;
+    }else{
+      $load = arg(NULL, $url);
     }
-    
     if($item['access_callback'] != 1){
       if($item['access_arguments']){
         if($load){
@@ -453,7 +454,7 @@ function menu_set_item(){
           $masks[$fit] = 1;
           $sort[$path] = $number_parts;
           
-          $menu['fit'] = $fit;
+          $menu['fit'] = $fit ? $fit : 0;
           $menu['module'] = $module;
           if($menu['load_functions']) {
             $menu['load_functions'] = serialize($menu['load_functions']);
@@ -472,6 +473,20 @@ function menu_set_item(){
           }
           $menu['access_callback'] = $menu['access_callback'] ? $menu['access_callback'] : 'user_access';
           
+          if(!$menu['weight']){
+            $menu['weight'] = 0;
+          }
+          
+          if(!$menu['title_callback']){
+            $menu['title_callback'] = '';
+          }
+          
+          if(!$menu['description']){
+            $menu['description'] = '';
+          }
+          
+          $menu['path'] = $path;
+          
           $menus[$path] = $menu;
         }
       }
@@ -481,9 +496,29 @@ function menu_set_item(){
   if($menus){
     array_multisort($sort, SORT_NUMERIC, $menus);
     db_query('DELETE FROM {menu}');
+    
+    $fields = array(
+      'path', 'module', 'title', 'title_callback', 'title_arguments', 'load_functions',
+      'access_callback', 'access_arguments', 'page_callback', 
+      'page_arguments', 'description', 'file', 'fit', 'weight'
+    );
+    
+    $place = $args = array();
+    
+    $i = 0;
     foreach($menus as $path => $menu){
-      db_exec('INSERT INTO {menu} (path, module, title, title_callback, title_arguments, load_functions, access_callback, access_arguments, page_callback, page_arguments, description, file, fit, weight) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', array($path, $menu['module'], $menu['title'], $menu['title_callback'], $menu['title_arguments'], $menu['load_functions'], $menu['access_callback'], $menu['access_arguments'], $menu['page_callback'], $menu['page_arguments'], $menu['description'], $menu['file'], ($menu['fit'] ? $menu['fit'] : 0), ($menu['weight'] ? $menu['weight'] : 0)));
+      $keys = array();
+      foreach($fields as $field){
+        $key = ':'.$field.$i;
+        $args[$key] = $menu[$field];
+        $keys[] = $key;
+      }
+      $place[] = '('.implode(',', $keys).')';
+      ++$i;
     }
+    
+    db_exec('INSERT INTO {menu} ('.implode(',', $fields).') VALUES '.implode(',', $place), $args);
+    
     $masks = array_keys($masks);
     rsort($masks);
     var_set('menu_masks', $masks);

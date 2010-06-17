@@ -384,10 +384,10 @@ function theme_item_list($items = array(), $title = NULL, $type = 'ul', $attribu
   if($wrapper){
     $output = '<div class="item-list'.$class.'">';
   }
-  if (isset($title)) {
+  if(isset($title)) {
     $output .= '<h3>'. $title .'</h3>';
   }
-  if (!empty($items)) {
+  if(!empty($items)) {
     $items = array_filter($items);
     $output .= "<$type". dd_attributes($attributes) .'>';
     $num_items = count($items);
@@ -533,7 +533,7 @@ function table_header($cell, $header, $ts) {
       $ts['sort'] = (($ts['sort'] == 'asc') ? 'desc' : 'asc');
       if (isset($cell['class'])) {
         $cell['class'] .= ' active';
-      }else {
+      }else{
         $cell['class'] = 'active';
       }
       $class = 'header_ac';

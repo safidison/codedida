@@ -419,7 +419,11 @@ function user_edit_form($ac, $op = 'user'){
     );
   }
   
-  $form['fields']['created'] = array('#value' => format_date($ac->created), '#title' => t('user', '注册时间'));
+  $form['fields']['created'] = array(
+    '#weight' => -80,
+    '#value' => format_date($ac->created),
+    '#title' => t('user', '注册时间')
+  );
   $form['fields']['host'] = array(
     '#value' => dd_get_ip($ac->host, 1),
     '#weight' => -80,
@@ -582,8 +586,9 @@ function user_edit_submit($form, &$value){
     $ac->name = $value['_dida_values']->name;
   }
   
-  if(db_exec('UPDATE {users} SET name = ?, mail = ?, theme = ?, language = ? WHERE uid = ?',
-  array($ac->name, $ac->mail, $ac->theme, $ac->language, $ac->uid), array('return' => 1))){
+  $value['_dida_values']->pass = md5($value['_dida_values']->pass);
+  
+  if(db_write_record('users', $value['_dida_values'], array('uid'))){
     /**
      * 触发 hook_user_save()
      */
@@ -1664,7 +1669,7 @@ function user_get_avatar_fid(){
  * @param (int) $uid
  *  用户 id
  */
-function user_get_avatar($uid, $size = NULL){
+function user_get_avatar($uid, $size = NULL, $style = 'scale'){
   static $data;
   if(!isset($data[$uid])){
     $data[$uid] = var_get_key('user', 'default_logo', 'misc/images/avatar.gif');
@@ -1677,7 +1682,7 @@ function user_get_avatar($uid, $size = NULL){
   }
   
   if($size && $data[$uid] != var_get_key('user', 'default_logo', 'misc/images/avatar.gif')){
-    $data[$uid] = image_get_thumb('thumb_'.$uid, $data[$uid], $size);
+    $data[$uid] = image_get_thumb('thumb_'.$uid, $data[$uid], $size, $style);
   }
   
   return $data[$uid];

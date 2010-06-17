@@ -2270,6 +2270,9 @@ function field_get_cache_field($field_id = NULL, $clear = 0){
       $lists = field_get_call_lists();
       foreach($fetch as $o){
         $group = module_invoke($o->module, 'field_call_group', $o->type);
+        
+        $field_count[$o->module.$o->type] = 1;
+        
         if(!$group['not_cache']){
           if($o->access) $o->access = unserialize($o->access);
           if($o->data) $o->data = unserialize($o->data);
@@ -2282,6 +2285,7 @@ function field_get_cache_field($field_id = NULL, $clear = 0){
       }
     }
     var_set('field_data', $data);
+    var_set('field_count', $field_count);
   }
   
   if($field_id && $data[$field_id] && $data[$field_id]->not_cache){
@@ -2433,6 +2437,9 @@ function field_get_node_data($nid, $type = 'term', $clear = NULL){
  *  节点对象
  */
 function field_get_node_load($module, $type, & $node, $ac = NULL){
+  global $conf;
+  
+  if(!$conf['field_count'][$module.$type]) return;
   
   if($cache = cache_get($module.$type.$node->nid, 'cache_field')){
     $node->fields = $cache->data;

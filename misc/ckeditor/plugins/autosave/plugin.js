@@ -1,6 +1,6 @@
-/*
-	autosave
-*/
+/**
+ * autosave
+ */
 var AutoSaveString;
 CKEDITOR.plugins.add('autosave',
 {
@@ -33,7 +33,8 @@ function PluginAutoSave(a){
   $(a.document).ready(function(){
     var b = a.document.getBody().getHtml();
     $('textarea[name='+a.name+']').val(b);
-    var s = $.param($('form').formToArray());
+    var s = $.param($('textarea[name='+a.name+']').closest('form').formToArray());
+    
     if(AutoSaveString != s) { // 表单数据与上次请求保存时不一致时才执行
       AutoSaveString = s;
       $.post(a.config.AutoSaveUrl, s, function(data){
