@@ -16,7 +16,7 @@
       </a>
     </div>
 		<div id="main"> 
-		 <?php if($sidebars_class) : ?><div id="content"><?php endif; ?>
+		 <?php if ($sidebars_class) : ?><div id="content"><?php endif; ?>
 				<div id="center">
 					<div class="column">
             <?php echo $breadcrumb; ?>
@@ -27,16 +27,16 @@
             <?php echo $content; ?>
 					</div>
 				</div>
-				<?php if($right) : ?>
+				<?php if ($right) : ?>
 					<div id="sidebar-right" class="sidebar">
 						<div class="column">
 							<?php echo $right; ?>
 						</div>
 					</div>
 				<?php endif; ?>
-			<?php if($sidebars_class) : ?></div><?php endif; ?>
+			<?php if ($sidebars_class) : ?></div><?php endif; ?>
 			
-			<?php if($left) : ?>
+			<?php if ($left) : ?>
 				<div id="sidebar-left" class="sidebar">
 					<div class="column">
 						<?php echo $left; ?>

@@ -1,5 +1,5 @@
 CKEDITOR.plugins.add('swfupload',{
-	init : function(a){
+	init : function(a) {
 		a.addCommand('swfupload', new CKEDITOR.dialogCommand('swfupload'));
 		a.ui.addButton( 'swfupload',{
 				label : '批量上传',
@@ -11,24 +11,24 @@ CKEDITOR.plugins.add('swfupload',{
 
 var instanceName = null;
 
-function ck_swfupload_error(file){
-  window.setTimeout(function(){$('#' + file.id).slideUp('slow', function(){$(this).remove()});}, 3000); 
+function ck_swfupload_error(file) {
+  window.setTimeout(function() {$('#' + file.id).slideUp('slow', function() {$(this).remove()});}, 3000); 
 }
 
-function ck_insert_img(src, title, alt, href){
-	if(instanceName != null){
+function ck_insert_img(src, title, alt, href) {
+	if (instanceName != null) {
 	  var a = CKEDITOR.instances[instanceName];
 	  var html = '<img src="'+src+'" title="'+title+'" alt="'+alt+'" />';
-	  if(href){
+	  if (href) {
 	    html = '<a href="'+href+'" target="_blank">'+html+'</a>';
 	  }
 	  a.insertHtml(html);
   }
 }
 
-function ck_swfupload_insert(file, path){
+function ck_swfupload_insert(file, path) {
   ck_insert_img(path, file.name, file.name, 0);
-  window.setTimeout(function(){$('#' + file.id).slideUp('slow', function(){$(this).remove()});}, 3000); 
+  window.setTimeout(function() {$('#' + file.id).slideUp('slow', function() {$(this).remove()});}, 3000); 
 }
 
 CKEDITOR.dialog.add('swfupload', function (a) {
@@ -48,9 +48,9 @@ CKEDITOR.dialog.add('swfupload', function (a) {
               html: '<div class="ckeditor_swfupload"><div id="swf_tabs"><a href="#" class="swf_view_click ck_tabs_ac">上传文件</a>'+(a.config.swf_Con.lists ? '<a href="#" class="files_view_click">浏览文件</a>' : '')+'</div><div id="files_view">loading</div><div class="ck_swfupload_wrapper"><div id="ck_swfupload"><div class="fieldset" id="fsUploadProgress"><span class="legend">文件队列</span></div><div class="su_content"><input type="button" class="su_stop_upload" value="暂停上传" /><input type="button" class="su_start_upload" value="开始上传" /><span id="swf_select_button"></span></div></div></div></div>'}]
       }],
       buttons: [CKEDITOR.dialog.okButton],
-      onShow: function(){
+      onShow: function() {
         instanceName = a.name;
-				$(function(){
+				$(function() {
           $('#fsUploadProgress tbody, .su_status, .su_loading').html('');
           $('.ck_swfupload_wrapper" input').attr('disabled', true).addClass('su_button_disabled');
           
@@ -59,14 +59,14 @@ CKEDITOR.dialog.add('swfupload', function (a) {
           $('.swf_view_click').addClass('ck_tabs_ac');
           $('.files_view_click').removeClass('ck_tabs_ac');
           
-          $('.files_view_click').click(function(){
+          $('.files_view_click').click(function() {
             
             $('#files_view').show();
             $('.ck_swfupload_wrapper').hide();
             
             $('#fsUploadProgress tbody, #fsUploadProgress .su_status').html('');
             $('.ck_swfupload_wrapper" input').attr('disabled', true).addClass('su_button_disabled');
-            if($('#files_view').text() == 'loading'){
+            if ($('#files_view').text() == 'loading') {
               var lists = a.config.swf_Con.lists || settings.base_path + 'misc/swfupload/lists.php';
               $('#files_view').html('<iframe src="'+lists+'" id="ck_files" name="ck_files"></iframe>');
             }
@@ -74,7 +74,7 @@ CKEDITOR.dialog.add('swfupload', function (a) {
             $('.swf_view_click').removeClass('ck_tabs_ac');
             return false;
           });
-          $('.swf_view_click').click(function(){
+          $('.swf_view_click').click(function() {
             $('#files_view').hide();
             $('.ck_swfupload_wrapper').show();
             $(this).addClass('ck_tabs_ac');

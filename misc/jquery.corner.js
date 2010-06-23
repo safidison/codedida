@@ -56,7 +56,7 @@ function gpc(node) {
 };
 
 function getWidth(fx, i, width) {
-    switch(fx) {
+    switch (fx) {
     case 'round':  return Math.round(width*(1-Math.cos(Math.asin(i/width))));
     case 'cool':   return Math.round(width*(1+Math.cos(Math.asin(i/width))));
     case 'sharp':  return Math.round(width*(1-Math.cos(Math.acos(i/width))));
@@ -91,7 +91,7 @@ $.fn.corner = function(options) {
         return this;
 	}
 
-    return this.each(function(index){
+    return this.each(function(index) {
 		var $this = $(this);
 		// meta values override options
 		var o = [$this.attr($.fn.corner.defaults.metaAttr) || '', options || ''].join(' ').toLowerCase();
@@ -200,7 +200,7 @@ $.fn.corner = function(options) {
 						
 						var common = { position: 'absolute', border: 'none', margin: 0, padding: 0, overflow: 'hidden', backgroundColor: strip.style.borderColor };
 						var $horz = $('<div/>').css(common).css({ width: width + 'px', height: '1px' });
-						switch(c) {
+						switch (c) {
 						case 'TL': $horz.css({ bottom: 0, left: 0 }); break;
 						case 'TR': $horz.css({ bottom: 0, right: 0 }); break;
 						case 'BL': $horz.css({ top: 0, left: 0 }); break;
@@ -209,7 +209,7 @@ $.fn.corner = function(options) {
 						d.appendChild($horz[0]);
 						
 						var $vert = $('<div/>').css(common).css({ top: 0, bottom: 0, width: '1px', height: width + 'px' });
-						switch(c) {
+						switch (c) {
 						case 'TL': $vert.css({ left: width }); break;
 						case 'TR': $vert.css({ right: width }); break;
 						case 'BL': $vert.css({ left: width }); break;

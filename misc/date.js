@@ -98,7 +98,7 @@ Date.format = 'dd/mm/yyyy';
 	 * @private
 	 */
 	function add(name, method) {
-		if( !Date.prototype[name] ) {
+		if ( !Date.prototype[name] ) {
 			Date.prototype[name] = method;
 		}
 	};

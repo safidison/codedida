@@ -8,9 +8,9 @@
  * Version 1.0
  */
 
-(function($){
-	jQuery.fn.timepicker = function(){
-		this.each(function(){
+(function($) {
+	jQuery.fn.timepicker = function() {
+		this.each(function() {
 			// get the ID and value of the current element
 			var i = this.id;
 			var v = $(this).val();
@@ -27,21 +27,21 @@
 			var p = (h >= 12 ? 'pm' : 'am');
 			
 			// adjust hour to 12-hour format
-			if(h > 12) h = h - 12;
+			if (h > 12) h = h - 12;
 				
 			// round minutes to nearest quarter hour
-			for(mn in mins){
-				if(m <= parseInt(mins[mn])){
+			for (mn in mins) {
+				if (m <= parseInt(mins[mn])) {
 					m = parseInt(mins[mn]);
 					break;
 				}
 			}
 			
 			// increment hour if we push minutes to next 00
-			if(m > 45){
+			if (m > 45) {
 				m = 0;
 				
-				switch(h){
+				switch (h) {
 					case(11):
 						h += 1;
 						p = (p == 'am' ? 'pm' : 'am');
@@ -58,7 +58,7 @@
 			}
 
 			// override with current values if applicable
-			if(v.length == 7){
+			if (v.length == 7) {
 				h = parseInt(v.substr(0,2));
 				m = parseInt(v.substr(3,2));
 				p = v.substr(5);
@@ -68,25 +68,25 @@
 			var output = '';
 			
 			output += '<select id="h_' + i + '" class="h timepicker">';				
-			for(hr in hrs){
+			for (hr in hrs) {
 				output += '<option value="' + hrs[hr] + '"';
-				if(parseInt(hrs[hr]) == h) output += ' selected';
+				if (parseInt(hrs[hr]) == h) output += ' selected';
 				output += '>' + hrs[hr] + '</option>';
 			}
 			output += '</select>';
 	
 			output += '<select id="m_' + i + '" class="m timepicker">';				
-			for(mn in mins){
+			for (mn in mins) {
 				output += '<option value="' + mins[mn] + '"';
-				if(parseInt(mins[mn]) == m) output += ' selected';
+				if (parseInt(mins[mn]) == m) output += ' selected';
 				output += '>' + mins[mn] + '</option>';
 			}
 			output += '</select>';				
 	
 			output += '<select id="p_' + i + '" class="p timepicker">';				
-			for(pp in ap){
+			for (pp in ap) {
 				output += '<option value="' + ap[pp] + '"';
-				if(ap[pp] == p) output += ' selected';
+				if (ap[pp] == p) output += ' selected';
 				output += '>' + ap[pp] + '</option>';
 			}
 			output += '</select>';
@@ -99,7 +99,7 @@
 		});
 		
 		
-		$('select.timepicker').change(function(){
+		$('select.timepicker').change(function() {
 			var i = this.id.substr(2);
 			var h = $('#h_' + i).val();
 			var m = $('#m_' + i).val();

@@ -12,14 +12,14 @@
  * @param (int) $id
  *  自定义 id，一般用于缓存
  */
-function filter_view($text, $format = NULL, $type = NULL, $id = NULL){
+function filter_view($text, $format = NULL, $type = NULL, $id = NULL) {
   global $conf;
-  if(!isset($format) || !$conf['formats'][$format]) {
+  if (!isset($format) || !$conf['formats'][$format]) {
     $format = $conf['default_format'];
   }
   
-  if($conf['filters'][$format] && is_array($conf['filters'][$format])){
-    foreach($conf['filters'][$format] as $filter){
+  if ($conf['filters'][$format] && is_array($conf['filters'][$format])) {
+    foreach ($conf['filters'][$format] as $filter) {
       $text = call_user_func($filter['module'] . '_filter', 'view', $filter['delta'], $filter['format'], $text, $filter['filter']);
     }
   }
@@ -29,14 +29,14 @@ function filter_view($text, $format = NULL, $type = NULL, $id = NULL){
 /**
  * PHP 解析
  */
-function filter_tags_php($text){
-  if(strpos($text, '<?php') !== false){
+function filter_tags_php($text) {
+  if (strpos($text, '<?php') !== false) {
     return preg_replace_callback('/<\?php(.*?)\?>/ims', '_filter_tags_php', $text);
   }
 }
 
-function _filter_tags_php($matches){
-  if($matches[1]){
+function _filter_tags_php($matches) {
+  if ($matches[1]) {
     ob_start();
     eval($matches[1]);
     $text = ob_get_contents();
@@ -48,35 +48,35 @@ function _filter_tags_php($matches){
 /**
  * 获取当前用户输入格式
  */
-function filter_user_format($ac = NULL){
+function filter_user_format($ac = NULL) {
   global $conf;
   $options = array();
   
-  if($conf['formats']){
-    if(!$ac){
+  if ($conf['formats']) {
+    if (!$ac) {
       $ac = $GLOBALS['user'];
     }
-    if($ac->uid != 1){
+    if ($ac->uid != 1) {
       $fids = array();
-      if($conf['default_format']){
+      if ($conf['default_format']) {
         $fids[] = $conf['default_format'];
       }
-      if($ac->roles){
-        foreach($ac->roles as $rid => $c){
-          if(is_array($conf['format_roles'][$rid])){
+      if ($ac->roles) {
+        foreach ($ac->roles as $rid => $c) {
+          if (is_array($conf['format_roles'][$rid])) {
             $fids = array_merge($fids, $conf['format_roles'][$rid]);
           }
         }
       }
-      if($fids){
-        foreach($conf['formats'] as $f){
-          if(in_array($f['format'], $fids)){
+      if ($fids) {
+        foreach ($conf['formats'] as $f) {
+          if (in_array($f['format'], $fids)) {
             $options[$f['format']] = $f['name'] .'<br /><span class="description form_description">'. check_plain(t('system', $f['description'])) .'</span><br />';
           }
         }
       }
-    }else{
-      foreach($conf['formats'] as $f){
+    } else {
+      foreach ($conf['formats'] as $f) {
         $options[$f['format']] = $f['name'] .'<br /><span class="description form_description">'. check_plain(t('system', $f['description'])) .'</span><br />';
       }
     }
@@ -88,13 +88,13 @@ function filter_user_format($ac = NULL){
  * 输入格式
  */
  
-function filter_form_field($format = NULL, $required = false, $title = NULL){
+function filter_form_field($format = NULL, $required = false, $title = NULL) {
   global $user, $conf;
-  if(!isset($format) || !$conf['formats'][$format]){
+  if (!isset($format) || !$conf['formats'][$format]) {
     $format = $conf['default_format'];
   }
   $option = filter_user_format();
-  if(count($option) > 1){
+  if (count($option) > 1) {
     $field = array(
       '#fieldset_prefix' => 'asc',
       '#fieldset_legend' => $title ? $title : t('system', '输入格式'),
@@ -104,7 +104,7 @@ function filter_form_field($format = NULL, $required = false, $title = NULL){
       '#fieldset_suffix' => 1,
       '#options' => filter_user_format()
     );
-  }else{
+  } else {
     $field = array(
       '#type' => 'hidden',
       '#default_value' => $format,
@@ -117,14 +117,14 @@ function filter_form_field($format = NULL, $required = false, $title = NULL){
 /**
  * 输入格式、角色格式配置缓存
  */
-function filter_set_cache(){
-  if($fetch = db_query('SELECT roles, format, name, description FROM {filter_format}', NULL, array('fetch' => 'array'))){
+function filter_set_cache() {
+  if ($fetch = db_query('SELECT roles, format, name, description FROM {filter_format}', NULL, array('fetch' => 'array'))) {
     $roles = array();
-    foreach($fetch as $o){
-      if($o['roles']){
+    foreach ($fetch as $o) {
+      if ($o['roles']) {
         $o['roles'] = unserialize($o['roles']);
-        if(is_array($o['roles'])){
-          foreach($o['roles'] as $rid){
+        if (is_array($o['roles'])) {
+          foreach ($o['roles'] as $rid) {
             $roles[$rid][$o['format']] = $o['format'];
           }
         }
@@ -133,8 +133,8 @@ function filter_set_cache(){
     }
   }
   
-  if($fetch = db_query('SELECT filter, format, delta, module FROM {filters} ORDER BY weight ASC, fid DESC', NULL, array('fetch' => 'array'))){
-    foreach($fetch as $o){
+  if ($fetch = db_query('SELECT filter, format, delta, module FROM {filters} ORDER BY weight ASC, fid DESC', NULL, array('fetch' => 'array'))) {
+    foreach ($fetch as $o) {
       $filters[$o['format']][] = $o;
     }
   }
@@ -150,11 +150,11 @@ function filter_set_cache(){
 /**
  * 检查输入法中是否含有 php 过滤器
  */
-function filter_is_php($format){
+function filter_is_php($format) {
   global $conf;
-  if($conf['filters'] && $conf['filters'][$format]){
-    foreach($conf['filters'][$format] as $f){
-      if($f['module'] == 'system' && $f['delta'] == 2){
+  if ($conf['filters'] && $conf['filters'][$format]) {
+    foreach ($conf['filters'][$format] as $f) {
+      if ($f['module'] == 'system' && $f['delta'] == 2) {
         return true;
       }
     }
@@ -164,31 +164,31 @@ function filter_is_php($format){
 /**
  * 获取自定义过滤器
  */
-function filter_get_filters($fid = NULL){
+function filter_get_filters($fid = NULL) {
   static $filters;
   
-  if(!isset($filters)){
-    if($cache = cache_get('filter_get_filters')){
+  if (!isset($filters)) {
+    if ($cache = cache_get('filter_get_filters')) {
       $filters = $cache->data;
-    }else{
-      if($fetch = db_query('SELECT * FROM {filter_tags}')){
-        foreach($fetch as $o){
-          if($o->module == 'system' && $o->body){
-            switch($o->delta){
+    } else {
+      if ($fetch = db_query('SELECT * FROM {filter_tags}')) {
+        foreach ($fetch as $o) {
+          if ($o->module == 'system' && $o->body) {
+            switch ($o->delta) {
               case 0: case 1:
-                if($tags = explode(' ', $o->body)){
-                  foreach($tags as $tag){
+                if ($tags = explode(' ', $o->body)) {
+                  foreach ($tags as $tag) {
                     $o->tags[$tag] = 1;
                     $o->strip_tags .= '<'.$tag.'>';
                   }
                 }
               break;
               case 2:
-                if($tags = explode("\n", $o->body)){
-                  foreach($tags as $tag){
-                    if(strpos($tag, '|') === false){
+                if ($tags = explode("\n", $o->body)) {
+                  foreach ($tags as $tag) {
+                    if (strpos($tag, '|') === false) {
                       $o->tags[$tag] = "";
-                    }else{
+                    } else {
                       $t = explode('|', $tag, 2);
                       $o->tags[$t[0]] = $t[1];
                     }

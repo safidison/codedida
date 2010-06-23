@@ -1,20 +1,20 @@
 // $Id$
-$(function(){
-  $('#field_admin_list select[name="field_list_required"]').change(function(){
+$(function() {
+  $('#field_admin_list select[name="field_list_required"]').change(function() {
     $.ajax({
       type: 'POST',
       dataType: 'html',
       data: 'field_field_id='+$(this).attr('alt')+'&field_change_required=' + $(this).val(),
-      success: function(data){
+      success: function(data) {
       }
     });
   });
-  $('#field_admin_list select[name="field_list_weight"]').change(function(){
+  $('#field_admin_list select[name="field_list_weight"]').change(function() {
     $.ajax({
       type: 'POST',
       dataType: 'html',
       data: 'field_field_id='+$(this).attr('alt')+'&field_change_weight=' + $(this).val(),
-      success: function(data){
+      success: function(data) {
       }
     });
   });
@@ -31,18 +31,18 @@ $(function(){
 			update: function(event, ui) { $('#block_left_system_adminLink .dida_sorttable_button').show(300); }
 		});
 		
-		$('#block_left_system_adminLink .dida_sorttable_button_cancel').click(function(){
+		$('#block_left_system_adminLink .dida_sorttable_button_cancel').click(function() {
 			result.sortable('cancel');
 			$('#block_left_system_adminLink .dida_sorttable_button').hide(300);
 		});
 		
-		$('#block_left_system_adminLink .dida_sorttable_button_save').click(function(){
+		$('#block_left_system_adminLink .dida_sorttable_button_save').click(function() {
 	    $.ajax({
 	      type: 'POST',
 	      dataType: 'html',
 	      url: Dida.url('sorttable'),
 	      data: 'module=system&op=admin_menu&' + result.sortable('serialize'),
-	      success: function(data){
+	      success: function(data) {
 	      }
 	    });
 			$('#block_left_system_adminLink .dida_sorttable_button').hide(300);

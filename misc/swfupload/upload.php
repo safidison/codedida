@@ -4,7 +4,7 @@
 	}
 	session_start();
   
-  if($_FILES['Filedata']['size'] > 30000){
+  if ($_FILES['Filedata']['size'] > 30000) {
     // 上传失败
   	// 403 权限不足
   	// 404 类型不符

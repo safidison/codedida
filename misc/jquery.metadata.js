@@ -64,11 +64,11 @@ $.extend({
 			cre: /({.*})/,
 			single: 'metadata'
 		},
-		setType: function( type, name ){
+		setType: function( type, name ) {
 			this.defaults.type = type;
 			this.defaults.name = name;
 		},
-		get: function( elem, opts ){
+		get: function( elem, opts ) {
 			var settings = $.extend({},this.defaults,opts);
 			// check for empty string in single property
 			if ( !settings.single.length ) settings.single = 'metadata';
@@ -84,7 +84,7 @@ $.extend({
 				if ( m )
 					data = m[1];
 			} else if ( settings.type == "elem" ) {
-				if( !elem.getElementsByTagName )
+				if ( !elem.getElementsByTagName )
 					return undefined;
 				var e = elem.getElementsByTagName(settings.name);
 				if ( e.length )
@@ -115,7 +115,7 @@ $.extend({
  * @type jQuery
  * @cat Plugins/Metadata
  */
-$.fn.metadata = function( opts ){
+$.fn.metadata = function( opts ) {
 	return $.metadata.get( this[0], opts );
 };
 

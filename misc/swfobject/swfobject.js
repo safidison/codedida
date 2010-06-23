@@ -95,7 +95,7 @@ var swfobject = function() {
 					}
 				});
 				if (win == top) { // if not inside an iframe
-					(function(){
+					(function() {
 						if (isDomLoaded) { return; }
 						try {
 							doc.documentElement.doScroll("left");
@@ -109,7 +109,7 @@ var swfobject = function() {
 				}
 			}
 			if (ua.wk) {
-				(function(){
+				(function() {
 					if (isDomLoaded) { return; }
 					if (!/loaded|complete/.test(doc.readyState)) {
 						setTimeout(arguments.callee, 0);
@@ -197,7 +197,7 @@ var swfobject = function() {
 		var t = b.appendChild(o);
 		if (t) {
 			var counter = 0;
-			(function(){
+			(function() {
 				if (typeof t.GetVariable != UNDEF) {
 					var d = t.GetVariable("$version");
 					if (d) {
@@ -343,7 +343,7 @@ var swfobject = function() {
 				newObj.setAttribute("id", replaceElemIdStr);
 				obj.parentNode.insertBefore(newObj, obj); // insert placeholder div that will be replaced by the object element that loads expressinstall.swf
 				obj.style.display = "none";
-				(function(){
+				(function() {
 					if (obj.readyState == 4) {
 						obj.parentNode.removeChild(obj);
 					}
@@ -366,7 +366,7 @@ var swfobject = function() {
 			obj.parentNode.insertBefore(el, obj); // insert placeholder div that will be replaced by the alternative content
 			el.parentNode.replaceChild(abstractAltContent(obj), el);
 			obj.style.display = "none";
-			(function(){
+			(function() {
 				if (obj.readyState == 4) {
 					obj.parentNode.removeChild(obj);
 				}
@@ -476,7 +476,7 @@ var swfobject = function() {
 		if (obj && obj.nodeName == "OBJECT") {
 			if (ua.ie && ua.win) {
 				obj.style.display = "none";
-				(function(){
+				(function() {
 					if (obj.readyState == 4) {
 						removeObjectInIE(id);
 					}

@@ -4,15 +4,15 @@
 /**
  * 数据库信息，扩展文件必须实现此接口
  */
-function db_info(){
+function db_info() {
   $types = array();
   $hd = dir('includes/database');
-  while(false !== ($name = $hd->read())){
-    if(strpos($name, 'database') !== false){
-      if($a = explode('.', $name)){
+  while (false !== ($name = $hd->read())) {
+    if (strpos($name, 'database') !== false) {
+      if ($a = explode('.', $name)) {
         require_once './includes/database/database.'.$a[1].'.inc';
         $function = $a[1].'_db_info';
-        if(function_exists($function)){
+        if (function_exists($function)) {
           $types += $function();
         }
       }
@@ -29,15 +29,15 @@ function db_info(){
  *  根据连接参数调用相应的扩展文件，如：database.mysql.inc
  *  连接成功，返回true，并将连接对象写入全局变量 $db。失败则返回 false
  */
-function db_connect($target = 'default'){
+function db_connect($target = 'default') {
   global $database, $dbc, $db;
-  if(!isset($db[$target]) && $dbc[$target]  = $database[$target]){
+  if (!isset($db[$target]) && $dbc[$target]  = $database[$target]) {
     $function = 'db_'.$dbc[$target]['driver'].'_connect';
     require_once './includes/database/database.'.$dbc[$target]['driver'].'.inc';
-    if(function_exists($function)){
-      if($db[$target] = $function($dbc[$target], $error)){
+    if (function_exists($function)) {
+      if ($db[$target] = $function($dbc[$target], $error)) {
       	return true;
-      }else{
+      } else {
       	dd_set_message(t('system', '数据库无法连接：@text', array('@text' => $error)), 'debug');
       }
     }
@@ -67,7 +67,7 @@ function db_connect($target = 'default'){
  * @return object or array or string
  *
  */
-function db_query($sql, $args = array(), $opt = array()){
+function db_query($sql, $args = array(), $opt = array()) {
   $opt = db_default_options($opt);
   $sql = db_prefix_tables($sql, $opt);
   $function = 'db_' . $opt['driver'].'_query';
@@ -86,10 +86,10 @@ function db_query($sql, $args = array(), $opt = array()){
  * @return (int) $count 影响的列数
  *
  */
-function db_exec($sql, $args = array(), array $opt = array()){
+function db_exec($sql, $args = array(), array $opt = array()) {
   $opt = db_default_options($opt);
   
-  if($sql) $sql = db_prefix_tables($sql, $opt);
+  if ($sql) $sql = db_prefix_tables($sql, $opt);
   
   $function = 'db_' . $opt['driver'].'_exec';
   $fetch = $function($sql, $args, $opt);
@@ -109,7 +109,7 @@ function db_exec($sql, $args = array(), array $opt = array()){
  * @return
  *  影响的列数
  */
-function db_replace($table, $args, array $opt = array()){
+function db_replace($table, $args, array $opt = array()) {
   $opt = db_default_options($opt);
   
   $function = 'db_' . $opt['driver'].'_replace';
@@ -122,10 +122,10 @@ function db_replace($table, $args, array $opt = array()){
 /**
  * 检查表是否存在
  */
-function db_is_table($table, $target = 'default'){
+function db_is_table($table, $target = 'default') {
   global $dbc;
   
-  if(empty($dbc[$target])) db_connect($target);
+  if (empty($dbc[$target])) db_connect($target);
   
   //$table = $dbc[$target]['prefix'] . $table;
   
@@ -135,9 +135,9 @@ function db_is_table($table, $target = 'default'){
 /**
  * 列出所有表
  */
-function db_show_tables($target = 'default'){
+function db_show_tables($target = 'default') {
   global $dbc;
-  if(empty($dbc[$target])) db_connect($target);
+  if (empty($dbc[$target])) db_connect($target);
   
   return call_user_func('db_' . $dbc[$target]['driver'].'_show_tables', $target);
 }
@@ -145,9 +145,9 @@ function db_show_tables($target = 'default'){
 /**
  * 获取数据库版本
  */
-function db_get_version($target = 'default'){
+function db_get_version($target = 'default') {
   global $dbc;
-  if(empty($dbc[$target])) db_connect($target);
+  if (empty($dbc[$target])) db_connect($target);
   
   return call_user_func('db_' . $dbc[$target]['driver'].'_get_version', $target);
 }
@@ -155,10 +155,10 @@ function db_get_version($target = 'default'){
 /**
  * 检查属性中是否有链接信息
  */
-function db_default_options(array $opt = array()){
+function db_default_options(array $opt = array()) {
   global $dbc;
-  if(empty($opt['target'])) $opt['target'] = 'default';
-  if(empty($dbc[$opt['target']])) db_connect($opt['target']);
+  if (empty($opt['target'])) $opt['target'] = 'default';
+  if (empty($dbc[$opt['target']])) db_connect($opt['target']);
   $opt['driver'] = $dbc[$opt['target']]['driver'];
   return $opt;
 }
@@ -166,7 +166,7 @@ function db_default_options(array $opt = array()){
 /**
  * 为查询语句中的表名加上前缀
  */
-function db_prefix_tables($sql, $opt){
+function db_prefix_tables($sql, $opt) {
   global $dbc;
   $prefix = $dbc[$opt['target']]['prefix'];
   return strtr($sql, array('{' => $prefix, '}' => ''));
@@ -175,7 +175,7 @@ function db_prefix_tables($sql, $opt){
 /**
  * 获取最后一个自增主键
  */
-function db_last_insert_id($target = 'default'){
+function db_last_insert_id($target = 'default') {
   return $GLOBALS['db'][$target]->lastInsertId();
 }
 
@@ -183,14 +183,14 @@ function db_last_insert_id($target = 'default'){
  * @param $code：错误代码
  * @param $info：错误描述
  */
-function db_error($code, $info){
-  if($code != '0000'){
+function db_error($code, $info) {
+  if ($code != '0000') {
     $msg = 'Error('.$info[0].')：' . $info[2];
     
     text_log('database_error', dd_error_msg($msg));
     
-    if(!$GLOBALS['conf']['debug']) return;
-    if($GLOBALS['conf']['debug'] == 2 && $GLOBALS['user']->uid != 1) return;
+    if (!$GLOBALS['conf']['debug']) return;
+    if ($GLOBALS['conf']['debug'] == 2 && $GLOBALS['user']->uid != 1) return;
     
     dd_set_message($msg, 'error');
     return true;
@@ -205,18 +205,18 @@ function db_error($code, $info){
  *  字段名称
  *
  */
-function db_create_table($name, $table, $target = 'default'){
+function db_create_table($name, $table, $target = 'default') {
   global $dbc, $db;
   
-  if(empty($dbc[$target])) db_connect($target);
+  if (empty($dbc[$target])) db_connect($target);
   
-  if(!db_is_table($name, $target)){
-    if($sql = call_user_func('db_' . $dbc[$target]['driver'].'_create_table', $name, $table, $target)){
+  if (!db_is_table($name, $target)) {
+    if ($sql = call_user_func('db_' . $dbc[$target]['driver'].'_create_table', $name, $table, $target)) {
       return $sql;
-    }else{
+    } else {
       dd_set_message(t('system', '表 @table 创建失败', array('@table' => $name)), 'error');
     }
-  }else{
+  } else {
     dd_set_message(t('system', '表 @table 已经存在', array('@table' => $name)), 'error');
   }
 }
@@ -232,20 +232,20 @@ function db_create_table($name, $table, $target = 'default'){
  */
 function db_rename_table($name, $new_name, $target = 'default') {
   global $dbc;
-  if(empty($dbc[$target])) db_connect($target);
+  if (empty($dbc[$target])) db_connect($target);
   
-	if(db_is_table($name, $target)){
-		if(!db_is_table($new_name, $target)){
-	    if(call_user_func('db_' . $dbc[$target]['driver'].'_rename_table', $name, $new_name, $target)){
+	if (db_is_table($name, $target)) {
+		if (!db_is_table($new_name, $target)) {
+	    if (call_user_func('db_' . $dbc[$target]['driver'].'_rename_table', $name, $new_name, $target)) {
 	      dd_set_message(t('system', '@table 更名成功', array('@table' => $name)));
 	      return true;
-	    }else{
+	    } else {
 	      dd_set_message(t('system', '@table 更名失败', array('@table' => $name)), 'error');
 	    }
-		}else{
+		} else {
 			dd_set_message(t('system', '@table 已经存在', array('@table' => $new_name)), 'error');
 		}
-	}else{
+	} else {
 		dd_set_message(t('system', '@table 不存在', array('@table' => $name)), 'error');
 	}
 }
@@ -253,18 +253,18 @@ function db_rename_table($name, $new_name, $target = 'default') {
 /**
  * 删除表
  */
-function db_drop_table($table, $target = 'default'){
+function db_drop_table($table, $target = 'default') {
   global $dbc;
   
-  if(empty($dbc[$target])) db_connect($target);
-  if(db_is_table($table, $target)){
-    if(call_user_func('db_' . $dbc[$target]['driver'].'_drop_table', $table, $target)){
+  if (empty($dbc[$target])) db_connect($target);
+  if (db_is_table($table, $target)) {
+    if (call_user_func('db_' . $dbc[$target]['driver'].'_drop_table', $table, $target)) {
       dd_set_message(t('system', '@table 删除成功', array('@table' => $table)));
       return true;
-    }else{
+    } else {
       dd_set_message(t('system', '@table 删除失败', array('@table' => $table)), 'error');
     }
-  }else{
+  } else {
     dd_set_message(t('system', '@table 不存在', array('@table' => $table)), 'error');
   }
 }
@@ -274,7 +274,7 @@ function db_drop_table($table, $target = 'default'){
  */
 function db_add_field($table, $field, $spec, $keys_new = array(), $target = 'default') {
   global $dbc;
-  if(empty($dbc[$target])) db_connect($target);
+  if (empty($dbc[$target])) db_connect($target);
   return call_user_func('db_' . $dbc[$target]['driver'].'_add_field', $table, $field, $spec, $keys_new, $target);
 }
 
@@ -283,7 +283,7 @@ function db_add_field($table, $field, $spec, $keys_new = array(), $target = 'def
  */
 function db_drop_field($table, $field, $target = 'default') {
   global $dbc;
-  if(empty($dbc[$target])) db_connect($target);
+  if (empty($dbc[$target])) db_connect($target);
   return call_user_func('db_' . $dbc[$target]['driver'].'_drop_field', $table, $field, $target);
 }
 
@@ -296,54 +296,54 @@ function db_drop_field($table, $field, $target = 'default') {
  * @param $value
  *  默认值
  */
-function db_field_set_default($table, $field, $value, $target = 'default'){
+function db_field_set_default($table, $field, $value, $target = 'default') {
   global $dbc;
-  if(empty($dbc[$target])) db_connect($target);
+  if (empty($dbc[$target])) db_connect($target);
   return call_user_func('db_' . $dbc[$target]['driver'].'_field_set_default', $table, $field, $value, $target);
 }
 
 /**
  * 删除字段默认值
  */
-function db_field_drop_default($table, $field, $target = 'default'){
+function db_field_drop_default($table, $field, $target = 'default') {
   global $dbc;
-  if(empty($dbc[$target])) db_connect($target);
+  if (empty($dbc[$target])) db_connect($target);
   return call_user_func('db_' . $dbc[$target]['driver'].'_field_del_default', $table, $field, $target);
 }
 
 /**
  * 添加主键
  */
-function db_add_primary($table, $fields, $target = 'default'){
+function db_add_primary($table, $fields, $target = 'default') {
   global $dbc;
-  if(empty($dbc[$target])) db_connect($target);
+  if (empty($dbc[$target])) db_connect($target);
   return call_user_func('db_' . $dbc[$target]['driver'].'_add_primary', $table, $fields, $target);
 }
 
 /**
  * 删除主键
  */
-function db_drop_primary($table, $target = 'default'){
+function db_drop_primary($table, $target = 'default') {
   global $dbc;
-  if(empty($dbc[$target])) db_connect($target);
+  if (empty($dbc[$target])) db_connect($target);
   return call_user_func('db_' . $dbc[$target]['driver'].'_drop_primary', $table, $target);
 }
 
 /**
  * 添加外键
  */
-function db_add_foreign($table, $field, $foreign, $target = 'default'){
+function db_add_foreign($table, $field, $foreign, $target = 'default') {
   global $dbc;
-  if(empty($dbc[$target])) db_connect($target);
+  if (empty($dbc[$target])) db_connect($target);
   return call_user_func('db_' . $dbc[$target]['driver'].'_add_foreign', $table, $field, $foreign, $target);
 }
 
 /**
  * 删除外键
  */
-function db_drop_foreign($table, $field, $parent_table, $parent_field, $target = 'default'){
+function db_drop_foreign($table, $field, $parent_table, $parent_field, $target = 'default') {
   global $dbc;
-  if(empty($dbc[$target])) db_connect($target);
+  if (empty($dbc[$target])) db_connect($target);
   return call_user_func('db_' . $dbc[$target]['driver'].'_drop_foreign', $table, $field, $parent_table, $parent_field, $target);
 }
 
@@ -352,7 +352,7 @@ function db_drop_foreign($table, $field, $parent_table, $parent_field, $target =
  */
 function db_add_unique($table, $name, $fields, $target = 'default') {
   global $dbc;
-  if(empty($dbc[$target])) db_connect($target);
+  if (empty($dbc[$target])) db_connect($target);
   return call_user_func('db_' . $dbc[$target]['driver'].'_add_unique', $table, $name, $fields, $target);
 }
 
@@ -361,7 +361,7 @@ function db_add_unique($table, $name, $fields, $target = 'default') {
  */
 function db_drop_unique($table, $name, $target = 'default') {
   global $dbc;
-  if(empty($dbc[$target])) db_connect($target);
+  if (empty($dbc[$target])) db_connect($target);
   return call_user_func('db_' . $dbc[$target]['driver'].'_drop_unique', $table, $name, $fields, $target);
 }
 
@@ -370,7 +370,7 @@ function db_drop_unique($table, $name, $target = 'default') {
  */
 function db_add_index($table, $name, $fields, $target = 'default') {
   global $dbc;
-  if(empty($dbc[$target])) db_connect($target);
+  if (empty($dbc[$target])) db_connect($target);
   return call_user_func('db_' . $dbc[$target]['driver'].'_add_index', $table, $name, $fields, $target);
 }
 
@@ -379,23 +379,23 @@ function db_add_index($table, $name, $fields, $target = 'default') {
  */
 function db_drop_index($table, $name, $target = 'default') {
   global $dbc;
-  if(empty($dbc[$target])) db_connect($target);
+  if (empty($dbc[$target])) db_connect($target);
   return call_user_func('db_' . $dbc[$target]['driver'].'_drop_index', $table, $name, $target);
 }
 
 /**
  * 更新字段
  */
-function db_change_field($table, $field, $field_new, $spec, $keys_new = array(), $target = 'default'){
+function db_change_field($table, $field, $field_new, $spec, $keys_new = array(), $target = 'default') {
   global $dbc;
-  if(empty($dbc[$target])) db_connect($target);
+  if (empty($dbc[$target])) db_connect($target);
   return call_user_func('db_' . $dbc[$target]['driver'].'_change_field', $table, $field, $field_new, $spec, $keys_new, $target);
 }
 
 /**
  * 数组解析为占位符
  */
-function db_get_placeholder($array = array()){
+function db_get_placeholder($array = array()) {
 	return implode(',', array_fill(0, count($array), '?'));
 }
 
@@ -412,22 +412,22 @@ function db_get_placeholder($array = array()){
  * @return
  *  成功返回 true，update 时影响的列数，将赋给 _db_write_record 单元，失败返回 false。
  */
-function db_write_record($table, &$o, $wheres = array(), array $opt = array()){
+function db_write_record($table, &$o, $wheres = array(), array $opt = array()) {
   $tables = module_get_schema($table);
   
-  if(!is_array($tables['fields'])){
+  if (!is_array($tables['fields'])) {
     dd_set_message(t('system', '无效的数据表 !string', array('!string' => $table)), 'error');
     return false;
   }
   
-  if(is_object($o)){
+  if (is_object($o)) {
     $o = (array) $o;
     $toObject = true;
-  }else{
+  } else {
     $toObject = false;
   }
   
-  if(!is_array($o)){
+  if (!is_array($o)) {
     dd_set_message(t('system', '待写入内容必须是对象或数组'), 'error');
     return false;
   }
@@ -440,47 +440,47 @@ function db_write_record($table, &$o, $wheres = array(), array $opt = array()){
   // 操作状态，$wheres 有值，则意味着 update，反之则为 insert
   $o['_db_write_record_is_update'] = count($wheres);
   
-  foreach($tables['fields'] as $field => $info){
+  foreach ($tables['fields'] as $field => $info) {
     
     // 自增字段且处于 insert 状态，跳过
-    if($info['type'] == 'serial' && !$o['_db_write_record_is_update']){
+    if ($info['type'] == 'serial' && !$o['_db_write_record_is_update']) {
       $insert_id = $field;
       continue;
     }
     
-    if(isset($o[$field])){
+    if (isset($o[$field])) {
       // 字段与值均存在
-      if(!$info['serialize']){
+      if (!$info['serialize']) {
         $args[$field] = $o[$field];
-      }else{
+      } else {
         $args[$field] = serialize($o[$field]);
       }
       
-    }else if(!$o['_db_write_record_is_update']){
+    } else if (!$o['_db_write_record_is_update']) {
       /**
        * 字段存在，无值，且处于 insert 状态，才试着为字段生成默认值
        */
       
       // 若字段设置了默认值，不做处理，无默认值，根据类型设置默认值
-      if(!isset($info['default'])){
+      if (!isset($info['default'])) {
         
         // 自增字段，添加标记
-        if($info['type'] == 'serial'){
+        if ($info['type'] == 'serial') {
           $insert_id = $field;
           continue;
         }
         
         // 不允许 null
-        if($info['not null']){
+        if ($info['not null']) {
           
-          if($info['type'] == 'int' || $info['type'] == 'float' || $info['type'] == 'numeric'){
+          if ($info['type'] == 'int' || $info['type'] == 'float' || $info['type'] == 'numeric') {
             // 数字类型，默认值设为 0
             $args[$field] = 0;
-          }else{
+          } else {
             // 文本或其它
             $args[$field] = '';
           } 
-        }else{
+        } else {
           // 允许 null
           $args[$field] = NULL;
         }
@@ -493,45 +493,45 @@ function db_write_record($table, &$o, $wheres = array(), array $opt = array()){
    * 更新操作，获取执行条件
    * $wheres 是一个由执行条件的字段名称构成的数组
    */
-  if($o['_db_write_record_is_update']){
+  if ($o['_db_write_record_is_update']) {
     
-    foreach($args as $field_name => $value){
+    foreach ($args as $field_name => $value) {
       $placeholder = ':'.$field_name;
       
-      if(in_array($field_name, $wheres)){
+      if (in_array($field_name, $wheres)) {
         $where[] = $field_name .' = '.$placeholder;
-      }else{
+      } else {
         $sets[] = $field_name .' = '.$placeholder;
       }
       
       $sql_args[$placeholder] = $value;
     }
     
-    if($where){
+    if ($where) {
       $sql = 'UPDATE {'.$table.'} SET '. implode(',', $sets) . ' WHERE '.implode(' AND ', $where);
       
-      if(!isset($opt['return'])){
+      if (!isset($opt['return'])) {
         $opt['return'] = true;
       }
-      if($count = db_exec($sql, $sql_args, $opt)){
-        if($count === true){
+      if ($count = db_exec($sql, $sql_args, $opt)) {
+        if ($count === true) {
           $o['_db_write_record'] = 0;
-        }else{
+        } else {
           $o['_db_write_record'] = $count;
         }
         
-      }else{
+      } else {
         dd_set_message(t('system', '更新失败'), 'error');
         return false;
       }
-    }else{
+    } else {
       dd_set_message(t('system', '更新条件不正确'), 'error');
       return false;
     }
     
-  }else{
+  } else {
     
-    foreach($args as $field_name => $value){
+    foreach ($args as $field_name => $value) {
       $placeholder = ':'.$field_name;
       $fields[] = $field_name;
       $placeholders[] = $placeholder;
@@ -542,19 +542,19 @@ function db_write_record($table, &$o, $wheres = array(), array $opt = array()){
     $sql .= '('.implode(',', $fields).') VALUES ';
     $sql .= '('.implode(',', $placeholders).')';
     
-    if(db_exec($sql, $sql_args, $opt)){
+    if (db_exec($sql, $sql_args, $opt)) {
       
-      if($insert_id){
+      if ($insert_id) {
         $o[$insert_id] = db_last_insert_id();
       }
       
-    }else{
+    } else {
       dd_set_message(t('system', '写入失败'), 'error');
       return false;
     }
   }
   
-  if($toObject){
+  if ($toObject) {
     $o = (object) $o;
   }
   
@@ -564,50 +564,50 @@ function db_write_record($table, &$o, $wheres = array(), array $opt = array()){
 /**
  * 在页脚显示查询语句
  */
-function db_debug(){
-  if(!$GLOBALS['conf']['sql_info']) return;
-  if($GLOBALS['conf']['sql_info'] == 2 && $GLOBALS['user']->uid != 1) return;
+function db_debug() {
+  if (!$GLOBALS['conf']['sql_info']) return;
+  if ($GLOBALS['conf']['sql_info'] == 2 && $GLOBALS['user']->uid != 1) return;
   
   static $items, $repeats;
   
-  if($debug = debug_backtrace()){
-    foreach(array_reverse($debug) as $i => $de){
-      if(strpos($de['file'], 'index.php') === false && $de['function'] != 'db_debug'){
-        if($de['file']){
-          $items[] = t('system', '文件：@file(@line 行，函数 @fun)',
-          array('@file' => $de['file'], '@line' => $de['line'], '@fun' => $de['function']));
+  if ($debug = debug_backtrace()) {
+    foreach (array_reverse($debug) as $i => $de) {
+      if (strpos($de['file'], 'index.php') === false && $de['function'] != 'db_debug') {
+        if ($de['file']) {
+          $items[] = '<li>'.t('system', '文件：@file(@line 行，函数 @fun)',
+          array('@file' => $de['file'], '@line' => $de['line'], '@fun' => $de['function'])).'</li>';
         }
       }
       
-      if($de['function'] == 'db_query' || $de['function'] == 'db_exec'){
+      if ($de['function'] == 'db_query' || $de['function'] == 'db_exec') {
         
         $args_string = dd_array_to_string($de['args'][1]);
         $keys = md5($de['args'][0].$args_string);
         
-        if(!isset($repeats[$keys])){
+        if (!isset($repeats[$keys])) {
           $repeats[$keys] = array('sql' => $de['args'][0].'<br />args：'.$args_string, 'count' => 1);
-        }else{
+        } else {
           $repeats[$keys]['count'] += 1;
         }
         
         $rows[] = array('data' => $de['args'][0], 'class' => 'dd_database_debug_args0');
         
-        if($de['args'][1]){
+        if ($de['args'][1]) {
           $rows[] = array('data' => $args_string, 'class' => 'dd_database_debug_args1');
-        }else{
+        } else {
           $rows[] = '';
         }
         
-        if($de['args'][2]){
+        if ($de['args'][2]) {
           $rows[] = array('data' => dd_array_to_string($de['args'][2]), 'class' => 'dd_database_debug_args2');
-        }else{
+        } else {
           $rows[] = '';
         }
         
         $_SESSION['database_debug'][] = $rows;
         
         $_SESSION['database_debug'][][] = array(
-          'data' => theme('item_list', $items),
+          'data' => ($items ? '<ul>'.implode('', $items).'</ul>' : ''),
           'colspan' => 3
         );
         
@@ -615,9 +615,9 @@ function db_debug(){
       }
     }
     
-    if($repeats){
-      foreach($repeats as $key => $sql){
-        if($sql['count'] > 1){
+    if ($repeats) {
+      foreach ($repeats as $key => $sql) {
+        if ($sql['count'] > 1) {
           $_SESSION['database_debug_count'][$key] = array(
             'data' => t('system', '!sql 执行了 %count 次', array('!sql' => $sql['sql'], '%count' => $sql['count'])),
             'colspan' => 3

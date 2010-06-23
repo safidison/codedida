@@ -5,32 +5,32 @@
  * 管理首页区块，提供钩子 hook_system_admin_default()
  * 模块可自定义一个区块在管理首页显示
  */
-function system_admin_default(){
+function system_admin_default() {
   global $conf;
   
-  if($_GET['op'] == 'system' && $_GET['view'] == 'php'){
+  if ($_GET['op'] == 'system' && $_GET['view'] == 'php') {
     phpinfo();
     exit();
   }
   
   $output = '<h1>'.t('system', '欢迎进入 %string 管理系统', array('%string' => $conf['site_global']['name'])).'</h1>';
-  if($data = _module_invoke_all('system_admin_default')){
+  if ($data = _module_invoke_all('system_admin_default')) {
     $i = 0;
-    foreach($data as $module => $content){
+    foreach ($data as $module => $content) {
       $html = '<div class="system_admin_default_block system_admin_default_block_'.$module.'">';
-      if(is_array($content)){
-        if($content['#title']){
+      if (is_array($content)) {
+        if ($content['#title']) {
           $html .= '<h2 class="title">'.$content['#title'].'</h2>';
         }
-        if($content['#content']){
+        if ($content['#content']) {
           $html .= $content['#content'];
-          if($content['#weight']){
+          if ($content['#weight']) {
             $weight = $content['#weight'];
-          }else{
+          } else {
             $weight = $i;
           }
         }
-      }else{
+      } else {
         $html .= $content;
         $weight = $i;
       }
@@ -42,7 +42,7 @@ function system_admin_default(){
       ++$i;
     }
     uasort($lists, 'dd_form_cmp');
-    foreach($lists as $d){
+    foreach ($lists as $d) {
       $output .= $d['#content'];
     }
   }
@@ -52,7 +52,7 @@ function system_admin_default(){
 /**
  * 
  */
-function system_system_admin_default(){
+function system_system_admin_default() {
   global $conf;
   $item[] = dd_get_strong(t('system', '网站名称')). $conf['site_global']['name'] . l(t('system', '修改'), 'admin/settings/global');
   
@@ -61,14 +61,14 @@ function system_system_admin_default(){
   $item[] .= dd_get_strong(t('system', '站长邮箱')). $conf['site_global']['mail'] . l(t('system', '修改'), 'admin/settings/global');
   $item[] .= dd_get_strong(t('system', '创建时间')). format_date($conf['site_created']);
   
-  if($conf['cron_last_time']){
+  if ($conf['cron_last_time']) {
     $cron = format_date($conf['cron_last_time']);
-  }else{
+  } else {
     $cron = t('system', '从未执行');
   }
-  if($conf['cron_pass']){
+  if ($conf['cron_pass']) {
     $cron_url = f('cron.php?pass='.md5($conf['cron_pass']));
-  }else{
+  } else {
     $cron_url = f('cron.php');
   }
   
@@ -92,7 +92,7 @@ function system_system_admin_default(){
 /**
  * phpinfo
  */
-function system_status_php(){
+function system_status_php() {
   phpinfo();
   exit;
 }
@@ -100,7 +100,7 @@ function system_status_php(){
 /**
  * 文件设置
  */
-function system_site_files(){
+function system_site_files() {
   $form['fields']['file_directory_path'] = array(
     '#type' => 'textfield',
     '#required' => 1,
@@ -125,10 +125,10 @@ function system_site_files(){
     '#description' => t('system', '0 为不限制。也可按角色设置。容量限制仅在模块发出检查请求时生效，详见 file.inc'),
     '#default_value' => var_get('user_file_size', 30)
   );
-  if($roles = user_data_roles()){
+  if ($roles = user_data_roles()) {
     $i = 0;
-    foreach($roles as $rid => $role){
-      if($rid != var_get_key('user', 'anonymous_role', 1)){
+    foreach ($roles as $rid => $role) {
+      if ($rid != var_get_key('user', 'anonymous_role', 1)) {
         $form['fields']['user_file_size_role_'.$rid] = array(
           '#type' => 'textfield',
           '#required' => 1,
@@ -137,7 +137,7 @@ function system_site_files(){
           '#field_suffix' => t('system', 'MB'),
           '#default_value' => var_get('user_file_size_role_'.$rid, 0)
         );
-        if($i == 0){
+        if ($i == 0) {
           $form['fields']['user_file_size_role_'.$rid]['#fieldset_prefix'] = 'desc';
           $form['fields']['user_file_size_role_'.$rid]['#fieldset_legend'] = t('system', '按角色设置');
         }
@@ -160,11 +160,11 @@ function system_site_files(){
   return system_setting_form($form);
 }
 
-function system_site_files_validate($form, $v){
+function system_site_files_validate($form, $v) {
   return module_invoke_all('system_site_files', 'validate', $form, $v);
 }
 
-function system_site_files_submit($form, $v){
+function system_site_files_submit($form, $v) {
   module_invoke_all('system_site_files', 'submit', $form, $v);
   file_mkdir($v['file_directory_path']);
 }
@@ -174,7 +174,7 @@ function system_site_files_submit($form, $v){
  */
 
 /**
-function system_admin_cron(){
+function system_admin_cron() {
   dd_set_breadcrumb(array(l(t('system', '系统管理'), 'admin'), t('system', '计划任务')));
 }
 */
@@ -182,7 +182,7 @@ function system_admin_cron(){
 /**
  * 默认首页内容
  */
-function system_admin_front(){
+function system_admin_front() {
   dd_set_breadcrumb(array(l(t('system', '系统管理'), 'admin'), t('system', '首页设置')));
   $form['fields']['value'] = array(
     '#type' => 'textarea',
@@ -198,7 +198,7 @@ function system_admin_front(){
   return $form;
 }
 
-function system_admin_front_submit($form, $v){
+function system_admin_front_submit($form, $v) {
   custom_set('front_default', $v['value']);
   dd_set_message(t('system', '操作成功'));
 }
@@ -206,7 +206,7 @@ function system_admin_front_submit($form, $v){
 /**
  * 站点信息
  */
-function system_site_global(){
+function system_site_global() {
   global $conf;
   
   $form['fields']['name'] = array(
@@ -259,13 +259,13 @@ function system_site_global(){
   return $form;
 }
 
-function system_site_global_validate($form, $v){
+function system_site_global_validate($form, $v) {
   return module_invoke_all('system_site_global', 'validate', $form, $v);
 }
 
-function system_site_global_submit($form, $v){
-  foreach($form['fields'] as $key => $field){
-    if($field['#type'] && !in_array($field['#type'], array('hidden', 'submit', 'button', 'file', 'captcha'))){
+function system_site_global_submit($form, $v) {
+  foreach ($form['fields'] as $key => $field) {
+    if ($field['#type'] && !in_array($field['#type'], array('hidden', 'submit', 'button', 'file', 'captcha'))) {
      $data[$key] = $v[$key];
     }
   }
@@ -277,7 +277,7 @@ function system_site_global_submit($form, $v){
 /**
  * 站点配置
  */
-function system_site_settings(){
+function system_site_settings() {
 	global $conf;
   
   $form['fields']['status'] = array(
@@ -363,8 +363,8 @@ function system_site_settings(){
   );
   
   $options = array(0 => t('system', '默认'));
-  if($modules = var_get('modules')){
-    foreach($modules as $module => $info){
+  if ($modules = var_get('modules')) {
+    foreach ($modules as $module => $info) {
       $options[$module] =  $info['name'];
     }
   }
@@ -390,30 +390,30 @@ function system_site_settings(){
   return system_setting_form($form);
 }
 
-function system_site_settings_validate($form, $v){
-  if($v['cache_css_and_js']){
+function system_site_settings_validate($form, $v) {
+  if ($v['cache_css_and_js']) {
     file_mkdir(file_directory_path() . '/cache/css_js');
   }
   return module_invoke_all('system_site_settings', 'validate', $form, $v);
 }
 
-function system_site_settings_submit($form, $v){
+function system_site_settings_submit($form, $v) {
   module_invoke_all('system_site_settings', 'submit', $form, $v);
 }
 
 /**
  * 验证码设置
  */
-function system_site_captcha(){
+function system_site_captcha() {
   $form['fields']['captcha_file_ttf'] = array(
     '#type' => 'textfield',
     '#default_value' => var_get('captcha_file_ttf', './tools/simkai.ttf'),
     '#title' => t('system', '字体文件'),
     '#description' => t('system', '图片验证码必须提供中文字体文件，请将字体文件放于程序可访问的目录(推荐 tools)，在此设置路径')
   );
-  if($fields = module_invoke_all('system_site_captcha', 'fields')){
-    foreach($fields as $key => $field){
-      if(!is_array($field)) continue;
+  if ($fields = module_invoke_all('system_site_captcha', 'fields')) {
+    foreach ($fields as $key => $field) {
+      if (!is_array($field)) continue;
       
       $value = var_get_key('captcha', $key);
       $form['fields'][$key]['data'] = array(
@@ -427,7 +427,7 @@ function system_site_captcha(){
         '#fieldset_prefix' => 'asc',
         '#fieldset_legend' => $field['title'],
       );
-      if($field['attributes']){
+      if ($field['attributes']) {
         $form['fields'][$key]['data'] = array_merge($form['fields'][$key]['data'], $field['attributes']);
       }
       $form['fields'][$key]['type'] = array(
@@ -462,7 +462,7 @@ function system_site_captcha(){
   return $form;
 }
 
-function system_site_captcha_submit($form, $v){
+function system_site_captcha_submit($form, $v) {
   var_set('captcha_file_ttf', $v['captcha_file_ttf'], 0);
   unset($v['captcha_file_ttf']);
   var_set('captcha', $v);
@@ -472,8 +472,8 @@ function system_site_captcha_submit($form, $v){
 /**
  * 错误设置
  */
-function system_site_error(){
-  if($image = custom_get('image_error')){
+function system_site_error() {
+  if ($image = custom_get('image_error')) {
     $view = l(img($image, 
     t('system', '默认错误图片'), NULL, 
     array('width' => 100, 'height' => 100)), $image, array('html' => true));
@@ -554,13 +554,13 @@ function system_site_error(){
   return $form;
 }
 
-function system_site_error_submit($form, $v){
+function system_site_error_submit($form, $v) {
   unset($v['image_error'], $v['submit'], $v['form_id'], $v['form_toke']);
   
-  foreach($v as $key => $value){
-    if($key == 'page_access_html' || $key == 'page_not_html' || $key == 'site_offline_html'){
+  foreach ($v as $key => $value) {
+    if ($key == 'page_access_html' || $key == 'page_not_html' || $key == 'site_offline_html') {
       custom_set($key, $value);
-    }else{
+    } else {
       var_set($key, $value, 0);
     }
   }
@@ -576,13 +576,13 @@ function system_site_error_submit($form, $v){
  * @param $name
  * @param $file
  */
-function _system_image_error_save($form_id, $name, $file){
+function _system_image_error_save($form_id, $name, $file) {
   custom_set('image_error', $file->filepath);
 }
 
-function _system_cache_htaccess(){
+function _system_cache_htaccess() {
   $filepath = $GLOBALS['conf_dir'].'/cache/.htaccess';
-  if(!is_file($filepath)){
+  if (!is_file($filepath)) {
     $h = "#禁止下载\n";
     $h .= '<FilesMatch "\.*$">';
     $h .= "\nOrder allow,deny\n";
@@ -595,7 +595,7 @@ function _system_cache_htaccess(){
 /**
  * 缓存设置
  */
-function system_cache_settings(){
+function system_cache_settings() {
   dd_set_tabs(array(
     l(t('system', '缓存管理'), 'admin/cache'),
     l(t('system', '缓存设置'), 'admin/cache/settings'),
@@ -604,10 +604,10 @@ function system_cache_settings(){
   
   $options['./includes/cache.inc'] = t('system', '系统默认');
   
-  if(is_dir('./includes/cache')){
-    if($objs = glob('./includes/cache/*')){
-      foreach($objs as $obj) {
-        if(strpos($obj, '.inc') !== false){
+  if (is_dir('./includes/cache')) {
+    if ($objs = glob('./includes/cache/*')) {
+      foreach ($objs as $obj) {
+        if (strpos($obj, '.inc') !== false) {
           $options[$obj] = next(explode('.', basename($obj), 3));
         }
       }
@@ -660,7 +660,7 @@ function system_cache_settings(){
     '#description' => t('system', '默认静态文件缓存时间，以秒为单位，最大不超过 31536000，即 365 天')
   );
   
-  if(function_exists('cache_settings_custom_form')){
+  if (function_exists('cache_settings_custom_form')) {
     cache_settings_custom_form($form);
   }
   
@@ -670,8 +670,8 @@ function system_cache_settings(){
 /**
  * @Implement of hook_system_cache_clear()
  */
-function system_system_cache_clear($op = 'list', $v = NULL){
-  switch($op){
+function system_system_cache_clear($op = 'list', $v = NULL) {
+  switch ($op) {
     case 'list':
     return array(
       'modules' => t('system', '清除模块信息缓存，当模块 info 信息变动时应选择此项'),
@@ -688,7 +688,7 @@ function system_system_cache_clear($op = 'list', $v = NULL){
   }
 }
 
-function system_cache_clearpage(){
+function system_cache_clearpage() {
   dd_set_tabs(array(
     l(t('system', '缓存管理'), 'admin/cache'),
     l(t('system', '缓存设置'), 'admin/cache/settings'),
@@ -723,10 +723,10 @@ function system_cache_clearpage(){
   return $form;
 }
 
-function system_cache_clearpage_submit($form, $v){
-  if($v['all']){
+function system_cache_clearpage_submit($form, $v) {
+  if ($v['all']) {
     cache_clear_page('*');
-  }else if($v['path']){
+  } else if ($v['path']) {
     cache_clear_page(trim($v['path']));
   }
   
@@ -736,7 +736,7 @@ function system_cache_clearpage_submit($form, $v){
 /**
  * 缓存管理
  */
-function system_cache_clear(){
+function system_cache_clear() {
   dd_set_tabs(array(
     l(t('system', '缓存管理'), 'admin/cache'),
     l(t('system', '缓存设置'), 'admin/cache/settings'),
@@ -755,40 +755,40 @@ function system_cache_clear(){
   return $form;
 }
 
-function system_cache_clear_submit($form, $value){
-  if($value['value']['modules']){
+function system_cache_clear_submit($form, $value) {
+  if ($value['value']['modules']) {
     module_set_list('module', 'modules');
     module_enabled_variable('module');
     cache_del('cid', 'schema');
     dd_set_message(t('system', '模块信息缓存清除成功'));
   }
-  if($value['value']['themes']){
+  if ($value['value']['themes']) {
     module_set_list('theme', 'themes');
     module_enabled_variable('theme');
     dd_set_message(t('system', '主题信息缓存清除成功'));
   }
-  if($value['value']['perms']){
+  if ($value['value']['perms']) {
     cache_del('cid', 'user_perm');
     dd_set_message(t('system', '用户权限缓存清除成功'));
   }
-  if($value['value']['menu']){
+  if ($value['value']['menu']) {
     menu_set_item();
     dd_set_message(t('system', 'menu 信息缓存清除成功'));
   }
-  if($value['value']['cache_hook']){
+  if ($value['value']['cache_hook']) {
     cache_del('cid', 'cache_hook');
     theme_get_cache();
     dd_set_message(t('system', 'hook 缓存清除成功'));
   }
-  if($value['value']['cache_menu']){
+  if ($value['value']['cache_menu']) {
     cache_del('empty', NULL, 'cache_menu');
     dd_set_message(t('system', 'menu 列表缓存清除成功'));
   }
-  if($value['value']['cache_css_and_js']){
+  if ($value['value']['cache_css_and_js']) {
     $filepath = file_directory_path() . '/cache/css_js';
-    if(is_dir($filepath)){
-      if($objs = glob($filepath.'/*')){
-        foreach($objs as $obj) {
+    if (is_dir($filepath)) {
+      if ($objs = glob($filepath.'/*')) {
+        foreach ($objs as $obj) {
           is_dir($obj) ? @rmdir($obj) : @unlink($obj);
         }
       }
@@ -796,11 +796,11 @@ function system_cache_clear_submit($form, $value){
     var_set('cache_css_and_js_timestamp', $_SERVER['REQUEST_TIME'], 0);
     dd_set_message(t('system', 'js和css缓存清除成功'));
   }
-  if($value['value']['admin_menus']){
+  if ($value['value']['admin_menus']) {
     cache_del('*', 'admin_menus_');
     dd_set_message(t('system', '管理菜单缓存清除成功'));
   }
-  if($value['value']['front_cache']){
+  if ($value['value']['front_cache']) {
     cache_clear_page('[front]');
   }
   
@@ -813,11 +813,11 @@ function system_cache_clear_submit($form, $value){
 /**
  * 通配符
  */
-function system_admin_token(){
-	if($tokens = _module_invoke_all('token_list')){
-		foreach($tokens as $module => $lists){
+function system_admin_token() {
+	if ($tokens = _module_invoke_all('token_list')) {
+		foreach ($tokens as $module => $lists) {
 			$table[][] = array('data' => $module, 'colspan' => 2);
-			foreach($lists as $key => $info){
+			foreach ($lists as $key => $info) {
 				$table[] = array($key, $info['title']);
 			}
 		}
@@ -825,42 +825,42 @@ function system_admin_token(){
 	}
 }
 
-function system_admin_lang(){
+function system_admin_lang() {
 	global $conf;
   dd_set_tabs(array(l(t('system', '语言管理'), 'admin/lang'), l(t('system', '导入语言'), 'admin/lang/cache')));
   dd_set_help(t('system', '所有语言文件将被合并，保存在 %path 目录下', array('%path' => $GLOBALS['conf_dir'].'/cache/languages')));
-	if(arg(2)){
-    if($conf['languages'][arg(2)]){
+	if (arg(2)) {
+    if ($conf['languages'][arg(2)]) {
   		$lang = arg(2);
-  		switch(arg(3)){
+  		switch (arg(3)) {
   			case 'edit':
   				$edit = array('language' => $lang, 'name' => $conf['languages'][$lang]);
   			break;
   			case 'delete':
-  				if($lang != $conf['default_language']){
+  				if ($lang != $conf['default_language']) {
   					db_exec('DELETE FROM {languages} WHERE language = ?', array($lang));
   					cache_del_file('lang_' . $lang . '.lang');
   					system_lang_cache();
   					dd_set_message(t('system', '删除成功'));
-  				}else{
+  				} else {
   					dd_set_message(t('system', '默认语言不能删除'));
   				}
   				dd_goto('admin/lang');
   				exit;
   		}
-    }else if(arg(2) == 'cache'){
+    } else if (arg(2) == 'cache') {
       return dd_get_form('system_admin_lang_cache');
     }
 	}
   
   $output = dd_get_form('system_admin_lang_form', $edit);
   
-  if($conf['languages']){
-  	foreach($conf['languages'] as $key => $name){
+  if ($conf['languages']) {
+  	foreach ($conf['languages'] as $key => $name) {
   		$links = array(l(t('system', '编辑'), 'admin/lang/' . $key . '/edit'));
-  		if($conf['default_language'] == $key){
+  		if ($conf['default_language'] == $key) {
   			$key .= t('system', '(当前默认语言)');
-  		}else{
+  		} else {
   			$links[] =  l(t('system', '删除'), 'admin/lang/' . $key . '/delete');
   		}
   		$table[] = array($key, $name, dd_imp($links));
@@ -873,7 +873,7 @@ function system_admin_lang(){
 }
 
 // 语言设置
-function system_admin_lang_form($lang = NULL){
+function system_admin_lang_form($lang = NULL) {
 	global $conf;
   
 	$form['settings']['#validate'] = array('system_admin_lang_form_validate');
@@ -892,7 +892,7 @@ function system_admin_lang_form($lang = NULL){
     '#description' => t('system', '用户看到的语言名称')
   );
   
-  if($lang['language']){
+  if ($lang['language']) {
     $form['fields']['update'] = array(
       '#type' => 'hidden',
       '#default_value' => $lang['language'],
@@ -904,18 +904,18 @@ function system_admin_lang_form($lang = NULL){
 	return $form;
 }
 
-function system_admin_lang_form_validate($form, $v){
+function system_admin_lang_form_validate($form, $v) {
 	$v['language'] = trim($v['language']);
 	$v['name'] = trim($v['name']);
-	if(dd_strlen($v['language']) > 16){
+	if (dd_strlen($v['language']) > 16) {
 		$t['language']['#error'][] = t('system', '长度不超过 16 字符');
-	}else if(dd_strlen($v['name']) > 32){
+	} else if (dd_strlen($v['name']) > 32) {
 		$t['name']['#error'][] = t('system', '长度不超过 32 字符');
-	}else {
-		if(!$v['update']){
-			if(db_query('SELECT COUNT(*) FROM {languages} WHERE language = ? OR name = ?', array($v['language'], $v['name']), array('return' => 'column'))){
+	} else {
+		if (!$v['update']) {
+			if (db_query('SELECT COUNT(*) FROM {languages} WHERE language = ? OR name = ?', array($v['language'], $v['name']), array('return' => 'column'))) {
 				$t['name']['#error'][] = t('system', '该语言已经存在');
-			}else{
+			} else {
 				db_exec('INSERT INTO {languages} (language, name) VALUES (?, ?)', array($v['language'], $v['name']));
 				
 				system_lang_cache();
@@ -924,11 +924,11 @@ function system_admin_lang_form_validate($form, $v){
 				
 				dd_set_message(t('system', '%string 添加成功', array('%string' => $v['name'])));
 			}
-		}else{
+		} else {
 			db_exec('UPDATE {languages} SET language = ?, name = ? WHERE language = ?', array($v['language'], $v['name'], $v['update']));
-			if($v['language'] != $v['update']){
+			if ($v['language'] != $v['update']) {
 				cache_del_file('lang_' . $v['update'] . '.php');
-				if($v['update'] == $GLOBALS['conf']['default_language']){
+				if ($v['update'] == $GLOBALS['conf']['default_language']) {
 					var_set('default_language', $v['language']);
 				}
 				dd_set_lang('instrt', NULL, array($v['language'])); // 导入语言文件
@@ -945,7 +945,7 @@ function system_admin_lang_form_validate($form, $v){
 /**
  * 语言文件更新
  */
-function system_admin_lang_cache(){
+function system_admin_lang_cache() {
 	global $conf;
 	$form['settings']['#validate'] = array('system_admin_lang_cache_validate');
   
@@ -973,10 +973,10 @@ function system_admin_lang_cache(){
 	return $form;
 }
 
-function system_admin_lang_cache_validate($form, $v){
-	if($v['language']){
+function system_admin_lang_cache_validate($form, $v) {
+	if ($v['language']) {
 		$languages[] = $v['language'];
-	}else{
+	} else {
 		$languages = NULL;
 	}
 	dd_set_lang($v['value'], NULL, $languages);
@@ -985,7 +985,7 @@ function system_admin_lang_cache_validate($form, $v){
 /**
  * 输入设置
  */
-function system_admin_filter(){
+function system_admin_filter() {
   global $conf;
   
   $item = array(
@@ -995,7 +995,7 @@ function system_admin_filter(){
     l(t('system', '添加过滤器'), 'admin/format/add'),
   );
   $args = arg();
-  switch($args[2]){
+  switch ($args[2]) {
     case 'config':
       $item[] = l(t('system', '输入法配置'), $_GET['q']);
       $output .= dd_get_form('system_admin_filter_form', $args[3]);
@@ -1004,17 +1004,17 @@ function system_admin_filter(){
       $output .= dd_get_form('system_admin_filter_form');
     break;
     case 'delete':
-      if(db_exec('DELETE FROM {filter_format} WHERE format = ?', array($args[3]))){
+      if (db_exec('DELETE FROM {filter_format} WHERE format = ?', array($args[3]))) {
         filter_set_cache(); // 清除配置文件缓存
         dd_set_message(t('system', '删除成功'));
-      }else{
+      } else {
         dd_set_message(t('system', '删除失败'));
       }
       dd_goto('admin/filter');
     exit;
     case 'default':
-      if($conf['default_format'] != $args[3]){
-        if(db_query('SELECT format FROM {filter_format} WHERE format = ?', array($args[3]), array('return' => 'column'))){
+      if ($conf['default_format'] != $args[3]) {
+        if (db_query('SELECT format FROM {filter_format} WHERE format = ?', array($args[3]), array('return' => 'column'))) {
           var_set('default_format', $args[3]);
           dd_set_message(t('system', '操作成功'));
         }
@@ -1022,10 +1022,10 @@ function system_admin_filter(){
       dd_goto('admin/filter');
     exit;
     default:
-      if($fetch = db_query('SELECT * FROM {filter_format}')){
-        foreach($fetch as $o){
+      if ($fetch = db_query('SELECT * FROM {filter_format}')) {
+        foreach ($fetch as $o) {
           $links = array(l(t('system', '设置'), 'admin/filter/config/'.$o->format), l(t('system', '删除'), 'admin/filter/delete/'.$o->format, array('attributes' => array('class' => 'confirm'))));
-          if($conf['default_format'] != $o->format){
+          if ($conf['default_format'] != $o->format) {
             $links[] = l(t('system', '设为默认'), 'admin/filter/default/'.$o->format);
           }
           
@@ -1045,7 +1045,7 @@ function system_admin_filter(){
 /**
  * 过滤器列表
  */
-function system_admin_format(){
+function system_admin_format() {
   global $conf;
   
   $item = array(
@@ -1055,78 +1055,78 @@ function system_admin_format(){
     l(t('system', '添加过滤器'), 'admin/format/add'),
   );
   $args = arg();
-  switch($args[2]){
+  switch ($args[2]) {
     case 'add':
-      if($lists = _module_invoke_all('filter', 'add')){
-        foreach($lists as $module => $links){
-          foreach($links as $delta => $link){
+      if ($lists = _module_invoke_all('filter', 'add')) {
+        foreach ($lists as $module => $links) {
+          foreach ($links as $delta => $link) {
             $filters[] = l($link['title'], 'admin/format/module/form/'.$module.'/'.$delta, dd_redirect(url('admin/format'))) . '<span class="description form_description">'. check_plain($link['description']). '</span>';
           }
         }
         $output .= theme('item_list', $filters);
-      }else{
+      } else {
         dd_set_message(t('system', '没有可用的项目'));
       }
     break;
     case 'module':
-      switch($args[3]){
+      switch ($args[3]) {
         case 'form':
           // 添加过滤器
-          if($args[4] && is_numeric($args[5])){
+          if ($args[4] && is_numeric($args[5])) {
             $output .= dd_get_form('system_admin_format_form', $args[4], $args[5]);
-          }else{
+          } else {
             dd_set_message(t('system', '没有可用的项目'));
           }
         break;
         case 'update':
-          if($filter = db_query('SELECT * FROM {filter_tags} WHERE fid = ?', array($args[4]), array('return' => 'one'))){
+          if ($filter = db_query('SELECT * FROM {filter_tags} WHERE fid = ?', array($args[4]), array('return' => 'one'))) {
             $output .= dd_get_form('system_admin_format_form', $filter->module, $filter->delta, $filter);
-          }else{
+          } else {
             dd_set_message(t('system', '不正确的访问'));
             dd_goto('admin/format', NULL, NULL, NULL, 1);
           }
         break;
         case 'delete':
           // 删除过滤器
-          if($filter = db_query('SELECT * FROM {filter_tags} WHERE fid = ?', array($args[4]), array('return' => 'one'))){
+          if ($filter = db_query('SELECT * FROM {filter_tags} WHERE fid = ?', array($args[4]), array('return' => 'one'))) {
             db_exec('DELETE FROM {filter_tags} WHERE fid = ?', array($args[4]));
             db_exec('DELETE FROM {filters} WHERE filter = ?', array($filter->fid));
-            if(function_exists($filter->module.'_filter')){
+            if (function_exists($filter->module.'_filter')) {
               call_user_func($filter->module.'_filter', 'delete', $filter->delta, NULL, $filter);
             }
             
             filter_set_cache(); // 清除配置文件缓存
             cache_del('cid', 'filter_get_filters'); // 清除自定义过滤器缓存
             dd_set_message(t('system', '清除成功'));
-          }else{
+          } else {
             dd_set_message(t('system', '清除失败'));
           }
           dd_goto_redirect('admin/format');
       }
     break;
     default:
-      if($lists = _module_invoke_all('filter', 'list')){
+      if ($lists = _module_invoke_all('filter', 'list')) {
         $allLists = array();
-        foreach($lists as $module => $filters){
-          foreach($filters as $delta => $filter){
+        foreach ($lists as $module => $filters) {
+          foreach ($filters as $delta => $filter) {
             $filter['delta'] = $delta;
             $filter['module'] = $module;
             $allLists[$delta.'_'.$module] = (object)$filter;
           }
         }
-        foreach($allLists as $key => $filter){
+        foreach ($allLists as $key => $filter) {
           $links = array();
-          if($filter->update){
-            if($filter->update == 1){
+          if ($filter->update) {
+            if ($filter->update == 1) {
               $links[] = l(t('system', '设置'), 'admin/format/module/update/'.$filter->filter_id, dd_redirect());
-            }else{
+            } else {
               $links[] = l(t('system', '设置'), $filter->update.'/'.$filter->delta, dd_redirect());
             }
           }
-          if($filter->delete){
-            if($filter->delete == 1){
+          if ($filter->delete) {
+            if ($filter->delete == 1) {
               $links[] = l(t('system', '清除'), 'admin/format/module/delete/'.$filter->filter_id, dd_redirect());
-            }else{
+            } else {
               $links[] = l(t('system', '清除'), $filter->delete.'/'.$filter->delta, dd_redirect());
             }
           }
@@ -1145,10 +1145,10 @@ function system_admin_format(){
 /**
  * 过滤器表单
  */
-function system_admin_format_form($module, $delta, $filter = NULL){
+function system_admin_format_form($module, $delta, $filter = NULL) {
   
   $add = call_user_func($module.'_filter', 'add', $delta);
-  if(!$add[$delta] || !$add[$delta]['title']){
+  if (!$add[$delta] || !$add[$delta]['title']) {
     dd_set_message(t('system', '不正确的访问'));
     dd_goto('admin/filte/add_filter');
     exit;
@@ -1182,7 +1182,7 @@ function system_admin_format_form($module, $delta, $filter = NULL){
     '#default_value' => $delta,
     '#constant' => true,
   );
-  if($k = call_user_func($module.'_filter', 'form', $delta, NULL, $filter)){
+  if ($k = call_user_func($module.'_filter', 'form', $delta, NULL, $filter)) {
     $form['fields'] += $k;
   }
   $form['settings'] = array(
@@ -1193,30 +1193,30 @@ function system_admin_format_form($module, $delta, $filter = NULL){
   return $form;
 }
 
-function system_admin_format_form_validate($form, $v){
-  if(dd_strlen($v['title']) > 60){
+function system_admin_format_form_validate($form, $v) {
+  if (dd_strlen($v['title']) > 60) {
     $t['title']['#error'][] = t('system', '不超过 %length 字符', array('%length' => 60));
-  }else if(dd_strlen($v['description']) > 255){
+  } else if (dd_strlen($v['description']) > 255) {
     $t['description']['#error'][] = t('system', '不超过 %length 字符', array('%length' => 255));
-  }else if(!$t = call_user_func($v['module'].'_filter', 'validate', $v['delta'], NULL, (object)$v)){
-    if($v['fid']){
+  } else if (!$t = call_user_func($v['module'].'_filter', 'validate', $v['delta'], NULL, (object)$v)) {
+    if ($v['fid']) {
       // 编辑
-      if(!db_query('SELECT title FROM {filter_tags} WHERE title = ? AND fid != ?', array($v['title'], $v['fid']), array('return' => 'column'))){
+      if (!db_query('SELECT title FROM {filter_tags} WHERE title = ? AND fid != ?', array($v['title'], $v['fid']), array('return' => 'column'))) {
         db_exec('UPDATE {filter_tags} SET title = ?, description = ? WHERE fid = ?', array($v['title'], $v['description'], $v['fid']));
         dd_set_message(t('system', '编辑成功'));
-      }else{
+      } else {
         $t['title']['#error'][] = t('system', '%string 已经存在', array('%string' => $v['title']));
       }
-    }else if(!db_query('SELECT title FROM {filter_tags} WHERE title =?', array($v['title']), array('return' => 'column'))){
+    } else if (!db_query('SELECT title FROM {filter_tags} WHERE title =?', array($v['title']), array('return' => 'column'))) {
       // 添加
-      if(db_exec('INSERT INTO {filter_tags} (title, module, delta, description) VALUES (?, ?, ?, ?)', array($v['title'], $v['module'], $v['delta'], $v['description']))){
+      if (db_exec('INSERT INTO {filter_tags} (title, module, delta, description) VALUES (?, ?, ?, ?)', array($v['title'], $v['module'], $v['delta'], $v['description']))) {
         $v['fid'] = db_last_insert_id();
         dd_set_message(t('system', '保存成功'));
-      }else{
+      } else {
         dd_set_message(t('system', '保存失败'));
         return true;
       }
-    }else{
+    } else {
       $t['title']['#error'][] = t('system', '%string 已经存在', array('%string' => $v['title']));
     }
     call_user_func($v['module'].'_filter', 'save', $v['delta'], NULL, (object)$v);
@@ -1228,22 +1228,22 @@ function system_admin_format_form_validate($form, $v){
 /**
  * 输入法配置
  */
-function system_admin_filter_form($fid = NULL){
-  if($fid && (!$format = db_query('SELECT * FROM {filter_format} WHERE format = ?', array($fid), array('return' => 'one')))){
+function system_admin_filter_form($fid = NULL) {
+  if ($fid && (!$format = db_query('SELECT * FROM {filter_format} WHERE format = ?', array($fid), array('return' => 'one')))) {
     dd_set_message(t('system', '不正确的访问'));
     dd_goto('admin/filter');
     exit;
   }
   
-  if($format->name){
+  if ($format->name) {
     dd_set_title(array(t(0, $format->name), t('system', '输入法配置'), t('system', '输入设置')));
-  }else{
+  } else {
     dd_set_title(array(t('system', '添加输入法'), t('system', '输入设置')));
   }
   
-  if($format->roles) {
+  if ($format->roles) {
     $format->roles = unserialize($format->roles);
-  }else{
+  } else {
     $format->roles = array();
   }
   $form['fields']['name'] = array(
@@ -1260,21 +1260,21 @@ function system_admin_filter_form($fid = NULL){
     '#default_value' => $format->description,
     '#description' => t('system', '不超过 %length 字符', array('%length' => 255))
   );
-  if($lists = _module_invoke_all('filter', 'list')){
+  if ($lists = _module_invoke_all('filter', 'list')) {
     $oldLists = $allLists = array();
     
-    foreach($lists as $module => $filters){
-      foreach($filters as $delta => $filter){
+    foreach ($lists as $module => $filters) {
+      foreach ($filters as $delta => $filter) {
         $filter['delta'] = $delta;
         $filter['module'] = $module;
         $allLists[$delta.'_'.$module] = (object)$filter;
       }
     }
-    if($fid){
-      if($fetch = db_query('SELECT * FROM {filters} WHERE format = ? ORDER BY weight ASC, fid DESC', array($fid))){
-        foreach($fetch as $o){
+    if ($fid) {
+      if ($fetch = db_query('SELECT * FROM {filters} WHERE format = ? ORDER BY weight ASC, fid DESC', array($fid))) {
+        foreach ($fetch as $o) {
           $key = $o->delta.'_'.$o->module;
-          if($allLists[$key]){
+          if ($allLists[$key]) {
             $allLists[$key]->fid = $o->fid;
             $allLists[$key]->weight = $o->weight;
           }
@@ -1299,19 +1299,19 @@ function system_admin_filter_form($fid = NULL){
       '#fieldset_suffix' => 1,
       '#description' => t('system', '权重将决定过滤器调用的先后顺序，多个过滤器之间可能存在冲突')
     );
-    foreach($allLists as $key => $filter){
+    foreach ($allLists as $key => $filter) {
       $op = array();
-      if($filter->update){
-        if($filter->update == 1){
+      if ($filter->update) {
+        if ($filter->update == 1) {
           $op[] = l(t('system', '设置'), 'admin/format/module/update/'.$filter->filter_id, dd_redirect());
-        }else{
+        } else {
           $op[] = l(t('system', '设置'), $filter->update.'/'.$filter->delta, dd_redirect());
         }
       }
-      if($filter->delete){
-        if($filter->delete == 1){
+      if ($filter->delete) {
+        if ($filter->delete == 1) {
           $op[] = l(t('system', '清除'), 'admin/format/module/delete/'.$filter->filter_id, dd_redirect());
-        }else{
+        } else {
           $op[] = l(t('system', '清除'), $filter->delete.'/'.$filter->delta, dd_redirect());
         }
       }
@@ -1344,36 +1344,36 @@ function system_admin_filter_form($fid = NULL){
   return $form;
 }
 
-function system_admin_filter_form_validate($form, $v){
-  if(dd_strlen($v['name']) > 60){
+function system_admin_filter_form_validate($form, $v) {
+  if (dd_strlen($v['name']) > 60) {
     $t['name']['#error'][] = t('system', '不超过 %length 字符', array('%length' => 60));
-  }else if(dd_strlen($v['description']) > 255){
+  } else if (dd_strlen($v['description']) > 255) {
     $t['description']['#error'][] = t('system', '不超过 %length 字符', array('%length' => 255));
-  }else if($v['fid']){
-    if(!db_query('SELECT name FROM {filter_format} WHERE name = ? AND format != ?', array($v['name'], $v['fid']), array('return' => 'column'))){
+  } else if ($v['fid']) {
+    if (!db_query('SELECT name FROM {filter_format} WHERE name = ? AND format != ?', array($v['name'], $v['fid']), array('return' => 'column'))) {
       db_exec('UPDATE {filter_format} SET name = ?, description = ?, roles = ? WHERE format = ?', array($v['name'], $v['description'], serialize($v['roles']), $v['fid']));
       db_exec('DELETE FROM {filters} WHERE format = ?', array($v['fid']));
       $fid = $v['fid'];
       dd_set_message(t('system', '编辑成功'));
-    }else{
+    } else {
       $t['name']['#error'][] = t('system', '%string 已经存在', array('%string' => $v['name']));
     }
-  }else if(!db_query('SELECT name FROM {filter_format} WHERE name =?', array($v['name']), array('return' => 'column'))){
-    if(db_exec('INSERT INTO {filter_format} (name, description, roles) VALUES (?, ?, ?)', array($v['name'], $v['description'], serialize($v['roles'])))){
+  } else if (!db_query('SELECT name FROM {filter_format} WHERE name =?', array($v['name']), array('return' => 'column'))) {
+    if (db_exec('INSERT INTO {filter_format} (name, description, roles) VALUES (?, ?, ?)', array($v['name'], $v['description'], serialize($v['roles'])))) {
       $fid = db_last_insert_id();
       dd_set_message(t('system', '添加成功'));
     }
-  }else{
+  } else {
     $t['name']['#error'][] = t('system', '%string 已经存在', array('%string' => $v['name']));
   }
   
-  if($fid){
-    if($v['filter']){
-      foreach($v['filter'] as $key => $filter){
-        if(is_array($filter)){
+  if ($fid) {
+    if ($v['filter']) {
+      foreach ($v['filter'] as $key => $filter) {
+        if (is_array($filter)) {
           list($delta, $module) = explode('_', $key, 2);
-          if($filter['check'] == 1){
-            if(!$filter['filter_id']) $filter['filter_id'] = 0;
+          if ($filter['check'] == 1) {
+            if (!$filter['filter_id']) $filter['filter_id'] = 0;
             db_exec('INSERT INTO {filters} (format, filter, delta, module, weight) VALUES (?, ?, ?, ?, ?)', array($fid, $filter['filter_id'], $delta, $module, $filter['weight']));
           }
         }
@@ -1389,7 +1389,7 @@ function system_admin_filter_form_validate($form, $v){
  * @reference
  *  http://people.w3.org/rishida/names/languages.html
  */
-function system_get_languages_data($lang = NULL){
+function system_get_languages_data($lang = NULL) {
   $languages = array(
     'aa' => 'Afar',
     'ab' => 'Abkhazian(аҧсуа бызшәа)',

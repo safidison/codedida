@@ -8,7 +8,7 @@
  * Version 2.1.1
  */
 
-(function($){
+(function($) {
 
 /**
  * The bgiframe is chainable and applies the iframe hack to get 
@@ -80,7 +80,7 @@ $.fn.bgIframe = $.fn.bgiframe = function(s) {
 			opacity : true,
 			src     : 'javascript:false;'
 		}, s || {});
-		var prop = function(n){return n&&n.constructor==Number?n+'px':n;},
+		var prop = function(n) {return n&&n.constructor==Number?n+'px':n;},
 		    html = '<iframe class="bgiframe"frameborder="0"tabindex="-1"src="'+s.src+'"'+
 		               'style="display:block;position:absolute;z-index:-1;'+
 			               (s.opacity !== false?'filter:Alpha(Opacity=\'0\');':'')+

@@ -5,7 +5,7 @@ cache_memcache_onnect();
 
 function cache_del($type = 'cid', $cid = NULL, $table = 'cache') {
   global $mem;
-  switch($type){
+  switch ($type) {
     case 'cid':
       $mem->delete($table.'_'.$cid, 0);
     break;
@@ -13,16 +13,16 @@ function cache_del($type = 'cid', $cid = NULL, $table = 'cache') {
       $mem->flush();
     break;
     case 'empty': // 清除表中所有数据
-      if($keys = $mem->get('__table_'.$table.'_keys')){
-        foreach($keys as $key => $k){
+      if ($keys = $mem->get('__table_'.$table.'_keys')) {
+        foreach ($keys as $key => $k) {
           $mem->delete($key, 0);
         }
       }
     break;
     case '*': // 模糊匹配
-      if($keys = $mem->get('__table_'.$table.'_keys')){
-        foreach($keys as $key => $k){
-          if(strpos($key, $cid) !== false){
+      if ($keys = $mem->get('__table_'.$table.'_keys')) {
+        foreach ($keys as $key => $k) {
+          if (strpos($key, $cid) !== false) {
             $mem->delete($key, 0);
           }
         }
@@ -34,7 +34,7 @@ function cache_del($type = 'cid', $cid = NULL, $table = 'cache') {
 
 function cache_get($cid, $table = 'cache') {
   global $mem;
-  if($data = $mem->get($table.'_'.$cid)){
+  if ($data = $mem->get($table.'_'.$cid)) {
     $cache->data = $data;
     return $cache;
   }
@@ -43,17 +43,17 @@ function cache_get($cid, $table = 'cache') {
 function cache_set($cid, $data, $table = 'cache', $expire = NULL) {
   global $mem;
   
-  if(!$expire) {
+  if (!$expire) {
     $expire = 259200;
   }
   
   $key = $table.'_'.$cid;
-  if($keys = $mem->get('__table_'.$table.'_keys')){
-    if(!$keys[$key]){
+  if ($keys = $mem->get('__table_'.$table.'_keys')) {
+    if (!$keys[$key]) {
       $keys[$key] = 1;
       $mem->set('__table_'.$table.'_keys', $keys, MEMCACHE_COMPRESSED, 259200);
     }
-  }else{
+  } else {
     $mem->set('__table_'.$table.'_keys', array($key => 1), MEMCACHE_COMPRESSED, 259200);
   }
   
@@ -65,9 +65,9 @@ function cache_set($cid, $data, $table = 'cache', $expire = NULL) {
  */
 function cache_memcache_onnect() {
   global $mem;
-  if(!isset($mem)){
+  if (!isset($mem)) {
     $mem = new Memcache;
-    if($mem->pconnect(var_get('cache_memcache_host', 'localhost'), var_get('cache_memcache_port', 11211))){
+    if ($mem->pconnect(var_get('cache_memcache_host', 'localhost'), var_get('cache_memcache_port', 11211))) {
       $mem->setCompressThreshold(20000, 0.2);
     }
   }
@@ -77,7 +77,7 @@ function cache_memcache_onnect() {
  * 缓存自定义配置
  * @param (array) $form
  */
-function cache_settings_custom_form(&$form){
+function cache_settings_custom_form(&$form) {
   $form['fields']['cache_memcache_host'] = array(
     '#title' => t('system', 'memcache 主机'),
     '#default_value' => var_get('cache_memcache_host', 'localhost'),
@@ -106,7 +106,7 @@ function cache_settings_custom_form(&$form){
  * @param (int) $expire
  *  过期时间，以秒为单位
  */
-function cache_set_page($path, $value, $expire = NULL){
+function cache_set_page($path, $value, $expire = NULL) {
   $oldpath = $path;
   
   // 以路径的 md5 值做为唯一标识
@@ -118,28 +118,28 @@ function cache_set_page($path, $value, $expire = NULL){
   /**
    * 缓存目录结构，将 md5 值的前 16 位，等分为 4，做为目录，避免一个目录文件过多
    */
-  for($i = 0; $i < 4; ++$i){
+  for ($i = 0; $i < 4; ++$i) {
     $filepath .= substr($cid, $i*4, 4).'/';
   }
   
   // 检查目录，不存在则创建
   
-  if(file_mkdir($filepath)){
+  if (file_mkdir($filepath)) {
     // 后 16 位做为文件名，文件名无后缀
     
     $end16 = substr($cid, 16);
     
-    if(!$GLOBALS['user']->uid){
+    if (!$GLOBALS['user']->uid) {
       $filepath .= $end16;
-    }else{
+    } else {
       // 为每个登录用户单独生成一份缓存，这将成倍加大缓存空间，建议关闭针对登录用户的页面缓存
       $filepath = file_mkdir($filepath . $end16 .'_user').'/'. $GLOBALS['user']->uid.'_'.$end16;
     }
     
-    if($fp = fopen($filepath, 'wb')){
-      if(flock($fp, LOCK_EX)){ // 锁定
+    if ($fp = fopen($filepath, 'wb')) {
+      if (flock($fp, LOCK_EX)) { // 锁定
         
-        if(!$expire){
+        if (!$expire) {
           $expire = var_get('dd_cache_page_expire', 600);
         }
         
@@ -155,8 +155,8 @@ function cache_set_page($path, $value, $expire = NULL){
       
       $dirname = dirname($filepath);
       
-      if(!db_query('SELECT path FROM {cache_page_list} WHERE dirname = ? AND path = ?',
-      array($dirname, $oldpath), array('return' => 'column'))){
+      if (!db_query('SELECT path FROM {cache_page_list} WHERE dirname = ? AND path = ?',
+      array($dirname, $oldpath), array('return' => 'column'))) {
         db_exec('INSERT INTO {cache_page_list} (path, dirname) VALUES (?, ?)', array($oldpath, $dirname));
       }
         
@@ -170,28 +170,28 @@ function cache_set_page($path, $value, $expire = NULL){
  * @param (string) $path
  *  系统路径
  */
-function cache_get_page($path){
+function cache_get_page($path) {
   $cid = md5($path);
   
   $filepath = $GLOBALS['conf_dir'].'/cache/page/';
   
-  for($i = 0; $i < 4; ++$i){
+  for ($i = 0; $i < 4; ++$i) {
     $filepath .= substr($cid, $i*4, 4).'/';
   }
   
-  if(!$GLOBALS['user']->uid){
+  if (!$GLOBALS['user']->uid) {
     $filepath .= substr($cid, 16);
-  }else{
+  } else {
     $filepath .= substr($cid, 16) .'_user/'. $GLOBALS['user']->uid.'_'.substr($cid, 16);
   }
   
-  if(is_file($filepath)){
+  if (is_file($filepath)) {
     $handle = fopen($filepath, 'rb');
     
     // 读取过期时间
     $timestamp = fread($handle, 10);
     
-    if($timestamp > $_SERVER['REQUEST_TIME']){
+    if ($timestamp > $_SERVER['REQUEST_TIME']) {
       
       // 读取缓存创建时间 
       $timestamp = fread($handle, 10);
@@ -219,39 +219,39 @@ function cache_get_page($path){
  *   user/1/*all => 清除 user/1 及其下的所有缓存页面，包括所有子文件夹
  *    适用于 hook_menu 发生变动
  */
-function cache_clear_page($path){
-  if($path == '*'){
+function cache_clear_page($path) {
+  if ($path == '*') {
     
     $filepath = $GLOBALS['conf_dir'].'/cache/page';
     file_delete_dir($filepath);
     
-  }else if(strpos($path, '*all') !== false){
+  } else if (strpos($path, '*all') !== false) {
     
     $path = str_replace(array('/*all', '*all'), '%', $path);
     
-    if($fetch = db_query('SELECT dirname FROM {cache_page_list} WHERE path LIKE ?', array($path))){
-      foreach($fetch as $o){
+    if ($fetch = db_query('SELECT dirname FROM {cache_page_list} WHERE path LIKE ?', array($path))) {
+      foreach ($fetch as $o) {
         file_delete_dir($o->dirname);
       }
     }
     
-  }else if(strpos($path, '*') !== false){
+  } else if (strpos($path, '*') !== false) {
     $path = str_replace(array('/*', '*'), '%', $path);
     
-    if($fetch = db_query('SELECT dirname FROM {cache_page_list} WHERE path LIKE ?', array($path))){
+    if ($fetch = db_query('SELECT dirname FROM {cache_page_list} WHERE path LIKE ?', array($path))) {
       
-      foreach($fetch as $o){
+      foreach ($fetch as $o) {
         file_delete_dir($o->dirname, 0);
       }
       
     }
     
-  }else{
+  } else {
     $cid = md5($path);
     
     $filepath = $GLOBALS['conf_dir'].'/cache/page/';
     
-    for($i = 0; $i < 4; ++$i){
+    for ($i = 0; $i < 4; ++$i) {
       $filepath .= substr($cid, $i*4, 4).'/';
     }
     
@@ -259,7 +259,7 @@ function cache_clear_page($path){
     
     $filename = $filepath . $end16;
     
-    if(is_file($filename)) @unlink($filename);
+    if (is_file($filename)) @unlink($filename);
     
     file_delete_dir($filepath . $end16 .'_user');
   }

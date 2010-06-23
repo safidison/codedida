@@ -13,7 +13,7 @@
  * @requires jQuery v1.3.2
  * @version: 1.0.0 - 30/3/2009
  */
-(function($){
+(function($) {
     //* Global Variables *************************************************************
     var FE={};
     FE.divcounter=0; // div counter for debug
@@ -28,7 +28,7 @@
         cursive:     "'Comic Sans MS' cursive"
         };
     //* Main Function *******************************************************************************
-    $.fn.FontEffect = function(o){
+    $.fn.FontEffect = function(o) {
         //* Defaults *********************************************************************
         var d = $.extend({
             outline             :false,
@@ -59,19 +59,19 @@
             debug               :false
         },  o);
         //* Main Loop ********************************************************************
-        this.not(".JQFE").each(function(){
+        this.not(".JQFE").each(function() {
             //* Check and correct options ********************************************************************
-            if(!d.outline &&
+            if (!d.outline &&
                 !d.shadow  &&
                 !d.mirror  &&
                 !d.gradient) {d.outline=true;};
-            if(d.outline){
-                if(d.outlineColor1 == "" && d.outlineColor2 == ""){
+            if (d.outline) {
+                if (d.outlineColor1 == "" && d.outlineColor2 == "") {
                     d.outlineColor1=pickcontrast($(this).css("color"));
                     };
-                if(d.outlineColor2 == "") d.outlineColor2=d.outlineColor1;
+                if (d.outlineColor2 == "") d.outlineColor2=d.outlineColor1;
                 };
-            if(d.gradient && d.gradientColor == ""){d.gradientColor=pickcontrast($(this).css("color"));};
+            if (d.gradient && d.gradientColor == "") {d.gradientColor=pickcontrast($(this).css("color"));};
             //* get the element display option and change to inline ********************************************************************
             var userdisplay=$(this).css("display");
             var userposition=$(this).css("position");
@@ -128,9 +128,9 @@
             FE.divounter+= 4;
             $(this).html("");
             //* Mirror Effect ****************************************************************
-            if(d.mirror){
-                for(i=0;i<h*(d.mirrorHeight/100);i++){
-                    if(d.proportional){
+            if (d.mirror) {
+                for (i=0;i<h*(d.mirrorHeight/100);i++) {
+                    if (d.proportional) {
                         var css_top1    =(h+d.mirrorOffset+i*d.mirrorDetail).pxToEm({scope: this});
                         var css_height  =d.mirrorDetail.pxToEm({scope: this});
                         var css_top2    =((h*-1)+i*(100/d.mirrorHeight)).pxToEm({scope: this});
@@ -156,15 +156,15 @@
                         );
                     FE.divounter+= i*2;
                     // Skip Non Visible Layers ************************************************
-                    if(css_opacity<0.01) break;
+                    if (css_opacity<0.01) break;
                     alldivsdown.append(appo);
                 };
             };
             //* Outline Effect ***************************************************************
-            if(d.outline){
+            if (d.outline) {
                 var totdiv =(d.outlineWeight)*8;
                 var to=FE.tabpos[d.outlineWeight];
-                for(i=0;i<totdiv;i++){
+                for (i=0;i<totdiv;i++) {
                     appo=$("<div class='JQFEOutline'>"+t+"</div>").css({
                         position: "absolute",
                         top:     (to.charAt(i*2)  -d.outlineWeight)+"px",
@@ -178,10 +178,10 @@
                 };
             };
             //* Shadow Effect ****************************************************************
-            if(d.shadow){
+            if (d.shadow) {
                 var totdiv =(d.shadowBlur)*8;
                 var to=FE.tabpos[d.shadowBlur];
-                for(i=0;i<totdiv;i++){
+                for (i=0;i<totdiv;i++) {
                     appo=$("<div class='JQFEShadow'>"+t+"</div>").css({
                         opacity:  d.shadowOpacity,
                         position: "absolute",
@@ -197,19 +197,19 @@
                 };
             };
             //* Gradient Effect *************************************************************
-            if(d.gradient){
+            if (d.gradient) {
                 var step    = Math.round((h*(d.gradientLength*0.01))/d.gradientSteps);
                 var postop  = h*(d.gradientPosition*0.01);
                 var opa     =(1/d.gradientSteps);
                 var gcolor  = d.gradientColor;
                 /*
-                if(!d.gradientFromTop){
+                if (!d.gradientFromTop) {
                     gcolor=$(this).css("color");
                     $(this).css("color", d.gradientColor);
                 }
                 */
-                for(i=0;i<d.gradientSteps;i++){
-                    if(d.proportional){
+                for (i=0;i<d.gradientSteps;i++) {
+                    if (d.proportional) {
                         css_top1   = (((i == 0)?0: postop)+i*step).pxToEm({scope: this});
                         css_height = (((i == 0)?postop: 0)+step  ).pxToEm({scope: this});
                         css_top2   = ((((i == 0)?0: postop)+i*step)*-1).pxToEm({scope: this});
@@ -245,20 +245,20 @@
             $(this).append(MyContainer);
         });//* Main Loop End *******************************************************************************
         //* Internal Functions ******************************************************************************
-        function hex2rgb(hexcolor){
+        function hex2rgb(hexcolor) {
             hexcolor=hexcolor.substring(1);
-            if(hexcolor.length == 3) hexcolor=hexcolor.charAt(0)+hexcolor.charAt(0)+hexcolor.charAt(1)+hexcolor.charAt(1)+hexcolor.charAt(2)+hexcolor.charAt(2);
+            if (hexcolor.length == 3) hexcolor=hexcolor.charAt(0)+hexcolor.charAt(0)+hexcolor.charAt(1)+hexcolor.charAt(1)+hexcolor.charAt(2)+hexcolor.charAt(2);
             var rgbcolor="rgb("+parseInt(hexcolor.substring(0, 2), 16)+", "+parseInt(hexcolor.substring(2, 4), 16)+", "+parseInt(hexcolor.substring(4, 6), 16)+")";
             return(rgbcolor);
         };
-        function chkColorString(col){
+        function chkColorString(col) {
             // test if "col" is a valid html color definition string(rgb(n, n, n)||#fff|#ffffff)
             return(/(#([0-9A-Fa-f]{3,6})\b)|(rgb\(\s*\b([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])\b\s*,\s*\b([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])\b\s*,\s*\b([0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])\b\s*\))|(rgb\(\s*(\d?\d%|100%)+\s*,\s*(\d?\d%|100%)+\s*,\s*(\d?\d%|100%)+\s*\))/.test(col));
         };
-        function pickcontrast(col){ //(try to) find the contrasting color
-            if(chkColorString(col)){
+        function pickcontrast(col) { //(try to) find the contrasting color
+            if (chkColorString(col)) {
                 col = col.toUpperCase();
-                if(col.charAt(0) == "#") col=hex2rgb(col);
+                if (col.charAt(0) == "#") col=hex2rgb(col);
                 var appo=col.substring(4, col.length-1).split(", ");
                 var g=255-parseInt(appo[0]);
                 var b=255-parseInt(appo[1]);
@@ -270,25 +270,25 @@
         return this; // chain...
     }; //* Main Function End *******************************************************************************
     //* External Functions *******************************************************************************
-    $.fn.changeOptionsFE = function(newoptions){
-        if(this){
+    $.fn.changeOptionsFE = function(newoptions) {
+        if (this) {
             var oldoptions=$(this).data("options") || {};
             $.extend(oldoptions, newoptions);
             $(this).data("options", oldoptions);
         };
     };
-    $.fn.redrawFE = function(newoptions){
-        if(this){
-            if(newoptions) $(this).changeOptionsFE(newoptions);
+    $.fn.redrawFE = function(newoptions) {
+        if (this) {
+            if (newoptions) $(this).changeOptionsFE(newoptions);
             $(this).removeFE();
             $(this).FontEffect($(this).data("options"));
         };
     };
-    $.fn.removeFE = function(removeoptions){
-        if(this && $(this).hasClass("JQFE")){
+    $.fn.removeFE = function(removeoptions) {
+        if (this && $(this).hasClass("JQFE")) {
             var t=$(this).find("div[class='JQFEText']").html();
             $(this).removeClass("JQFE");
-            if(removeoptions) $(this).data("options", {});
+            if (removeoptions) $(this).data("options", {});
             $(this).find("div[class^='JQFE']").remove();
             $(this).html(t);
         };
@@ -307,19 +307,19 @@
  * Dual licensed under the MIT(filamentgroup.com/examples/mit-license.txt) and GPL(filamentgroup.com/examples/gpl-license.txt) licenses.
  *
 --------------------------------------------------------------------*/
-Number.prototype.pxToEm = String.prototype.pxToEm = function(settings){
+Number.prototype.pxToEm = String.prototype.pxToEm = function(settings) {
     settings = $.extend({
         scope:  'body',
         reverse:  false
 },  settings);
     var pxVal =(this  ==  '') ? 0 :  parseFloat(this);
     var scopeVal;
-    var getWindowWidth = function(){
+    var getWindowWidth = function() {
         var de = document.documentElement;
         return self.innerWidth ||(de && de.clientWidth) || document.body.clientWidth;
 };
-    if(settings.scope  ==  'body' && $.browser.msie &&(parseFloat($('body').css('font-size')) / getWindowWidth()).toFixed(1) > 0.0){
-        var calcFontSize = function(){
+    if (settings.scope  ==  'body' && $.browser.msie &&(parseFloat($('body').css('font-size')) / getWindowWidth()).toFixed(1) > 0.0) {
+        var calcFontSize = function() {
             return(parseFloat($('body').css('font-size'))/getWindowWidth()).toFixed(3) * 16;
     };
         scopeVal = calcFontSize();

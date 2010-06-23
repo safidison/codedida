@@ -6,8 +6,8 @@ bootstrap('full');
 
 $return = menu_get_item();
 
-if(is_int($return)){
-  switch($return){
+if (is_int($return)) {
+  switch ($return) {
     case MENU_ACCESS_DENIED:
       dd_get_access();
     break;

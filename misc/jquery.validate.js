@@ -121,7 +121,7 @@ $.extend($.fn, {
 			var settings = $.data(element.form, 'validator').settings;
 			var staticRules = settings.rules;
 			var existingRules = $.validator.staticRules(element);
-			switch(command) {
+			switch (command) {
 			case "add":
 				$.extend(existingRules, $.validator.normalizeRule(argument));
 				staticRules[element.name] = existingRules;
@@ -219,7 +219,7 @@ $.extend($.validator, {
 			// hide error label and remove error class on focus if enabled
 			if ( this.settings.focusCleanup && !this.blockFocusCleanup ) {
 				this.settings.unhighlight && this.settings.unhighlight.call( this, element, this.settings.errorClass, this.settings.validClass );
-				this.errorsFor(element).hide();
+				this.errorsfor (element).hide();
 			}
 		},
 		onfocusout: function(element) {
@@ -354,7 +354,7 @@ $.extend($.validator, {
 
 		// http://docs.jquery.com/Plugins/Validation/Validator/showErrors
 		showErrors: function(errors) {
-			if(errors) {
+			if (errors) {
 				// add items to error list and map
 				$.extend( this.errorMap, errors );
 				this.errorList = [];
@@ -408,7 +408,7 @@ $.extend($.validator, {
 		},
 		
 		focusInvalid: function() {
-			if( this.settings.focusInvalid ) {
+			if ( this.settings.focusInvalid ) {
 				try {
 					$(this.findLastActive() || this.errorList.length && this.errorList[0].element || []).filter(":visible").focus();
 				} catch(e) {
@@ -470,7 +470,7 @@ $.extend($.validator, {
 		
 		prepareElement: function( element ) {
 			this.reset();
-			this.toHide = this.errorsFor(element);
+			this.toHide = this.errorsfor (element);
 		},
 	
 		check: function( element ) {
@@ -483,7 +483,7 @@ $.extend($.validator, {
 			
 			var rules = $(element).rules();
 			var dependencyMismatch = false;
-			for( method in rules ) {
+			for ( method in rules ) {
 				var rule = { method: method, parameters: rules[method] };
 				try {
 					var result = $.validator.methods[method].call( this, element.value.replace(/\r/g, ""), element, rule.parameters );
@@ -497,11 +497,11 @@ $.extend($.validator, {
 					dependencyMismatch = false;
 					
 					if ( result == "pending" ) {
-						this.toHide = this.toHide.not( this.errorsFor(element) );
+						this.toHide = this.toHide.not( this.errorsfor (element) );
 						return;
 					}
 					
-					if( !result ) {
+					if ( !result ) {
 						this.formatAndAdd( element, rule );
 						return false;
 					}
@@ -541,7 +541,7 @@ $.extend($.validator, {
 		
 		// return the first defined argument, allowing empty strings
 		findDefined: function() {
-			for(var i = 0; i < arguments.length; i++) {
+			for (var i = 0; i < arguments.length; i++) {
 				if (arguments[i] !== undefined)
 					return arguments[i];
 			}
@@ -588,7 +588,7 @@ $.extend($.validator, {
 				this.settings.highlight && this.settings.highlight.call( this, error.element, this.settings.errorClass, this.settings.validClass );
 				this.showLabel( error.element, error.message );
 			}
-			if( this.errorList.length ) {
+			if ( this.errorList.length ) {
 				this.toShow = this.toShow.add( this.containers );
 			}
 			if (this.settings.success) {
@@ -617,7 +617,7 @@ $.extend($.validator, {
 		},
 		
 		showLabel: function(element, message) {
-			var label = this.errorsFor( element );
+			var label = this.errorsfor ( element );
 			if ( label.length ) {
 				// refresh error/success class
 				label.removeClass().addClass( this.settings.errorClass );
@@ -673,11 +673,11 @@ $.extend($.validator, {
 		},
 		
 		getLength: function(value, element) {
-			switch( element.nodeName.toLowerCase() ) {
+			switch ( element.nodeName.toLowerCase() ) {
 			case 'select':
 				return $("option:selected", element).length;
 			case 'input':
-				if( this.checkable( element) )
+				if ( this.checkable( element) )
 					return this.findByName(element.name).filter(':checked').length;
 			}
 			return value.length;
@@ -871,7 +871,7 @@ $.extend($.validator, {
 	
 	// Converts a simple string to a {string: true} rule, e.g., "required" to {required:true}
 	normalizeRule: function(data) {
-		if( typeof data == "string" ) {
+		if ( typeof data == "string" ) {
 			var transformed = {};
 			$.each(data.split(/\s/), function() {
 				transformed[this] = true;
@@ -897,7 +897,7 @@ $.extend($.validator, {
 			// check if dependency is met
 			if ( !this.depend(param, element) )
 				return "dependency-mismatch";
-			switch( element.nodeName.toLowerCase() ) {
+			switch ( element.nodeName.toLowerCase() ) {
 			case 'select':
 				// could be an array for select-multiple or a string, both are fine this way
 				var val = $(element).val();
@@ -955,7 +955,7 @@ $.extend($.validator, {
 					}
 				}, param));
 				return "pending";
-			} else if( this.pending[element.name] ) {
+			} else if ( this.pending[element.name] ) {
 				return "pending";
 			}
 			return previous.valid;
@@ -1108,7 +1108,7 @@ $.format = $.validator.format;
 	$.each({
 		focus: 'focusin',
 		blur: 'focusout'	
-	}, function( original, fix ){
+	}, function( original, fix ) {
 		$.event.special[fix] = {
 			setup:function() {
 				if ( $.browser.msie ) return false;

@@ -4,7 +4,7 @@
 /**
  * 数据库连接信息，由各数据库接口文件自定义
  */
-function db_install_form($database){
+function db_install_form($database) {
   $field[] = dd_form_textfield(array(
     '#name' => 'dbname',
     '#title' => '数据库名称',
@@ -46,8 +46,8 @@ function db_install_form($database){
  * 测试数据库权限，若通过，则保存配置到 setting.php
  * 测试与保存由各数据库接口文件自定义
  */
-function db_install_test($database){
-  if($database['dbuser'] && $database['dbname'] && $database['host']){
+function db_install_test($database) {
+  if ($database['dbuser'] && $database['dbname'] && $database['host']) {
     $dsn = $database['driver'] .':host='. $database['host'].';port='.$database['port'].';dbname='.$database['dbname'];
     try{
       $db = new PDO($dsn, $database['dbuser'], $database['dbpass']);
@@ -57,10 +57,10 @@ function db_install_test($database){
   	   * 安装文件仅测试： 增删查，创建、删除、修改等权限。
   	   * 根据不同数据库特性，更多权限在此自定义测试，并返回错误信息以阻止安装
   	   */
-    }catch(PDOException $e){
+    }catch(PDOException $e) {
       return array($e->getMessage());
     }
-  }else{
+  } else {
     $error[] = '数据库信息不完整';
   }
   return $error;

@@ -4,7 +4,7 @@
 /**
  * hook_menu
  */
-function block_menu(){
+function block_menu() {
   $items = array();
   $items['admin/blocks/settings'] = array(
     'access_arguments' => array('admin block'),
@@ -66,14 +66,14 @@ function block_menu(){
 }
 
 //注册权限
-function block_perm(){
+function block_perm() {
   return array(
     'admin block' => '管理区块',
   );
 }
 
 //管理菜单
-function block_system_admin_menus(){
+function block_system_admin_menus() {
   return array(array(
   	array('管理区块', 'admin/blocks/settings/'.$GLOBALS['conf']['default_theme']),
     array('添加区块', 'admin/blocks/boxes/add'),
@@ -84,10 +84,10 @@ function block_system_admin_menus(){
 /**
  * 载入区块信息
  */
-function block_load($bid){
-	if($block = db_query('SELECT * FROM {blocks} WHERE bid = ?', array($bid), array('return' => 'one'))){
+function block_load($bid) {
+	if ($block = db_query('SELECT * FROM {blocks} WHERE bid = ?', array($bid), array('return' => 'one'))) {
     $block->settings = $block->settings ? unserialize($block->settings) : array();
-    if(!$block->settings['custom']){
+    if (!$block->settings['custom']) {
     	$block->settings['custom'] = array();
     }
   	return $block;
@@ -97,7 +97,7 @@ function block_load($bid){
 /**
  * 载入自定义(即管理员后台手动添加)区块信息
  */
-function block_box_load($bid){
+function block_box_load($bid) {
   return db_query('SELECT * FROM {boxes} WHERE bid = ?', array($bid), array('return' => 'one'));
 }
 
@@ -106,50 +106,50 @@ function block_box_load($bid){
  * @param (string) $theme
  *  主题系统名称，默认更新当前主题的区块列表
  */
-function block_cache_lists($theme = NULL){
+function block_cache_lists($theme = NULL) {
   global $conf;
-  if(!$theme){
+  if (!$theme) {
   	$theme = $conf['default_theme'];
   }
   
-  if($conf['themes'][$theme]['region']){
+  if ($conf['themes'][$theme]['region']) {
     $blocks = _block_get_cache_theme($theme);
-    if($lists = _module_invoke_all('block_list', $theme)){
-      foreach($lists as $module => $a){
-        foreach($a as $delta => $b){
-        	if(!$b['title']){
+    if ($lists = _module_invoke_all('block_list', $theme)) {
+      foreach ($lists as $module => $a) {
+        foreach ($a as $delta => $b) {
+        	if (!$b['title']) {
         		dd_set_message(t('module', '%string 定义的区块没有提供标题，这是必需项', array('%string' => $module)), 'error');
         		continue;
         	}
           $moduleLists[$module.'_'.$delta] = 1; 
-          if(!$blocks[$module.'_'.$delta]){
+          if (!$blocks[$module.'_'.$delta]) {
             $b['theme'] = $theme;
             $b['module'] = $module;
             $b['delta'] = $delta;
             $b['settings'] = array();
-            if(!$b['region']) $b['region'] = '';
-            if(!$b['weight']) $b['weight'] = 0;
-            if(!$b['visibility']) $b['visibility'] = 0;
-            if($b['custom']){
+            if (!$b['region']) $b['region'] = '';
+            if (!$b['weight']) $b['weight'] = 0;
+            if (!$b['visibility']) $b['visibility'] = 0;
+            if ($b['custom']) {
             	$b['settings']['custom'] = $b['custom'];
             }
-            if($insert = block_set_info($b)){
+            if ($insert = block_set_info($b)) {
               $blocks[$module.'_'.$insert->delta] = $insert;
             }
-          }else{
+          } else {
           	$blocks[$module.'_'.$delta]->title = $b['title'];
           }
         }
       }
       
-      if($delList = array_diff_key($blocks, $moduleLists)){
-        foreach($delList as $key => $c){
+      if ($delList = array_diff_key($blocks, $moduleLists)) {
+        foreach ($delList as $key => $c) {
           db_exec('DELETE FROM {blocks} WHERE bid = ?', array($c->bid));
           unset($blocks[$key]);
         }
         var_del('theme_'.$theme.'_view');
       }
-      if($insert) cache_del('cid', 'theme_'.$theme.'_list', 'cache_block');
+      if ($insert) cache_del('cid', 'theme_'.$theme.'_list', 'cache_block');
     }
     return $blocks;
   }
@@ -160,12 +160,12 @@ function block_cache_lists($theme = NULL){
  * @param $theme = sting
  *  主题系统名称
  */
-function _block_get_cache_theme($theme){
-  if($cache = cache_get('theme_'.$theme.'_list', 'cache_block')){
+function _block_get_cache_theme($theme) {
+  if ($cache = cache_get('theme_'.$theme.'_list', 'cache_block')) {
     return $cache->data;
-  }else{
-    if($fetch = db_query('SELECT bid, module, delta, weight, visibility, region, title FROM {blocks} WHERE theme = ? ORDER BY weight ASC, bid DESC', array($theme))){
-      foreach($fetch as $o){
+  } else {
+    if ($fetch = db_query('SELECT bid, module, delta, weight, visibility, region, title FROM {blocks} WHERE theme = ? ORDER BY weight ASC, bid DESC', array($theme))) {
+      foreach ($fetch as $o) {
         $data[$o->module.'_'.$o->delta] = $o;
       }
       cache_set('theme_'.$theme.'_list', $data, 'cache_block');
@@ -179,9 +179,9 @@ function _block_get_cache_theme($theme){
  * @param (string) $theme
  *  主题系统名称
  */
-function block_block_list($theme){
-  if($fetch = db_query('SELECT * FROM {boxes}')){
-    foreach($fetch as $o){
+function block_block_list($theme) {
+  if ($fetch = db_query('SELECT * FROM {boxes}')) {
+    foreach ($fetch as $o) {
       $blocks['boxes_'.$o->bid] = array(
         'title' => $o->title,
   			//'region' => 'left', // 所在区域，依主题而定
@@ -211,11 +211,11 @@ function block_block_list($theme){
  * @param $value = array()
  *  设置表单提交值，用于自定义存储
  */
-function block_block_view($theme, $config){
-  if(strpos($config->delta, '_') !== false){
+function block_block_view($theme, $config) {
+  if (strpos($config->delta, '_') !== false) {
     list($box, $bid) = explode('_', $config->delta);
     
-    if($o = db_query('SELECT * FROM {boxes} WHERE bid = ?', array($bid), array('return' => 'one'))){
+    if ($o = db_query('SELECT * FROM {boxes} WHERE bid = ?', array($bid), array('return' => 'one'))) {
       $block['title'] = t('block', $config->title);
       $block['content'] = filter_view($o->body, $o->format, 'block', $o->bid);
     }
@@ -226,22 +226,22 @@ function block_block_view($theme, $config){
 
 
 // 写入区块
-function block_set_info($block = array()){
+function block_set_info($block = array()) {
   $args = array(
     'cache' => 1,
     'settings' => array()
   );
   $block = array_merge($args, $block);
   
-  if(db_exec('INSERT INTO {blocks} (module, theme, region, delta, title, weight, visibility, cache, settings) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', array($block['module'], $block['theme'], $block['region'], $block['delta'], $block['title'], $block['weight'], $block['visibility'], $block['cache'], serialize($block['settings'])))){
-    if($block['bid'] = db_last_insert_id()){
+  if (db_exec('INSERT INTO {blocks} (module, theme, region, delta, title, weight, visibility, cache, settings) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', array($block['module'], $block['theme'], $block['region'], $block['delta'], $block['title'], $block['weight'], $block['visibility'], $block['cache'], serialize($block['settings'])))) {
+    if ($block['bid'] = db_last_insert_id()) {
       return (object) $block;
     }
   }
 }
 
 // 更新区块
-function block_update_info($bid, $block = array()){
+function block_update_info($bid, $block = array()) {
   $args = array(
     'cache' => 1,
     'settings' => array()
@@ -253,14 +253,14 @@ function block_update_info($bid, $block = array()){
   return true;
 }
 
-function block_get_cache_theme($theme, $region = NULL){
-  if($cache = var_get('theme_'.$theme.'_view')){
+function block_get_cache_theme($theme, $region = NULL) {
+  if ($cache = var_get('theme_'.$theme.'_view')) {
     return !$region ? $cache : $cache[$region];
-  }else{
-    if($fetch = db_query('SELECT * FROM {blocks} WHERE theme = ? AND visibility = 1 AND region != ? ORDER BY weight ASC, bid DESC', array($theme, '0'))){
-      foreach($fetch as $o){
+  } else {
+    if ($fetch = db_query('SELECT * FROM {blocks} WHERE theme = ? AND visibility = 1 AND region != ? ORDER BY weight ASC, bid DESC', array($theme, '0'))) {
+      foreach ($fetch as $o) {
         $o->settings = $o->settings ? unserialize($o->settings) : array();
-        if(!$o->settings['custom']){
+        if (!$o->settings['custom']) {
         	$o->settings['custom'] = array();
         }
         $data[$o->region][$o->module][$o->delta] = $o;
@@ -280,21 +280,21 @@ function block_get_cache_theme($theme, $region = NULL){
  *  区域，默认为指定主题定义的全部区块
  * @return 返回一个以 region 为键名的数组
  */
-function dd_get_block($theme = NULL, $region = NULL){
-  if(!$theme){
+function dd_get_block($theme = NULL, $region = NULL) {
+  if (!$theme) {
     $theme = $GLOBALS['conf']['default_theme'];
   }
   
-  if($blocks = block_get_cache_theme($theme, $region)){
-    foreach($blocks as $reg => $v){
-      foreach($v as $module => $c){
+  if ($blocks = block_get_cache_theme($theme, $region)) {
+    foreach ($blocks as $reg => $v) {
+      foreach ($v as $module => $c) {
         if (!function_exists($module.'_block_view')) {
           continue;
         }
         
-        foreach($c as $block){
-          if($block->settings['display']['type'] && $block->settings['display']['body']){
-          	if(block_path_display($block->settings['display']['type'], $block->settings['display']['body']) == false){
+        foreach ($c as $block) {
+          if ($block->settings['display']['type'] && $block->settings['display']['body']) {
+          	if (block_path_display($block->settings['display']['type'], $block->settings['display']['body']) == false) {
           		continue;
           	}
           }
@@ -303,18 +303,18 @@ function dd_get_block($theme = NULL, $region = NULL){
           
           $block_value = $block_title = NULL;
           
-          if(is_array($b)){
-            if($b['content']){
+          if (is_array($b)) {
+            if ($b['content']) {
               $block_value = $b['content'];
             }
-            if($b['title']){
+            if ($b['title']) {
               $block->title = check_plain($b['title']);
             }
-          }else{
+          } else {
             $block_value = $b;
           }
           
-          if(!$block_value){
+          if (!$block_value) {
           	continue;
           }
           
@@ -333,7 +333,7 @@ function dd_get_block($theme = NULL, $region = NULL){
 /**
  * @Implement of hook_theme()
  */
-function block_theme(){
+function block_theme() {
   return array(
     'block' => array(
       'tpl' => 'block.tpl.php',
@@ -342,44 +342,44 @@ function block_theme(){
   );
 }
 
-function block_path_display($type, $text){
+function block_path_display($type, $text) {
 	$return = false;
-	switch($type){
+	switch ($type) {
 		case 1:
-			if(substr($text, 0, 1) != '/'){
-				if(strpos($text, "\n") !== false){
-					foreach(explode("\n", $text) as $path){
+			if (substr($text, 0, 1) != '/') {
+				if (strpos($text, "\n") !== false) {
+					foreach (explode("\n", $text) as $path) {
 						$path = trim($path);
-						if($path) $lists[] = $path;
+						if ($path) $lists[] = $path;
 					}
-				}else{
+				} else {
 					$lists[0] = $text;
 				}
 				
-				if($lists){
+				if ($lists) {
 					return _menu_check_path_filter($_GET['q'], $lists);
 				}
 				
-			}else if(preg_match($text, $_GET['q'])){
+			} else if (preg_match($text, $_GET['q'])) {
 				// 正则模式
 				$return = true;
 			}
 		break;
 		case 2:
-			if(substr($text, 0, 1) != '/'){
-				if(strpos($text, "\n") !== false){
-					foreach(explode("\n", $text) as $path){
+			if (substr($text, 0, 1) != '/') {
+				if (strpos($text, "\n") !== false) {
+					foreach (explode("\n", $text) as $path) {
 						$path = trim($path);
-						if($path) $lists[] = $path;
+						if ($path) $lists[] = $path;
 					}
-				}else{
+				} else {
 					$lists[0] = $text;
 				}
 				
-				if($lists){
+				if ($lists) {
 					return !_menu_check_path_filter($_GET['q'], $lists);
 				}
-			}else if(!preg_match($text, $_GET['q'])){
+			} else if (!preg_match($text, $_GET['q'])) {
 				// 正则模式
 				$return = true;
 			}

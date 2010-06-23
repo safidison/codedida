@@ -14,7 +14,7 @@
  * @param (int) $timestamp
  *  hook_cron() 将传递一个时间戳，即上一次 cron 执行的时间
  * @示例
- *  hook_cron($timestamp){
+ *  hook_cron($timestamp) {
  *    db_query('DELETE FROM {temp} ....'); // 定期清除临时表
  *  }
  */
@@ -29,8 +29,8 @@ bootstrap('full');
  * cron 并不会泄露安全信息，故而这仅是一个很简单的验证
  */
 
-if($pass = var_get('cron_pass', false)){
-  if(!$_GET['pass'] || $_GET['pass'] != md5($pass)){
+if ($pass = var_get('cron_pass', false)) {
+  if (!$_GET['pass'] || $_GET['pass'] != md5($pass)) {
     echo 'byebye';
     exit;
   }
@@ -43,10 +43,10 @@ $timestamp = var_get('cron_last_time', 0);
  * 获得最小执行时间，默认为 3600 秒，防止频繁执行
  * $user->uid == 1 时，手动执行不受此限制
  */
-if($GLOBALS['user']->uid != 1){
+if ($GLOBALS['user']->uid != 1) {
   $time_min = var_get('cron_min_time', 3600);
 
-  if($time_min && $timestamp > ($_SERVER['REQUEST_TIME'] - $time_min)){
+  if ($time_min && $timestamp > ($_SERVER['REQUEST_TIME'] - $time_min)) {
     echo 'byebye';
     exit;
   }
@@ -55,20 +55,20 @@ if($GLOBALS['user']->uid != 1){
 set_time_limit(600);
 
 // 读取任务列表，每次最多 100 条
-if($fetch = db_query('SELECT * FROM {cron} WHERE status = 0 ORDER BY weight ASC, cid ASC', NULL, array('limit' => 100))){
-  foreach($fetch as $o){
-    if(!$o->data) continue;
+if ($fetch = db_query('SELECT * FROM {cron} WHERE status = 0 ORDER BY weight ASC, cid ASC', NULL, array('limit' => 100))) {
+  foreach ($fetch as $o) {
+    if (!$o->data) continue;
     
     $data = unserialize($o->data);
     
-    if($data['includes']){
-      foreach($data['includes'] as $filepath){
+    if ($data['includes']) {
+      foreach ($data['includes'] as $filepath) {
         include_once $filepath;
       }
     }
-    if(function_exists($data['func']) && call_user_func_array($data['func'], $data['args'])){
+    if (function_exists($data['func']) && call_user_func_array($data['func'], $data['args'])) {
       db_exec('UPDATE {cron} SET status = 1 WHERE cid = ?', array($o->cid));
-      if($data['success'] && function_exists($data['success'])){
+      if ($data['success'] && function_exists($data['success'])) {
         call_user_func_array($data['success'], $data['args']);
       }
     }
