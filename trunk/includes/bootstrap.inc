@@ -341,7 +341,19 @@ function f($filepath) {
   return $GLOBALS['base_path'] . $filepath;
 }
 
-// url 解析
+/**
+ * 用于生成 url，不必考虑简洁链接、相对或绝对、站内或站外等因素，均可以正确判断和处理
+ * @param (string) $path
+ *  可以是相对路径或外部链接
+ * @param (array) $options
+ *  其它参数：
+ *  file：是否为物理文件
+ *  external：是否为外部链接。若不传值，也将判断 $path 是否为外部链接
+ *  fragment：锚点
+ *  query：get 参数，数组：array('op' => 'insert', 'id' => 1)， 或字符串：op=insert&id=1
+ *  absolute：若为 true，则输出完整路径(包含域名)
+ * @return (string) 返回处理后的 url
+ */
 function url($path = NULL, $options = array()) {
   if ($options['file']) {
     return f($path);
@@ -1929,6 +1941,7 @@ function dd_get_js($scope = 'header', $javascript = NULL) {
       'cache_css_and_js_timestamp' => $conf['cache_css_and_js_timestamp'],
       'base_theme' => $conf['base_theme'],
       'base_path' => $base_path,
+      'clean_url' => $conf['clean_url'] ? true : false
     );
     dd_add_js($js, 'setting');
   }
