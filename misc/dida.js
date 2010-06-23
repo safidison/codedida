@@ -25,11 +25,38 @@ Dida.getsize = function() {
 	return arrayPageSize;
 };
 
+Dida.external = function(path) {
+	
+	if (path.substr(0, 1) == '/') {
+		return true;
+	}
+	
+	if (path.indexOf(':') != -1) {
+		
+		var par = path.split(':');
+		var types = {
+					'http': 1, 'https': 1, 'ftp': 1, 'news': 1, 'nntp': 1,
+					'telnet': 1, 'mailto': 1, 'irc': 1, 'ssh': 1, 'sftp': 1, 'webcal': 1, 'rtsp': 1
+				};
+  	return types[par[0]];
+  }
+}
+
 Dida.url = function(q, opt) {
-  var url;
-  url = settings.base_path + q;
+  var url = q;
+  var external = Dida.external(q);
+  
+  if (!external) {
+  	if (settings.clean_url || url.indexOf('?') != -1) {
+  		url = settings.base_path + q;
+  	} else {
+  		url = settings.base_path + '?q=' + q;
+  	}
+  }
+  
   if (opt) {
-    if (settings.base_path.indexOf('?') != -1) {
+  	
+    if (url.indexOf('?') == -1) {
       url += '?';
     } else {
       url += '&';
@@ -37,6 +64,7 @@ Dida.url = function(q, opt) {
     for (var attr in opt) {
       url += attr + '=' +opt[attr] + '&';
     }
+    url = url.substr(0, url.length - 1);
   }
   return url;
 };
