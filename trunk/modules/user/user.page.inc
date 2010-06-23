@@ -1,11 +1,11 @@
 <?php
 // $Id$
 
-function user_default(){
+function user_default() {
   global $user;
-  if(!$user->uid){
+  if (!$user->uid) {
     dd_goto('user/login');
-  }else{
+  } else {
     dd_goto('user/' . $user->uid);
   }
 }
@@ -13,17 +13,17 @@ function user_default(){
 /**
  * 用户 ajax 搜索 
  */
-function user_page_json(){
-  if($_POST['value']){
+function user_page_json() {
+  if ($_POST['value']) {
     $json['error'] = 0;
-    if($fetch = db_query('SELECT name FROM {users} WHERE name LIKE ?',
-    array('%'.$_POST['value'].'%'), array('limit' => 10))){
-      foreach($fetch as $o){
+    if ($fetch = db_query('SELECT name FROM {users} WHERE name LIKE ?',
+    array('%'.$_POST['value'].'%'), array('limit' => 10))) {
+      foreach ($fetch as $o) {
         $json['contents'][] = $o->name;
       }
     }
     echo json_encode($json);
-  }else{
+  } else {
     echo '{"error": 1}';
   }
   exit;
@@ -32,25 +32,25 @@ function user_page_json(){
 /**
  * 找回密码
  */
-function user_page_pass(){
-  switch($_GET['type']){
+function user_page_pass() {
+  switch ($_GET['type']) {
     case 'mail':
-      if($_GET['ajax'] == 'submit'){
-        if($_POST['name']){
+      if ($_GET['ajax'] == 'submit') {
+        if ($_POST['name']) {
           $o = db_query('SELECT status, name, uid, mail FROM {users} WHERE name = ?', array($_POST['name']), array('return' => 'one'));
-        }else if($_POST['mail']){
+        } else if ($_POST['mail']) {
           $o = db_query('SELECT status, name, uid, mail FROM {users} WHERE mail =?', array($_POST['mail']), array('return' => 'one'));
-        }else{
+        } else {
           dd_js_print('$(\'#ajax_description\').html("邮箱或昵称必填一项").show(300);');
         }
-        if($o->uid){
-          if($o->status == 1){
-            if(_user_newpass($o->uid, $o->name, $o->mail)){
+        if ($o->uid) {
+          if ($o->status == 1) {
+            if (_user_newpass($o->uid, $o->name, $o->mail)) {
               dd_js_print('$(\'#ajax_description\').html("找回密码的方式已发送到你的邮箱，请注意查收。").show(300);');
-            }else{
+            } else {
               dd_js_print('$(\'#ajax_description\').html("找回失败，请重试。").show(300);');
             }
-          }else if(!$o->status){
+          } else if (!$o->status) {
             $str = addslashes('你的账号还未激活。'.l('立即激活', 'user/activation/').'。');
             dd_js_print('$(\'#ajax_description\').html("'.$str.'").show(300);');
           }
@@ -58,19 +58,19 @@ function user_page_pass(){
       }
     exit();
     case 'newpass':
-      if($_GET['str'] && $_GET['uid']){
-        if($uid = db_query('SELECT uid FROM {users} WHERE uid = ? AND newpass = ? AND active > ?', array($_GET['uid'], $_GET['str'], ($_SERVER['REQUEST_TIME'] - 86400)), array('return' => 'column'))){
+      if ($_GET['str'] && $_GET['uid']) {
+        if ($uid = db_query('SELECT uid FROM {users} WHERE uid = ? AND newpass = ? AND active > ?', array($_GET['uid'], $_GET['str'], ($_SERVER['REQUEST_TIME'] - 86400)), array('return' => 'column'))) {
           db_exec('UPDATE {users} SET newpass = 0 WHERE uid = ?', array($uid));
-          if(user_login(user_load($uid))){
+          if (user_login(user_load($uid))) {
             setcookie(session_name(), session_id(), -1, '/', $cookie_domain);
             $_SESSION['oldpass'] = time();
             dd_set_message('请在 5 分钟内修改密码');
             dd_goto('user/newpass');
-          }else{
+          } else {
             dd_goto('user/pass');
           }
         }
-      }else{
+      } else {
         dd_set_message('错误的请求', 'error');
       }
     break;
@@ -104,36 +104,36 @@ function user_page_pass(){
 /**
  * 修改密码
  */
-function user_page_newpass(){
+function user_page_newpass() {
   global $user;
-  if($_GET['ajax'] == 'submit'){
-    if(!$_POST['pass']){
+  if ($_GET['ajax'] == 'submit') {
+    if (!$_POST['pass']) {
       $error[] = t('user', '新密码不能为空');
-    }else if($_POST['pass'] != $_POST['pass2']){
+    } else if ($_POST['pass'] != $_POST['pass2']) {
       $error[] = t('user', '两次输入的新密码不一致');
-    }else {
+    } else {
     	
     	$_POST['uid'] = $user->uid;
     	$_POST['name'] = $user->name;
     	$_POST['mail'] = $user->mail;
     	
-    	if(!$error = module_invoke_all('user', 'newpass', (object)$_POST)){
+    	if (!$error = module_invoke_all('user', 'newpass', (object)$_POST)) {
         $ok = true;
-	      if(!$_SESSION['oldpass'] || $_SESSION['oldpass'] < time() - 300){
-          if($_POST['pass'] != $_POST['oldpass']){
+	      if (!$_SESSION['oldpass'] || $_SESSION['oldpass'] < time() - 300) {
+          if ($_POST['pass'] != $_POST['oldpass']) {
 	          $ok = db_exec('UPDATE {users} SET pass = ? WHERE uid =? AND pass = ?', array(md5($_POST['pass']), $user->uid, md5($_POST['oldpass'])));
           }
-	      }else{
+	      } else {
 	        db_exec('UPDATE {users} SET pass = ? WHERE uid = ?', array(md5($_POST['pass']), $user->uid));
           
 	        unset($_SESSION['oldpass']);
 	      }
-	      if($ok){
+	      if ($ok) {
 	        setcookie(session_name(), session_id(), -1, '/', $cookie_domain);
 	        dd_set_message(t('user', '密码修改成功'));
 	        dd_js_print('window.location.href = "'.url('user/newpass').'"');
 	        exit();
-	      }else{
+	      } else {
 	        $error[] = t('user', '旧密码不匹配');
 	      }
       }
@@ -158,7 +158,7 @@ function user_page_newpass(){
       ),
     ),
   );
-  if(!$_SESSION['oldpass'] || $_SESSION['oldpass'] < time() - 300){
+  if (!$_SESSION['oldpass'] || $_SESSION['oldpass'] < time() - 300) {
     $form['fields']['oldpass'] = array(
       '#type' => 'password',
       '#title' => t('user', '旧密码'),
@@ -191,21 +191,21 @@ function user_page_newpass(){
 /**
  * 激活帐号，触发 hook_user_status($old, &$ac)
  */
-function user_page_activation(){
-  if($_GET['validate'] && $_GET['uid']){
-    if($uid = db_query('SELECT uid FROM {users} WHERE validate = ? AND uid = ?', array($_GET['validate'], $_GET['uid']), array('return' => 'column'))){
-      if(db_exec('UPDATE {users} SET status = 1, validate = ? WHERE uid = ?', array('', $uid))){
+function user_page_activation() {
+  if ($_GET['validate'] && $_GET['uid']) {
+    if ($uid = db_query('SELECT uid FROM {users} WHERE validate = ? AND uid = ?', array($_GET['validate'], $_GET['uid']), array('return' => 'column'))) {
+      if (db_exec('UPDATE {users} SET status = 1, validate = ? WHERE uid = ?', array('', $uid))) {
         
         $user = user_load($uid);
         
         module_invoke_all('user_status', 0, $user);
         
-        if(user_login($user) && ($_GET['ajax'] != 'submit')){
+        if (user_login($user) && ($_GET['ajax'] != 'submit')) {
           dd_set_message('激活成功，欢迎加入 '. $GLOBALS['conf']['site_name']);
           dd_goto(dd_get_token(var_get_key('user', 'redirect', 'user/' . $user->uid), $user, array('user', 'system')));
         }
       }
-    }else{
+    } else {
       dd_set_message('不正确的激活链接', 'error');
     }
   }
@@ -225,12 +225,12 @@ function user_page_activation(){
   return $form;
 }
 
-function user_activation_validate($form, $v){
-  if($msg = form_vali_mail($v['mail'])){
+function user_activation_validate($form, $v) {
+  if ($msg = form_vali_mail($v['mail'])) {
     $t['mail']['#error'][] = $msg;
-  }else if(!$o = db_query('SELECT uid, name, created FROM {users} WHERE mail = ? AND status = 0', array($v['mail']), array('return' => 'one'))){
+  } else if (!$o = db_query('SELECT uid, name, created FROM {users} WHERE mail = ? AND status = 0', array($v['mail']), array('return' => 'one'))) {
     $t['mail']['#error'][] = t('user', '不正确的邮箱');
-  }else{
+  } else {
     _user_activation($o->uid, $o->name, $v['mail'], $o->created);
     dd_set_message(t('user', '激活链接已发送，请注意查收'));
     dd_goto('user/activation');
@@ -241,7 +241,7 @@ function user_activation_validate($form, $v){
 /**
  * 修改资料
  */
-function user_page_edit(){
+function user_page_edit() {
   
   return dd_get_form('user_edit_form', $GLOBALS['user']);
 }
@@ -249,32 +249,32 @@ function user_page_edit(){
 /**
  * 注册
  */
-function user_page_register(){
-  if($_GET['ajax'] == 'submit'){
+function user_page_register() {
+  if ($_GET['ajax'] == 'submit') {
     $form_values = array();
-    if(!$error = dd_ajax_validate(0, 'user_register_form', $_POST['form_token'])){
-      if($account = user_insert($_POST['_dida_values'])){
-        if($_GET['redirect'] && strpos($_GET['redirect'], 'user/login') === false && strpos($_GET['redirect'], 'user/register') === false){
+    if (!$error = dd_ajax_validate(0, 'user_register_form', $_POST['form_token'])) {
+      if ($account = user_insert($_POST['_dida_values'])) {
+        if ($_GET['redirect'] && strpos($_GET['redirect'], 'user/login') === false && strpos($_GET['redirect'], 'user/register') === false) {
           $rediect = $_GET['redirect'];
-        }else{
+        } else {
           $rediect = url(dd_get_token(var_get_key('user', 'redirect', 'user/' . $account->uid), $account, array('user', 'system')));
         }
-        if($account->status == 1){
+        if ($account->status == 1) {
           dd_set_message(t('user', '恭喜，注册成功了'));
           user_login(user_load($account->uid));
-        }else if($GLOBALS['conf']['user']['status'] == 0){
+        } else if ($GLOBALS['conf']['user']['status'] == 0) {
           dd_set_message(t('user', '恭喜，注册成功了，你需要通过邮箱激活帐号'));
           $rediect = url('user/activation');
-        }else if($GLOBALS['conf']['user']['status'] == -1){
+        } else if ($GLOBALS['conf']['user']['status'] == -1) {
           dd_set_message(t('user', '恭喜，注册成功了，请等待管理员激你的帐号'));
           $rediect = $GLOBALS['base_path'];
         }
         
         dd_js_print('window.location.href = "'.urldecode($rediect).'"');
-      }else{
+      } else {
         dd_js_print('alert(\''.t('user', '抱歉，出现问题，注册失败了').'\')');
       }
-    }else{
+    } else {
       dd_js_print('$(\'#ajax_description\').html("'. addslashes(implode('<br>', dd_array_multi2single($error))).'").show(300);');
     }
   }
@@ -285,24 +285,24 @@ function user_page_register(){
 /**
  * 登录
  */
-function user_page_login(){
-  if($_GET['ajax'] == 'submit'){
-    if(!$error = dd_ajax_validate(0, 'user_login_form', $_POST['form_token'])){
-      if($_SESSION['user']->uid > 0){
-        if(!$_POST['his'][1]) {
+function user_page_login() {
+  if ($_GET['ajax'] == 'submit') {
+    if (!$error = dd_ajax_validate(0, 'user_login_form', $_POST['form_token'])) {
+      if ($_SESSION['user']->uid > 0) {
+        if (!$_POST['his'][1]) {
           global $cookie_domain;
           setcookie(session_name(), session_id(), -1, '/', $cookie_domain);
         }
-        if($_GET['redirect'] && strpos($_GET['redirect'], 'user/login') === false && strpos($_GET['redirect'], 'user/register') === false){
+        if ($_GET['redirect'] && strpos($_GET['redirect'], 'user/login') === false && strpos($_GET['redirect'], 'user/register') === false) {
           $rediect = $_GET['redirect'];
-        }else{
+        } else {
           $rediect = url(dd_get_token(var_get_key('user', 'redirect', 'user/' . $_SESSION['user']->uid), $_SESSION['user'], array('user', 'system')));
         }
         dd_js_print('location.href = "'.urldecode($rediect).'"');
-      }else{
+      } else {
         dd_js_print('alert(\''.t('user', '抱歉，登录失败了').'\')');
       }
-    }else{
+    } else {
       dd_js_print('$(\'#ajax_description\').html("'.addslashes(implode('<br>', dd_array_multi2single($error))).'").show(300);');
     }
   }
@@ -310,15 +310,15 @@ function user_page_login(){
   return $v;
 }
 
-function user_page_login_ajax(){
-  if($_GET['ajax'] == 'submit'){
-    if(!$error = dd_ajax_validate(0, 'user_login_form', $_POST['form_token'])){
-      if($_SESSION['user']->uid > 0){
-        if(!$_POST['his'][1]) {
+function user_page_login_ajax() {
+  if ($_GET['ajax'] == 'submit') {
+    if (!$error = dd_ajax_validate(0, 'user_login_form', $_POST['form_token'])) {
+      if ($_SESSION['user']->uid > 0) {
+        if (!$_POST['his'][1]) {
           global $cookie_domain;
           setcookie(session_name(), session_id(), -1, '/', $cookie_domain);
         }
-        switch($_GET['call']){
+        switch ($_GET['call']) {
           case 'to':
             //关闭本页，刷新父页
             dd_js_print('self.parent._tb_remove()');
@@ -335,10 +335,10 @@ function user_page_login_ajax(){
             $url = $_GET['redirect'] ? $_GET['redirect'] : url(dd_get_token(var_get_key('user', 'redirect', 'user/' . $_SESSION['user']->uid), $_SESSION['user'], array('user', 'system')));
             dd_js_print('window.location.href = "'.urldecode($url).'"');
         }
-      }else{
+      } else {
         dd_js_print('alert(\''.t('user', '抱歉，登录失败了').'\')');
       }
-    }else{
+    } else {
       dd_js_print('$(\'#ajax_description\').html("'.addslashes(implode('<br>', dd_array_multi2single($error))).'").show(100);');
     }
     exit;

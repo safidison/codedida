@@ -5,6 +5,6 @@
 
 <h2><?php echo $account->title; ?></h2>
 
-<?php if($account->content) : ?>
+<?php if ($account->content) : ?>
   <?php echo $account->content; ?>
 <?php endif;?>

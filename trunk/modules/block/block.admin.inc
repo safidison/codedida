@@ -1,28 +1,28 @@
 <?php
 // $Id$
 
-function block_admin_default(){
+function block_admin_default() {
   dd_goto('admin/blocks/settings/' .$GLOBALS['conf']['default_theme']);
 }
 
-function block_admin_form($theme){
+function block_admin_form($theme) {
 	global $conf;
-	if($conf['themes'][$theme]){
-		foreach($conf['themes'] as $links){
+	if ($conf['themes'][$theme]) {
+		foreach ($conf['themes'] as $links) {
 			$item[] = l($links['name'], 'admin/blocks/settings/'.$links['filename']);
 		}
     $item[] = l(t('block', '缓存管理'), 'admin/blocks/cache/'.$theme);
     $item[] = l(t('block', '添加区块'), 'admin/blocks/boxes/add');
     dd_set_tabs($item);
 		
-    if($blocks = block_cache_lists($theme)){
+    if ($blocks = block_cache_lists($theme)) {
       $regions = $conf['themes'][$theme]['region'];
       $regions[0] = t('block', '无');
-      foreach($blocks as $block){
-        if($regions[$block->region]){
+      foreach ($blocks as $block) {
+        if ($regions[$block->region]) {
           $region = $block->region;
           $defaultValue = $block->region;
-        }else{
+        } else {
           $defaultValue = $region = 0;
         }
         
@@ -54,21 +54,21 @@ function block_admin_form($theme){
       $form['fields']['submit']['#type'] = 'submit';
       
       dd_set_title(array($conf['themes'][$theme]['name'], t('block', '区块管理')));
-    }else{
+    } else {
       dd_set_message(t('block', '这个主题不能设置区块'), 'error');
     }
     dd_add_css('modules/block/block.admin.css');
 		return $form;
-	}else{
+	} else {
 		dd_get_not();
 	}
 }
 
-function block_admin_form_validate($form, $v){
+function block_admin_form_validate($form, $v) {
   global $conf;
-  if($v['region']){
-    foreach($v['region'] as $region => $blocks){
-      foreach($blocks as $bid => $block){
+  if ($v['region']) {
+    foreach ($v['region'] as $region => $blocks) {
+      foreach ($blocks as $bid => $block) {
         db_exec('UPDATE {blocks} SET region = ?, weight = ?, visibility = ? WHERE bid = ?', array($block['region'], $block['weight'], ($block['visibility'] ? $block['visibility'] : 0), $bid));
       }
     }
@@ -79,15 +79,15 @@ function block_admin_form_validate($form, $v){
 }
 
 // 区块配置
-function block_settings_form($theme, $block){
+function block_settings_form($theme, $block) {
 	$blocks = call_user_func($block->module.'_block_list', $theme, $block);
 	
-	if($config = $blocks[$block->delta]){
-		if(arg(5) == 'default'){
+	if ($config = $blocks[$block->delta]) {
+		if (arg(5) == 'default') {
     	$config['settings']['custom'] = array(
     		'custom' => $config->custom
     	);
-      if(block_update_info($block->bid, $config)){
+      if (block_update_info($block->bid, $config)) {
       	var_del('theme_'.$theme.'_view');
       	dd_set_message(t('block', '已恢复默认值'));
         dd_goto('admin/blocks/settings/'.$theme);
@@ -135,13 +135,13 @@ function block_settings_form($theme, $block){
 	    		t('block', '根据系统路径设置区块显示，可使用以下三种匹配模式：'),
 	    		t('block', '普通模式：一行一个。斜杠(/)代表整个路径。如：user 匹配单个页面，而 user/ 匹配以 user 下的所有页面。&lt;front&gt; 代表首页'),
 	    		t('block', '正则模式：符合PHP标准的正则表达式，只允许一个，以斜杠开始，如 /^user.*/i，匹配以 user 开头的所有页面'),
-	    		t('block', 'PHP模式：如：if($GLOBALS[\'user\']->uid == 1) return true;不能包含 PHP 标签。必须用 return 而不是 echo')
+	    		t('block', 'PHP模式：如：if ($GLOBALS[\'user\']->uid == 1) return true;不能包含 PHP 标签。必须用 return 而不是 echo')
 	    	)
       )
 	  );
     $function = $block->module.'_block_setting';
-    if(function_exists($function) && $custom = $function($theme, $block)){
-			if(is_array($custom)){
+    if (function_exists($function) && $custom = $function($theme, $block)) {
+			if (is_array($custom)) {
 				$form['fields']['settings']['custom'] = $custom;
 			}
 		}
@@ -155,25 +155,25 @@ function block_settings_form($theme, $block){
 	  	'#validate' => array('block_settings_form_validate'),
 	  	'#data' => $block
 	  );
-  }else{
+  } else {
   	dd_set_message(t('block', '数据已过期，模块(%string)中已不存在这个区块，请更新 <a href="!url">区块列表缓存</a>', array('%string' => $block->module, '!url' => url('admin/blocks/cache/'.$theme))), 'error');
   }
   return $form;
 }
 
-function block_settings_form_validate($form, $v){
+function block_settings_form_validate($form, $v) {
 	$block = $form['settings']['#data'];
 	$theme = arg(3);
-	if(dd_strlen($v['title']) > 60){
+	if (dd_strlen($v['title']) > 60) {
 		$t['title']['#error'][] = t('block', '标题长度不超过 %length 字符', array('%length' => 60));
-	}else{
+	} else {
     $function = $block->module.'_block_save';
-    if(function_exists($function)){
+    if (function_exists($function)) {
       $t = $function($theme, $block, $v);
     }
   }
-  if(!$t){
-		if($v['settings']['display']['body']){
+  if (!$t) {
+		if ($v['settings']['display']['body']) {
 			$v['settings']['display']['body'] = trim($v['settings']['display']['body']);
 		}
 	  db_exec('UPDATE {blocks} SET title = ?, settings = ? WHERE bid = ?', array(trim($v['title']), serialize($v['settings']), $v['bid']));
@@ -184,7 +184,7 @@ function block_settings_form_validate($form, $v){
   return $t;
 }
 
-function block_admin_cache($theme){
+function block_admin_cache($theme) {
   $item = array(
     l(t('block', '缓存管理'), $_GET['q']),
     l(t('block', '区块列表'), 'admin/blocks/settings/'.$theme)
@@ -204,12 +204,12 @@ function block_admin_cache($theme){
   return $form;
 }
 
-function block_admin_cache_validate($form, $v){
-  if($v['cache']){
+function block_admin_cache_validate($form, $v) {
+  if ($v['cache']) {
     global $conf;
     $theme = arg(3);
-    foreach($v['cache'] as $key){
-      switch($key){
+    foreach ($v['cache'] as $key) {
+      switch ($key) {
         case 'list':
           block_cache_lists($theme);
         break;

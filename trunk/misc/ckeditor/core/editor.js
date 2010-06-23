@@ -57,7 +57,7 @@ For licensing, see LICENSE.html or http://ckeditor.com/license
 					if ( CKEDITOR.editorConfig )
 						loadedConfig.fn = CKEDITOR.editorConfig;
 					else
-						loadedConfig.fn = function(){};
+						loadedConfig.fn = function() {};
 
 					// Call the load config again. This time the custom
 					// config is already cached and so it will get loaded.

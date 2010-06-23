@@ -85,7 +85,7 @@ $.fn.ajaxSubmit = function(options) {
 	if (options.data) {
 		options.extraData = options.data;
 		for (var n in options.data) {
-		  if(options.data[n] instanceof Array) {
+		  if (options.data[n] instanceof Array) {
 			for (var k in options.data[n])
 			  a.push( { name: n, value: options.data[n][k] } );
 		  }
@@ -122,7 +122,7 @@ $.fn.ajaxSubmit = function(options) {
 
 	// perform a load on the target only if dataType is not provided
 	if (!options.dataType && options.target) {
-		var oldSuccess = options.success || function(){};
+		var oldSuccess = options.success || function() {};
 		callbacks.push(function(data) {
 			var fn = options.replaceTarget ? 'replaceWith' : 'html';
 			$(options.target)[fn](data).each(oldSuccess, arguments);
@@ -310,7 +310,7 @@ $.fn.ajaxSubmit = function(options) {
 				cbInvoked = true;
 				xhr.responseText = doc.body ? doc.body.innerHTML : null;
 				xhr.responseXML = doc.XMLDocument ? doc.XMLDocument : doc;
-				xhr.getResponseHeader = function(header){
+				xhr.getResponseHeader = function(header) {
 					var headers = {'content-type': opts.dataType};
 					return headers[header];
 				};
@@ -332,7 +332,7 @@ $.fn.ajaxSubmit = function(options) {
 				}
 				data = $.httpData(xhr, opts.dataType);
 			}
-			catch(e){
+			catch(e) {
 				log('error caught:',e);
 				ok = false;
 				xhr.error = e;
@@ -441,14 +441,14 @@ $.fn.formToArray = function(semantic) {
 	var form = this[0];
 	var els = semantic ? form.getElementsByTagName('*') : form.elements;
 	if (!els) return a;
-	for(var i=0, max=els.length; i < max; i++) {
+	for (var i=0, max=els.length; i < max; i++) {
 		var el = els[i];
 		var n = el.name;
 		if (!n) continue;
 
 		if (semantic && form.clk && el.type == "image") {
 			// handle image inputs on the fly when semantic == true
-			if(!el.disabled && form.clk == el) {
+			if (!el.disabled && form.clk == el) {
 				a.push({name: n, value: $(el).val()});
 				a.push({name: n+'.x', value: form.clk_x}, {name: n+'.y', value: form.clk_y});
 			}
@@ -457,7 +457,7 @@ $.fn.formToArray = function(semantic) {
 
 		var v = $.fieldValue(el, true);
 		if (v && v.constructor == Array) {
-			for(var j=0, jmax=v.length; j < jmax; j++)
+			for (var j=0, jmax=v.length; j < jmax; j++)
 				a.push({name: n, value: v[j]});
 		}
 		else if (v !== null && typeof v != 'undefined')
@@ -573,7 +573,7 @@ $.fieldValue = function(el, successful) {
 		var a = [], ops = el.options;
 		var one = (t == 'select-one');
 		var max = (one ? index+1 : ops.length);
-		for(var i=(one ? index : 0); i < max; i++) {
+		for (var i=(one ? index : 0); i < max; i++) {
 			var op = ops[i];
 			if (op.selected) {
 				var v = op.value;

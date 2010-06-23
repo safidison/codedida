@@ -1281,7 +1281,7 @@ CKEDITOR.tools.extend( CKEDITOR.dom.element.prototype,
 						'javascript:document.write("' +
 							'<script>' +
 								'window.setTimeout(' +
-									'function(){window.close();}' +
+									'function() {window.close();}' +
 									',50);' +
 							'</script>")' );
 				}

@@ -405,7 +405,7 @@ var sh = {
 									.replace(/&amp;/g, '&')
 								);
 
-							if(window.clipboardData)
+							if (window.clipboardData)
 								// will fall through to the confirmation because there isn't a break
 								window.clipboardData.setData('text', code);
 							else
@@ -459,8 +459,8 @@ var sh = {
 					{
 						var links = sourceDoc.getElementsByTagName('link');
 					
-						for(var i = 0; i < links.length; i++)
-							if(links[i].rel.toLowerCase() == 'stylesheet' && /shCore\.css$/.test(links[i].href))
+						for (var i = 0; i < links.length; i++)
+							if (links[i].rel.toLowerCase() == 'stylesheet' && /shCore\.css$/.test(links[i].href))
 								destDoc.write('<link type="text/css" rel="stylesheet" href="' + links[i].href + '"></link>');
 					};
 				};
@@ -501,7 +501,7 @@ var sh = {
 			fromIndex = Math.max(fromIndex || 0, 0);
 
 			for (var i = fromIndex; i < array.length; i++)
-				if(array[i] == searchElement)
+				if (array[i] == searchElement)
 					return i;
 
 			return -1;
@@ -997,16 +997,16 @@ var sh = {
 		matchesSortCallback: function(m1, m2)
 		{
 			// sort matches by index first
-			if(m1.index < m2.index)
+			if (m1.index < m2.index)
 				return -1;
-			else if(m1.index > m2.index)
+			else if (m1.index > m2.index)
 				return 1;
 			else
 			{
 				// if index is the same, sort by length
-				if(m1.length < m2.length)
+				if (m1.length < m2.length)
 					return -1;
-				else if(m1.length > m2.length)
+				else if (m1.length > m2.length)
 					return 1;
 			}
 			
@@ -1855,7 +1855,7 @@ RegExp.prototype.exec = function (str) {
     return match;
 };
 })(); // end anonymous function
-} // end if(!window.XRegExp)
+} // end if (!window.XRegExp)
 
 /**
  * intentionally undocumented

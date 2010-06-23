@@ -6,12 +6,12 @@ jQuery.extend({
 			//create frame
             var frameId = 'jUploadFrame' + id;
             
-            if(window.ActiveXObject) {
+            if (window.ActiveXObject) {
                 var io = document.createElement('<iframe id="' + frameId + '" name="' + frameId + '" />');
-                if(typeof uri== 'boolean'){
+                if (typeof uri== 'boolean') {
                     io.src = 'javascript:false';
                 }
-                else if(typeof uri== 'string'){
+                else if (typeof uri== 'string') {
                     io.src = uri;
                 }
             }
@@ -71,12 +71,12 @@ jQuery.extend({
 			var io = document.getElementById(frameId);
             try 
 			{				
-				if(io.contentWindow)
+				if (io.contentWindow)
 				{
 					 xml.responseText = io.contentWindow.document.body?io.contentWindow.document.body.innerHTML:null;
                 	 xml.responseXML = io.contentWindow.document.XMLDocument?io.contentWindow.document.XMLDocument:io.contentWindow.document;
 					 
-				}else if(io.contentDocument)
+				}else if (io.contentDocument)
 				{
 					 xml.responseText = io.contentDocument.document.body?io.contentDocument.document.body.innerHTML:null;
                 	xml.responseXML = io.contentDocument.document.XMLDocument?io.contentDocument.document.XMLDocument:io.contentDocument.document;
@@ -101,7 +101,7 @@ jQuery.extend({
                             s.success( data, status );
     
                         // Fire the global callback
-                        if( s.global )
+                        if ( s.global )
                             jQuery.event.trigger( "ajaxSuccess", [xml, s] );
                     } else
                         jQuery.handleError(s, xml, status);
@@ -112,7 +112,7 @@ jQuery.extend({
                 }
 
                 // The request was completed
-                if( s.global )
+                if ( s.global )
                     jQuery.event.trigger( "ajaxComplete", [xml, s] );
 
                 // Handle the global AJAX counter
@@ -145,9 +145,9 @@ jQuery.extend({
         // Timeout checker
         if ( s.timeout > 0 ) 
 		{
-            setTimeout(function(){
+            setTimeout(function() {
                 // Check to see if the request is still happening
-                if( !requestDone ) uploadCallback( "timeout" );
+                if ( !requestDone ) uploadCallback( "timeout" );
             }, s.timeout);
         }
         try 
@@ -157,7 +157,7 @@ jQuery.extend({
 			$(form).attr('action', s.url);
 			$(form).attr('method', 'POST');
 			$(form).attr('target', frameId);
-            if(form.encoding)
+            if (form.encoding)
 			{
                 form.encoding = 'multipart/form-data';				
             }
@@ -171,7 +171,7 @@ jQuery.extend({
 		{			
             jQuery.handleError(s, xml, null, e);
         }
-        if(window.attachEvent){
+        if (window.attachEvent) {
             document.getElementById(frameId).attachEvent('onload', uploadCallback);
         }
         else{
@@ -194,7 +194,7 @@ jQuery.extend({
         if ( type == "html" )
             jQuery("<div>").html(data);
             //jQuery("<div>").html(data).evalScripts();
-			//alert($('param', data).each(function(){alert($(this).attr('value'));}));
+			//alert($('param', data).each(function() {alert($(this).attr('value'));}));
         return data;
     }
 })

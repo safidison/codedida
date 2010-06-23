@@ -10,18 +10,18 @@
 */
 
 /*# AVOID COLLISIONS #*/
-;if(window.jQuery) (function($){
+;if (window.jQuery) (function($) {
 /*# AVOID COLLISIONS #*/
 	// plugin initialization
-	$.fn.MultiFile = function(options){
-		if(this.length==0) return this; // quick fail
+	$.fn.MultiFile = function(options) {
+		if (this.length==0) return this; // quick fail
 		
 		// Handle API methods
-		if(typeof arguments[0]=='string'){
+		if (typeof arguments[0]=='string') {
 			// Perform API methods on individual elements
-			if(this.length>1){
+			if (this.length>1) {
 				var args = arguments;
-				return this.each(function(){
+				return this.each(function() {
 					$.fn.MultiFile.apply($(this), args);
     });
 			};
@@ -48,7 +48,7 @@
 		
 		//### http://plugins.jquery.com/node/1363
 		// utility method to integrate this plugin with others...
-		if($.fn.MultiFile.options.autoIntercept){
+		if ($.fn.MultiFile.options.autoIntercept) {
 			$.fn.MultiFile.intercept( $.fn.MultiFile.options.autoIntercept /* array of methods to intercept */ );
 			$.fn.MultiFile.options.autoIntercept = null; /* only run this once */
 		};
@@ -57,7 +57,7 @@
 		this
 		 .not('.MultiFile-applied')
 			.addClass('MultiFile-applied')
-		.each(function(){
+		.each(function() {
 			//#####################################################################
 			// MAIN PLUGIN FUNCTIONALITY - START
 			//#####################################################################
@@ -76,7 +76,7 @@
        //===
        
        //# USE CONFIGURATION
-       if(typeof options=='number') options = {max:options};
+       if (typeof options=='number') options = {max:options};
        var o = $.extend({},
         $.fn.MultiFile.options,
         options || {},
@@ -84,18 +84,18 @@
 								{} /* internals */
        );
        // limit number of files that can be selected?
-       if(!(o.max>0) /*IsNull(MultiFile.max)*/){
+       if (!(o.max>0) /*IsNull(MultiFile.max)*/) {
         o.max = MultiFile.E.attr('filelength');
-        if(!(o.max>0) /*IsNull(MultiFile.max)*/){
+        if (!(o.max>0) /*IsNull(MultiFile.max)*/) {
          o.max = (String(MultiFile.e.className.match(/\b(max|limit)\-([0-9]+)\b/gi) || ['']).match(/[0-9]+/gi) || [''])[0];
-         if(!(o.max>0)) o.max = -1;
+         if (!(o.max>0)) o.max = -1;
          else           o.max = String(o.max).match(/[0-9]+/gi)[0];
         }
        };
        o.max = new Number(o.max);
        // limit extensions?
        o.accept = o.accept || MultiFile.E.attr('accept') || '';
-       if(!o.accept){
+       if (!o.accept) {
         o.accept = (MultiFile.e.className.match(/\b(accept\-[\w\|]+)\b/gi)) || '';
         o.accept = new String(o.accept).replace(/^(accept|ext)\-/i,'');
        };
@@ -114,12 +114,12 @@
         n: 0, // How many elements are currently selected?
         slaves: [], files: [],
         instanceKey: MultiFile.e.id || 'MultiFile'+String(group_count), // Instance Key?
-        generateID: function(z){ return MultiFile.instanceKey + (z>0 ?'_F'+String(z):''); },
-        trigger: function(event, element){
+        generateID: function(z) { return MultiFile.instanceKey + (z>0 ?'_F'+String(z):''); },
+        trigger: function(event, element) {
          var handler = MultiFile[event], value = $(element).attr('value');
-         if(handler){
+         if (handler) {
           var returnValue = handler(element, value, MultiFile);
-          if( returnValue!=null ) return returnValue;
+          if ( returnValue!=null ) return returnValue;
          }
          return true;
         }
@@ -129,7 +129,7 @@
        
        // Setup dynamic regular expression for extension validation
        // - thanks to John-Paul Bader: http://smyck.de/2006/08/11/javascript-dynamic-regular-expresions/
-       if(String(MultiFile.accept).length>1){
+       if (String(MultiFile.accept).length>1) {
 								MultiFile.accept = MultiFile.accept.replace(/\W+/g,'|').replace(/^\W|\W$/g,'');
         MultiFile.rxAccept = new RegExp('\\.('+(MultiFile.accept?MultiFile.accept:'')+')$','gi');
        };
@@ -148,7 +148,7 @@
        
        //===
        
-							if(!MultiFile.list){
+							if (!MultiFile.list) {
 								// Create a wrapper for the list
 								// * OPERA BUG: NO_MODIFICATION_ALLOWED_ERR ('list' is a read-only property)
 								// this change allows us to keep the files in the order they were selected
@@ -160,8 +160,8 @@
        //===
        
        // Bind a new element
-       MultiFile.addSlave = function( slave, slave_count ){
-								//if(window.console) console.log('MultiFile.addSlave',slave_count);
+       MultiFile.addSlave = function( slave, slave_count ) {
+								//if (window.console) console.log('MultiFile.addSlave',slave_count);
 								
         // Keep track of how many elements have been displayed
         MultiFile.n++;
@@ -170,11 +170,11 @@
 								
 								// BUG FIX: http://plugins.jquery.com/node/1495
 								// Clear identifying properties from clones
-								if(slave_count>0) slave.id = slave.name = '';
+								if (slave_count>0) slave.id = slave.name = '';
 								
         // Define element's ID and name (upload components need this!)
         //slave.id = slave.id || MultiFile.generateID(slave_count);
-								if(slave_count>0) slave.id = MultiFile.generateID(slave_count);
+								if (slave_count>0) slave.id = MultiFile.generateID(slave_count);
 								//FIX for: http://code.google.com/p/jquery-multifile-plugin/issues/detail?id=23
         
         // 2008-Apr-29: New customizable naming convention (see url below)
@@ -187,7 +187,7 @@
         );
         
         // If we've reached maximum number, disable input slave
-        if( (MultiFile.max > 0) && ((MultiFile.n-1) > (MultiFile.max)) )//{ // MultiFile.n Starts at 1, so subtract 1 to find true count
+        if ( (MultiFile.max > 0) && ((MultiFile.n-1) > (MultiFile.max)) )//{ // MultiFile.n Starts at 1, so subtract 1 to find true count
          slave.disabled = true;
         //};
         
@@ -204,30 +204,30 @@
 								slave.addClass('MultiFile-applied');
 								
         // Triggered when a file is selected
-        slave.change(function(){
-          //if(window.console) console.log('MultiFile.slave.change',slave_count);
+        slave.change(function() {
+          //if (window.console) console.log('MultiFile.slave.change',slave_count);
  								 
           // Lose focus to stop IE7 firing onchange again
           $(this).blur();
           
           //# Trigger Event! onFileSelect
-          if(!MultiFile.trigger('onFileSelect', this, MultiFile)) return false;
+          if (!MultiFile.trigger('onFileSelect', this, MultiFile)) return false;
           //# End Event!
           
           //# Retrive value of selected file from element
           var ERROR = '', v = String(this.value || ''/*.attr('value)*/);
           
           // check extension
-          if(MultiFile.accept && v && !v.match(MultiFile.rxAccept))//{
+          if (MultiFile.accept && v && !v.match(MultiFile.rxAccept))//{
             ERROR = MultiFile.STRING.denied.replace('$ext', String(v.match(/\.\w{1,4}$/gi)));
            //}
           //};
           
           // Disallow duplicates
-										for(var f in MultiFile.slaves)//{
-           if(MultiFile.slaves[f] && MultiFile.slaves[f]!=this)//{
+										for (var f in MultiFile.slaves)//{
+           if (MultiFile.slaves[f] && MultiFile.slaves[f]!=this)//{
   										//console.log(MultiFile.slaves[f],MultiFile.slaves[f].value);
-            if(MultiFile.slaves[f].value==v)//{
+            if (MultiFile.slaves[f].value==v)//{
              ERROR = MultiFile.STRING.duplicate.replace('$file', v.match(/[^\/\\]+$/gi));
             //};
            //};
@@ -241,7 +241,7 @@
           newEle.addClass('MultiFile');
           
           // Handle error
-          if(ERROR!=''){
+          if (ERROR!='') {
             // Handle error
             MultiFile.error(ERROR);
 												
@@ -267,7 +267,7 @@
           MultiFile.addSlave( newEle[0], slave_count+1 );
           
           //# Trigger Event! afterFileSelect
-          if(!MultiFile.trigger('afterFileSelect', this, MultiFile)) return false;
+          if (!MultiFile.trigger('afterFileSelect', this, MultiFile)) return false;
           //# End Event!
           
         }); // slave.change()
@@ -281,11 +281,11 @@
        
        
        // Add a new file to the list
-       MultiFile.addToList = function( slave, slave_count ){
-        //if(window.console) console.log('MultiFile.addToList',slave_count);
+       MultiFile.addToList = function( slave, slave_count ) {
+        //if (window.console) console.log('MultiFile.addToList',slave_count);
 								
         //# Trigger Event! onFileAppend
-        if(!MultiFile.trigger('onFileAppend', slave, MultiFile)) return false;
+        if (!MultiFile.trigger('onFileAppend', slave, MultiFile)) return false;
         //# End Event!
         
         // Create label elements
@@ -301,10 +301,10 @@
         );
         
         b
-								.click(function(){
+								.click(function() {
          
           //# Trigger Event! onFileRemove
-          if(!MultiFile.trigger('onFileRemove', slave, MultiFile)) return false;
+          if (!MultiFile.trigger('onFileRemove', slave, MultiFile)) return false;
           //# End Event!
           
           MultiFile.n--;
@@ -320,14 +320,14 @@
 										$(MultiFile.current).reset().val('').attr('value', '')[0].value = '';
           
           //# Trigger Event! afterFileRemove
-          if(!MultiFile.trigger('afterFileRemove', slave, MultiFile)) return false;
+          if (!MultiFile.trigger('afterFileRemove', slave, MultiFile)) return false;
           //# End Event!
 										
           return false;
         });
         
         //# Trigger Event! afterFileAppend
-        if(!MultiFile.trigger('afterFileAppend', slave, MultiFile)) return false;
+        if (!MultiFile.trigger('afterFileAppend', slave, MultiFile)) return false;
         //# End Event!
         
        }; // MultiFile.addToList
@@ -336,7 +336,7 @@
        
        
        // Bind functionality to the first element
-       if(!MultiFile.MultiFile) MultiFile.addSlave(MultiFile.e, 0);
+       if (!MultiFile.MultiFile) MultiFile.addSlave(MultiFile.e, 0);
        
        // Increment control count
        //MultiFile.I++; // using window.MultiFile
@@ -370,10 +370,10 @@
    *
    * @example $.fn.MultiFile.reset();
    */
-  reset: function(){
+  reset: function() {
 			var settings = $(this).data('MultiFile');
-			//if(settings) settings.wrapper.find('a.MultiFile-remove').click();
-			if(settings) settings.list.find('a.MultiFile-remove').click();
+			//if (settings) settings.wrapper.find('a.MultiFile-remove').click();
+			if (settings) settings.list.find('a.MultiFile-remove').click();
    return $(this);
   },
   
@@ -392,10 +392,10 @@
    * @example $.fn.MultiFile.disableEmpty();
    * @param String class (optional) A string specifying a class to be applied to all affected elements - Default: 'mfD'.
    */
-  disableEmpty: function(klass){ klass = (typeof(klass)=='string'?klass:'')||'mfD';
+  disableEmpty: function(klass) { klass = (typeof(klass)=='string'?klass:'')||'mfD';
    var o = [];
-   $('input:file.MultiFile').each(function(){ if($(this).val()=='') o[o.length] = this; });
-   return $(o).each(function(){ this.disabled = true }).addClass(klass);
+   $('input:file.MultiFile').each(function() { if ($(this).val()=='') o[o.length] = this; });
+   return $(o).each(function() { this.disabled = true }).addClass(klass);
   },
   
   
@@ -412,8 +412,8 @@
 			* @example $.fn.MultiFile.reEnableEmpty();
 			* @param String klass (optional) A string specifying the class that was used to mark affected elements - Default: 'mfD'.
 			*/
-  reEnableEmpty: function(klass){ klass = (typeof(klass)=='string'?klass:'')||'mfD';
-   return $('input:file.'+klass).removeClass(klass).each(function(){ this.disabled = false });
+  reEnableEmpty: function(klass) { klass = (typeof(klass)=='string'?klass:'')||'mfD';
+   return $('input:file.'+klass).removeClass(klass).each(function() { this.disabled = false });
   },
   
   
@@ -429,26 +429,26 @@
 			* @param Array methods (optional) Array of method names to be intercepted
 			*/
   intercepted: {},
-  intercept: function(methods, context, args){
+  intercept: function(methods, context, args) {
    var method, value; args = args || [];
-   if(args.constructor.toString().indexOf("Array")<0) args = [ args ];
-   if(typeof(methods)=='function'){
+   if (args.constructor.toString().indexOf("Array")<0) args = [ args ];
+   if (typeof(methods)=='function') {
     $.fn.MultiFile.disableEmpty();
     value = methods.apply(context || window, args);
 				//SEE-http://code.google.com/p/jquery-multifile-plugin/issues/detail?id=27
-				setTimeout(function(){ $.fn.MultiFile.reEnableEmpty() },1000);
+				setTimeout(function() { $.fn.MultiFile.reEnableEmpty() },1000);
     return value;
    };
-   if(methods.constructor.toString().indexOf("Array")<0) methods = [methods];
-   for(var i=0;i<methods.length;i++){
+   if (methods.constructor.toString().indexOf("Array")<0) methods = [methods];
+   for (var i=0;i<methods.length;i++) {
     method = methods[i]+''; // make sure that we have a STRING
-    if(method) (function(method){ // make sure that method is ISOLATED for the interception
-     $.fn.MultiFile.intercepted[method] = $.fn[method] || function(){};
-     $.fn[method] = function(){
+    if (method) (function(method) { // make sure that method is ISOLATED for the interception
+     $.fn.MultiFile.intercepted[method] = $.fn[method] || function() {};
+     $.fn[method] = function() {
       $.fn.MultiFile.disableEmpty();
       value = $.fn.MultiFile.intercepted[method].apply(this, arguments);
 						//SEE-http://code.google.com/p/jquery-multifile-plugin/issues/detail?id=27
-      setTimeout(function(){ $.fn.MultiFile.reEnableEmpty() },1000);
+      setTimeout(function() { $.fn.MultiFile.reEnableEmpty() },1000);
       return value;
      }; // interception
     })(method); // MAKE SURE THAT method IS ISOLATED for the interception
@@ -484,10 +484,10 @@
   autoIntercept: [ 'submit', 'ajaxSubmit', 'ajaxForm', 'validate' /* array of methods to intercept */ ],
 		
 		// error handling function
-		error: function(s){
+		error: function(s) {
 			/*
 			ERROR! blockUI is not currently working in IE
-			if($.blockUI){
+			if ($.blockUI) {
 				$.blockUI({
 					message: s.replace(/\n/gi,'<br/>'),
 					css: { 
@@ -513,7 +513,7 @@
 	*/
 	
 	// Native input reset method - because this alone doesn't always work: $(element).val('').attr('value', '')[0].value = '';
-	$.fn.reset = function(){ return this.each(function(){ try{ this.reset(); }catch(e){} }); };
+	$.fn.reset = function() { return this.each(function() { try{ this.reset(); }catch(e) {} }); };
 	
 	/*--------------------------------------------------------*/
 	
@@ -522,7 +522,7 @@
 		The plugin will attach itself to file inputs
 		with the class 'multi' when the page loads
 	*/
-	$(function(){
+	$(function() {
   //$("input:file.multi").MultiFile();
   $("input[type=file].multi").MultiFile();
  });

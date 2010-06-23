@@ -283,7 +283,7 @@ CKEDITOR.htmlParser.fragment = function()
 
 				currentNode = candidate;
 
-				if( currentNode.name == 'pre' )
+				if ( currentNode.name == 'pre' )
 					inPre = false;
 
 				addElement( candidate, candidate.parent );

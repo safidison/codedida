@@ -252,10 +252,10 @@ CKEDITOR.dom.range = function( document )
 		}
 
 		// Cleanup any marked node.
-		if( removeStartNode )
+		if ( removeStartNode )
 			startNode.remove();
 
-		if( removeEndNode && endNode.$.parentNode )
+		if ( removeEndNode && endNode.$.parentNode )
 			endNode.remove();
 	};
 
@@ -1332,7 +1332,7 @@ CKEDITOR.dom.range = function( document )
 
 		setStartAt : function( node, position )
 		{
-			switch( position )
+			switch ( position )
 			{
 				case CKEDITOR.POSITION_AFTER_START :
 					this.setStart( node, 0 );
@@ -1358,7 +1358,7 @@ CKEDITOR.dom.range = function( document )
 
 		setEndAt : function( node, position )
 		{
-			switch( position )
+			switch ( position )
 			{
 				case CKEDITOR.POSITION_AFTER_START :
 					this.setEnd( node, 0 );

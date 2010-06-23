@@ -1,6 +1,6 @@
 (function() {
     var a = {
-        exec: function(c){
+        exec: function(c) {
           c.insertHtml('<span class="ck_body_break" title="摘要分隔符">&nbsp;<!-- break --></span>');
         }
     };

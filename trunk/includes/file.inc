@@ -30,7 +30,7 @@
 */
 
 /**
-function file_test(){
+function file_test() {
   $form['settings']['#attributes']['enctype'] = 'multipart/form-data';
   $form['fields']['file'] = array(
     '#type' => 'file',
@@ -56,21 +56,21 @@ function file_test(){
 /**
  * 上传字段 HTML
  */
-function file_get_form($field){
+function file_get_form($field) {
   $name = str_replace(array('[', ']'), array('_'), $field['#name']);
   $output = dd_form_label($field);
-  if($field['#required'] && strpos($field['#attributes']['class'], 'required') === false) {
+  if ($field['#required'] && strpos($field['#attributes']['class'], 'required') === false) {
     $field['#attributes']['class'] .= ' required';
   }
-  if($field['#multi']){
+  if ($field['#multi']) {
     static $dom = 1;
     dd_add_js('misc/jquery.MultiFile.js');
     
-    if($field['#validate']['image']['type']){
+    if ($field['#validate']['image']['type']) {
       $type = implode('|', $field['#validate']['image']['type']);
-    }else if($field['#validate']['filetype']){
+    } else if ($field['#validate']['filetype']) {
       $type = implode('|', $field['#validate']['filetype']);
-    }else if($field['#filetype']){
+    } else if ($field['#filetype']) {
       $type = implode('|', $field['#filetype']);
     }
     $output .= '<input id="multi_'.$dom.'" class="multi" filelength="'.$field['#multi'].'" accept="'.$type.'" type="file" name="'.$field['#name'].'[]"'.dd_attributes($field['#attributes']).'/>' . dd_form_error($field);
@@ -78,7 +78,7 @@ function file_get_form($field){
     dd_add_js(array('multi' => array(array('dom' => $dom))), 'setting');
     
     ++$dom;
-  }else{
+  } else {
     $output .= '<input type="file" name="'.$field['#name'].'" value="" '.dd_attributes($field['#attributes']).'/>' . dd_form_error($field);
   }
   return $output;
@@ -87,13 +87,13 @@ function file_get_form($field){
 /**
  * 读取数据库，并显示图片
  */
-function file_image_view($fid, $opt = array()){
-  if($file = db_query('SELECT filepath, filename FROM {files} WHERE fid = ?', array($fid), array('return' => 'one'))){
+function file_image_view($fid, $opt = array()) {
+  if ($file = db_query('SELECT filepath, filename FROM {files} WHERE fid = ?', array($fid), array('return' => 'one'))) {
     
     $title = $opt['title'] ? $opt['title'] : $file->filename;
     $alt = $opt['alt'] ? $opt['alt'] : $title;
     
-    if($opt['thumb']){
+    if ($opt['thumb']) {
       $file->filepath = image_get_thumb($fid, $file->filepath, $opt['thumb']);
     }
     
@@ -104,25 +104,25 @@ function file_image_view($fid, $opt = array()){
 /**
  * 验证上传字段
  */
-function file_form_validate($form){
-  if($_FILES){
-    foreach($_FILES as $key => $field){
-      if(!empty($field['name'])){
-        if($form['fields'][$key]['#type'] == 'file'){
-          if($form['fields'][$key]['#required'] && !file_require_empty($field)){
+function file_form_validate($form) {
+  if ($_FILES) {
+    foreach ($_FILES as $key => $field) {
+      if (!empty($field['name'])) {
+        if ($form['fields'][$key]['#type'] == 'file') {
+          if ($form['fields'][$key]['#required'] && !file_require_empty($field)) {
             $error[$key]['#error'][] = t('system', '必须上传文件');
           }
           $form['fields'][$key]['#filename'] = $key;
-          if($msg = _file_form_validate($field, $form['fields'][$key])){
+          if ($msg = _file_form_validate($field, $form['fields'][$key])) {
             $error[$key]['#error'] = $msg;
           }
-        }else if(is_array($field['name'])){
+        } else if (is_array($field['name'])) {
           $error[$key] = _file_form_subvalidate($form['fields'][$key], $field);
         }
       }
     }
   }
-  if($error){
+  if ($error) {
     return array_filter($error);
   }
 }
@@ -130,32 +130,32 @@ function file_form_validate($form){
 /**
  * 检查上传字段
  */
-function _file_form_validate($files, $field){
-  if(!$field['#filesave']) return false;
-  if($field['#multi']){
-    for($i = 0; $i < $field['#multi']; ++$i){
-      if(!$t = file_validate_error($files['error'][$i])){
+function _file_form_validate($files, $field) {
+  if (!$field['#filesave']) return false;
+  if ($field['#multi']) {
+    for ($i = 0; $i < $field['#multi']; ++$i) {
+      if (!$t = file_validate_error($files['error'][$i])) {
         $file[$i] = array(
           'name' => $files['name'][$i],
           'type' => $files['type'][$i],
           'size' => $files['size'][$i],
           'tmp_name' => $files['tmp_name'][$i],
         );
-      }else if($t !== 4){
+      } else if ($t !== 4) {
         return $t;
       }
     }
-  }else if(!$t = file_validate_error($files['error'])){
+  } else if (!$t = file_validate_error($files['error'])) {
     $file[] = $files;
-  }else if($t !== 4){
+  } else if ($t !== 4) {
     return $t;
   }
   
-  if($field['#call_function']){
+  if ($field['#call_function']) {
     $error = call_user_func($field['#call_function'],  $field['#form_id'],  $field['#name'], $file);
-  }else if($field['#filesave']){
+  } else if ($field['#filesave']) {
     $error = file_form_save($field, $file);
-  }else{
+  } else {
     return true;
   }
   return $error;
@@ -164,9 +164,9 @@ function _file_form_validate($files, $field){
 /**
  * 检查子字段
  */
-function _file_form_subvalidate($form, $files){
-  foreach($files['name'] as $key => $field){
-    if(is_string($field)){
+function _file_form_subvalidate($form, $files) {
+  foreach ($files['name'] as $key => $field) {
+    if (is_string($field)) {
       $file = array(
         'name' => $files['name'][$key],
         'type' => $files['type'][$key],
@@ -174,16 +174,16 @@ function _file_form_subvalidate($form, $files){
         'tmp_name' => $files['tmp_name'][$key],
         'error' => $files['error'][$key],
        );
-      if($form[$key]['#type'] == 'file'){
-        if($form[$key]['#required'] && !$field){
+      if ($form[$key]['#type'] == 'file') {
+        if ($form[$key]['#required'] && !$field) {
           $error[$key]['#error'][] = t('system', '必须上传文件');
         }
         $form[$key]['#filename'] = $key;
-        if($t = _file_form_validate($file, $form[$key])){
+        if ($t = _file_form_validate($file, $form[$key])) {
           $error[$key]['#error'] = $t;
         }
-      }else if(is_array($field)){
-        if($t = _file_form_subvalidate($form[$key], $file)){
+      } else if (is_array($field)) {
+        if ($t = _file_form_subvalidate($form[$key], $file)) {
           $error[$key] = $t;
         }
       }
@@ -195,12 +195,12 @@ function _file_form_subvalidate($form, $files){
 /**
  * 判断必需上传字段是否为空
  */
-function file_require_empty($array){
-  if(is_array($array)){
-    foreach($array as $key => $val){
-      if(is_array($val)){
+function file_require_empty($array) {
+  if (is_array($array)) {
+    foreach ($array as $key => $val) {
+      if (is_array($val)) {
         return dd_array_empty($val);
-      }else if(!empty($val)){
+      } else if (!empty($val)) {
         return true;
       }
     }
@@ -211,13 +211,13 @@ function file_require_empty($array){
  * 处理上传文件，默认调用 file_save_upload() 保存
  * 若设置 $form['#validate']['call_function']，回调该函数，传递字段名及文件对象
  */
-function file_form_save($form, $files){
-  if(is_array($files)){
-    foreach($files as $item){
-      if($file = file_save_upload($item, $form['#validate'])){
-        if(!$form['#validate']['call_function']){
+function file_form_save($form, $files) {
+  if (is_array($files)) {
+    foreach ($files as $item) {
+      if ($file = file_save_upload($item, $form['#validate'])) {
+        if (!$form['#validate']['call_function']) {
           dd_set_message(t('system', '%string 上传成功', array('%string' => $file->filename)));
-        }else{
+        } else {
           call_user_func($form['#validate']['call_function'], $form['#form_id'], $form['#name'], $file);
         }
       }
@@ -225,18 +225,18 @@ function file_form_save($form, $files){
   }
 }
 
-function file_set($filepath, $uid, $info = true){
+function file_set($filepath, $uid, $info = true) {
   $t = new stdClass();
   $t->filepath = $filepath;
   $t->filemime = file_get_mimetype(end(explode('.', $filepath)));
-  if($info){
+  if ($info) {
     $t->filesize = filesize($filepath);
   }
   $t->filename = end(explode('/', $filepath));
   $t->uid = $uid ? $uid : $GLOBALS['user']->uid;
   $t->status = 1;
   $t->timestamp = $_SERVER['REQUEST_TIME'];
-  if(db_exec('INSERT INTO {files} (uid, filename, filepath, filemime, filesize, status, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?)', array($t->uid, $t->filename, $t->filepath, $t->filemime, $t->filesize, $t->status, $t->timestamp))){
+  if (db_exec('INSERT INTO {files} (uid, filename, filepath, filemime, filesize, status, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?)', array($t->uid, $t->filename, $t->filepath, $t->filemime, $t->filesize, $t->status, $t->timestamp))) {
     $t->fid = db_last_insert_id();
     return $t;
   }
@@ -249,18 +249,18 @@ function file_set($filepath, $uid, $info = true){
  * @param (array) $validate
  *  配置参数，见上传示例
  */
-function file_save_upload($file, $validate = NULL, $rename = 1){
-  if(isset($file['error']) && file_validate_error($file['error']) != false) return false;
+function file_save_upload($file, $validate = NULL, $rename = 1) {
+  if (isset($file['error']) && file_validate_error($file['error']) != false) return false;
   
-  if(!$file['name'] || !$file['tmp_name']) return false;
+  if (!$file['name'] || !$file['tmp_name']) return false;
   
   $file = (object) $file;
   $file->filename = $file->name;
   
-  if(file_create_name($file, $validate, $rename) && move_uploaded_file($file->tmp_name, $file->filepath) && file_save_validate($file, $validate)){
-    if(!$validate['no_insert']){
+  if (file_create_name($file, $validate, $rename) && move_uploaded_file($file->tmp_name, $file->filepath) && file_save_validate($file, $validate)) {
+    if (!$validate['no_insert']) {
       return file_save($file); // 文件信息写入数据库
-    }else{
+    } else {
       return $file; // 不写入
     }
   }
@@ -273,8 +273,8 @@ function file_save_upload($file, $validate = NULL, $rename = 1){
  * @param (array) $validate
  *  配置参数，见上传示例
  */
-function file_save_copy($source, $validate = NULL, $rename = 1){
-  if(!is_file($source) || !is_readable($source)) {
+function file_save_copy($source, $validate = NULL, $rename = 1) {
+  if (!is_file($source) || !is_readable($source)) {
     dd_set_message(t('system', '没有权限访问文件 %string', array('%string' => $source)));
     return false;
   }
@@ -282,10 +282,10 @@ function file_save_copy($source, $validate = NULL, $rename = 1){
   $file = new stdClass();
   $file->filename = basename($source);
   
-  if(file_create_name($file, $validate, $rename) && copy($source, $file->filepath) && file_save_validate($file, $validate)){
-    if(!$validate['no_insert']){
+  if (file_create_name($file, $validate, $rename) && copy($source, $file->filepath) && file_save_validate($file, $validate)) {
+    if (!$validate['no_insert']) {
       return file_save($file); // 文件信息写入数据库
-    }else{
+    } else {
       return $file; // 不写入
     }
   }
@@ -298,8 +298,8 @@ function file_save_copy($source, $validate = NULL, $rename = 1){
  * @param (array) $validate
  *  配置参数，见上传示例
  */
-function file_save_move($source, $validate = NULL, $rename = 1){
-  if(!is_file($source) || !is_writable($source)) {
+function file_save_move($source, $validate = NULL, $rename = 1) {
+  if (!is_file($source) || !is_writable($source)) {
     dd_set_message(t('system', '没有权限移动文件 %string', array('%string' => $source)));
     return false;
   }
@@ -307,10 +307,10 @@ function file_save_move($source, $validate = NULL, $rename = 1){
   $file = new stdClass();
   $file->filename = basename($source);
   
-  if(file_create_name($file, $validate, $rename) && rename($source, $file->filepath) && file_save_validate($file, $validate)){
-    if(!$validate['no_insert']){
+  if (file_create_name($file, $validate, $rename) && rename($source, $file->filepath) && file_save_validate($file, $validate)) {
+    if (!$validate['no_insert']) {
       return file_save($file); // 文件信息写入数据库
-    }else{
+    } else {
       return $file; // 不写入
     }
   }
@@ -324,12 +324,12 @@ function file_save_move($source, $validate = NULL, $rename = 1){
  *  配置参数，见上传示例。必须有 filename 参数，即文件名
  */
 function file_save_data($data, $validate = array(), $rename = 1) {
-  if(!$data) return false;
-  if($validate['filename']){
+  if (!$data) return false;
+  if ($validate['filename']) {
     $file = new stdClass();
     
-    if(file_create_name($file, $validate, $rename)){
-      if(!$fp = @fopen($file->filepath, 'wb')) {
+    if (file_create_name($file, $validate, $rename)) {
+      if (!$fp = @fopen($file->filepath, 'wb')) {
         dd_set_message(t('system', '无法写入文件 %string', array('%string' => $file->filepath)), 'debug');
         return false;
       }
@@ -337,16 +337,16 @@ function file_save_data($data, $validate = array(), $rename = 1) {
       @fwrite($fp, $data);
       @fclose($fp);
       
-      if(file_save_validate($file, $validate)){
-        if(!$validate['no_insert']){
+      if (file_save_validate($file, $validate)) {
+        if (!$validate['no_insert']) {
           return file_save($file); // 文件信息写入数据库
-        }else{
+        } else {
           return $file; // 不写入
         }
       }
       file_delete_file($file->filepath);
     }
-  }else{
+  } else {
     dd_set_message(t('system', '文件名不能为空'));
   }
 }
@@ -354,52 +354,52 @@ function file_save_data($data, $validate = array(), $rename = 1) {
 /**
  * 保存前检查文件名
  */
-function file_create_name(&$file, $validate = NULL, $rename = 1){
-  if($validate['savepath']) {
+function file_create_name(&$file, $validate = NULL, $rename = 1) {
+  if ($validate['savepath']) {
     $savepath = file_mkdir(file_directory_path() . '/' .$validate['savepath']);
-  }else{
+  } else {
     $savepath = file_get_path();
   }
   
-  if($validate['filename']){
+  if ($validate['filename']) {
     // 指定扩展名
-    if($validate['extension']){
+    if ($validate['extension']) {
       $file->extension = strtolower($validate['extension']);
-      if(in_array($file->extension, array('jpg', 'jpeg', 'png', 'gif'))){
+      if (in_array($file->extension, array('jpg', 'jpeg', 'png', 'gif'))) {
         $extension = strtolower(end(explode('.', $file->filename)));
-        if($extension && $file->extension != $extension){
+        if ($extension && $file->extension != $extension) {
           $file->imagetotype = array($extension, $file->extension);
         }
       }
       
       $file->filename = $validate['filename'] .'.'. $file->extension;
-    }else if(strpos($validate['filename'], '.') !== false){
+    } else if (strpos($validate['filename'], '.') !== false) {
       $file->filename = $validate['filename'];
-    }else{
+    } else {
       $file->extension = strtolower(end(explode('.', $file->filename)));
       $file->filename = $validate['filename'].'.'.$file->extension;
     }
   }
   
-  if(!$file->filename){
+  if (!$file->filename) {
     dd_set_message(t('system', '不合法的文件名'), 'error');
     return false;
   }
   
-  if(!is_writable($savepath)){
+  if (!is_writable($savepath)) {
     dd_set_message(t('system', '文件夹 %string 必须有读取权限', array('%string' => $savepath)), 'error');
     return false;
   }
   
-  if(!$file->uid){
+  if (!$file->uid) {
     $file->uid = $GLOBALS['user']->uid;
   }
   
-  if(!$file->extension){
+  if (!$file->extension) {
     $file->extension = strtolower(end(explode('.', $file->filename)));
   }
   
-  if($validate['filetype'] && !file_validate_mime($file, $validate['filetype'])){
+  if ($validate['filetype'] && !file_validate_mime($file, $validate['filetype'])) {
     dd_set_message(t('system', '只允许 %string 类型的文件', array('%string' => implode(' ', $validate['filetype']))), 'error');
     return false;
   }
@@ -408,14 +408,14 @@ function file_create_name(&$file, $validate = NULL, $rename = 1){
   
   // 重命名浏览器可执行的文件
   
-  if(preg_match('/\.(php|pl|py|cgi|asp|js)$/i', $file->filename) && (substr($file->filename, -4) != '.txt')){
+  if (preg_match('/\.(php|pl|py|cgi|asp|js)$/i', $file->filename) && (substr($file->filename, -4) != '.txt')) {
     $file->filemime = 'text/plain';
     $file->filepath .= '.txt';
     $file->filename .= '.txt';
     $file->extension = 'txt';
   }
   
-  if(!$rename){
+  if (!$rename) {
     return true;
   }
   
@@ -423,12 +423,12 @@ function file_create_name(&$file, $validate = NULL, $rename = 1){
   
   //$rename: 0，替换。1，添加后缀。2，放弃
   
-  if(is_file($file->filepath)){
+  if (is_file($file->filepath)) {
     $i = 0;
-    switch($rename){
+    switch ($rename) {
       case 1:
         $file->filepath = str_replace($file->filename, $file->uid.$i.'_'.$file->filename, $oldfilepath);
-        while(is_file($file->filepath)){
+        while (is_file($file->filepath)) {
           $file->filepath = str_replace($file->filename, $file->uid.$i.'_'.$file->filename, $oldfilepath);
           ++$i;
         }
@@ -445,25 +445,25 @@ function file_create_name(&$file, $validate = NULL, $rename = 1){
 /**
  * 验证已保存的文件
  */
-function file_save_validate(&$file, $validate){
-  if(!$file->extension){
+function file_save_validate(&$file, $validate) {
+  if (!$file->extension) {
     $file->extension = end(explode('.', $file->filepath));
   }
-  if(!$file->filemime){
+  if (!$file->filemime) {
     $file->filemime = file_get_mimetype($file->extension);
   }
   
-  if(!$file->size){
+  if (!$file->size) {
     $file->filesize = filesize($file->filepath);
-  }else{
+  } else {
     $file->filesize = $file->size;
   }
   
   $file->status = isset($validate['status']) ? $validate['status']: 1;
   
-  if(is_array($validate)){
-    foreach($validate as $key => $val){
-      switch($key){
+  if (is_array($validate)) {
+    foreach ($validate as $key => $val) {
+      switch ($key) {
         case 'ext_id':
           $file->ext_id = $val;
         break;
@@ -477,29 +477,29 @@ function file_save_validate(&$file, $validate){
           $file->filename = $val;
         break;
         case 'image':
-          if(!is_array($val)) $val = array();
-          if(empty($val['type'])) $val['type'] = array('jpg', 'png', 'gif', 'jpeg', 'wbmp');
-          if(!file_validate_image($file, $val)){
+          if (!is_array($val)) $val = array();
+          if (empty($val['type'])) $val['type'] = array('jpg', 'png', 'gif', 'jpeg', 'wbmp');
+          if (!file_validate_image($file, $val)) {
             file_delete_file($file->filepath);
             return false;
           }
         break;
         case 'filesize':
-          if(!file_validate_size($file, $val)){
+          if (!file_validate_size($file, $val)) {
             file_delete_file($filepath);
             dd_set_message(t('system', '只允许 %string K 之内的文件', array('%string' => $val)), 'error');
             return false;
           }
         break;
         case 'filetype':
-          if(is_array($val) && !file_validate_mime($file, $val)){
+          if (is_array($val) && !file_validate_mime($file, $val)) {
             file_delete_file($filepath);
             dd_set_message(t('system', '只允许 %string 类型的文件。', array('%string' => implode(' ', $val))), 'error');
             return false;
           }
         break;
         case 'usersize':
-          if($size = file_validate_usersize($file)){
+          if ($size = file_validate_usersize($file)) {
             file_delete_file($filepath);
             dd_set_message(t('system', '文件空间不足。你的总空间 %sum MB，已使用 %used', array('%sum' => $size[0], '%used' => $size[1])), 'error');
             return false;
@@ -515,18 +515,18 @@ function file_save_validate(&$file, $validate){
 /**
  * 文件信息写入数据库
  */
-function file_save($file){
-  if(!$file->ext_id) $file->ext_id = 0;
+function file_save($file) {
+  if (!$file->ext_id) $file->ext_id = 0;
   
-  if(!$file->ext_id2) $file->ext_id2 = 0;
+  if (!$file->ext_id2) $file->ext_id2 = 0;
   
-  if(!$file->ext_type) $file->ext_type = '';
+  if (!$file->ext_type) $file->ext_type = '';
   
-  if(!$file->uid) $file->uid = $GLOBALS['user']->uid;
+  if (!$file->uid) $file->uid = $GLOBALS['user']->uid;
   
-  if(!$file->timestamp) $file->timestamp = $_SERVER['REQUEST_TIME'];
+  if (!$file->timestamp) $file->timestamp = $_SERVER['REQUEST_TIME'];
   
-  if(db_exec('INSERT INTO {files} (uid, filename, filepath, filemime, filesize, status, timestamp, ext_id, ext_id2, ext_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', array($file->uid, $file->filename, $file->filepath, $file->filemime, $file->filesize, $file->status, $file->timestamp, $file->ext_id, $file->ext_id2, $file->ext_type))){
+  if (db_exec('INSERT INTO {files} (uid, filename, filepath, filemime, filesize, status, timestamp, ext_id, ext_id2, ext_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', array($file->uid, $file->filename, $file->filepath, $file->filemime, $file->filesize, $file->status, $file->timestamp, $file->ext_id, $file->ext_id2, $file->ext_type))) {
     $file->fid = db_last_insert_id();
     return $file;
   }
@@ -535,7 +535,7 @@ function file_save($file){
 /**
  * 分析字符串 img 标签，并下载到本地
  */
-function file_down_image($text, $validate = array(), $rename = 1){
+function file_down_image($text, $validate = array(), $rename = 1) {
   global $__file_down_image;
   
   $__file_down_image['validate'] = $validate;
@@ -547,25 +547,25 @@ function file_down_image($text, $validate = array(), $rename = 1){
   return $text;
 }
 
-function _file_down_image($mat){
+function _file_down_image($mat) {
   global $__file_down_image;
 	static $files;
-  if(!isset($files[$mat[3]])){
-    if(strpos($mat[3], $GLOBALS['base_url']) === false && strpos($mat[3], 'http://') !== false){
-      if($data = @file_get_contents($mat[3])){
+  if (!isset($files[$mat[3]])) {
+    if (strpos($mat[3], $GLOBALS['base_url']) === false && strpos($mat[3], 'http://') !== false) {
+      if ($data = @file_get_contents($mat[3])) {
         
-        if(!$__file_down_image['validate']['filename']){
+        if (!$__file_down_image['validate']['filename']) {
           $__file_down_image['validate']['filename'] = end(explode('/', $mat[3]));
-        }else if(!$__file_down_image['validate']['extension']){
+        } else if (!$__file_down_image['validate']['extension']) {
           $__file_down_image['validate']['extension'] = end(explode('.', $mat[3]));
         }
         
-        if($file = file_save_data($data, $__file_down_image['validate'], $__file_down_image['rename'])){
+        if ($file = file_save_data($data, $__file_down_image['validate'], $__file_down_image['rename'])) {
           $files[$mat[3]] = $mat[1]. '"' .$GLOBALS['base_path'] .$file->filepath.'"';
         }
       }
     }
-    if(!$files[$mat[3]]){
+    if (!$files[$mat[3]]) {
       $files[$mat[3]] = $mat[0];
     }
   }
@@ -576,7 +576,7 @@ function _file_down_image($mat){
  * 数据保存为文件，不做任何验证，文件存在则覆盖
  */
 function _file_save_data($data, $filepath) {
-  if(!$fp = @fopen($filepath, 'wb')) {
+  if (!$fp = @fopen($filepath, 'wb')) {
     dd_set_message(t('system', '无法写入文件 %string', array('%string' => $filepath)), 'debug');
     return 0;
   }
@@ -588,30 +588,30 @@ function _file_save_data($data, $filepath) {
 /**
  * 验证图片
  */
-function file_validate_image(&$file, $val){
-  if($data = image_get_info($file->filepath)){
+function file_validate_image(&$file, $val) {
+  if ($data = image_get_info($file->filepath)) {
     $file->filemime = $data['mime_type'];
     $file->extension = $data['extension'];
-    foreach($val as $key => $item){
-      switch($key){
+    foreach ($val as $key => $item) {
+      switch ($key) {
         case 'type':
-          if(!in_array($data['extension'], $item)){
+          if (!in_array($data['extension'], $item)) {
             dd_set_message(t('system', '只允许上传 %string 类型的图片', array('%string' => implode(' ', $item))), 'error');
             return false;
           }
         break;
         case 'size':
           $w = explode('x', $item);
-          if(($data['width'] > $w[0]) || ($data['height'] > $w[1])){
+          if (($data['width'] > $w[0]) || ($data['height'] > $w[1])) {
             $function = 'image_'. ($val['style'] ? $val['style'] : 'scale_resize');
-            if($function($file->filepath, $file->filepath, $w[0], $w[1], $val['watermark'])){
+            if ($function($file->filepath, $file->filepath, $w[0], $w[1], $val['watermark'])) {
               dd_set_message(t('system', '图片长宽超限，已被缩减至 %string', array('%string' => $w[0] .'x'. $w[1])));
             }
           }
         break;
         case 'minsize':
           $w = explode('x', $item);
-          if(($data['width'] < $w[0]) || ($data['height'] < $w[1])){
+          if (($data['width'] < $w[0]) || ($data['height'] < $w[1])) {
             dd_set_message(t('system', '图片最小尺寸 %string', 'error', array('%string' => $item)));
             return false;
           }
@@ -624,11 +624,11 @@ function file_validate_image(&$file, $val){
 /**
  * 验证用户文件空间是否超过限制
  */
-function file_validate_usersize($file){
-  if($file->uid != 1){
-    if($limit = user_get_file_size($uid)){
+function file_validate_usersize($file) {
+  if ($file->uid != 1) {
+    if ($limit = user_get_file_size($uid)) {
       $sum = db_query('SELECT SUM(filesize) FROM {files} WHERE uid = ?', array($file->uid), array('return' => 'column'));
-      if(($file->filesize + $sum) > $limit*1024*1024){
+      if (($file->filesize + $sum) > $limit*1024*1024) {
         return array($limit, $sum/1024/1024);
       }
     }
@@ -638,8 +638,8 @@ function file_validate_usersize($file){
 /**
  * 验证文件大小
  */
-function file_validate_size(&$file, $val){
-  if(($file->filesize/1024) > $val){
+function file_validate_size(&$file, $val) {
+  if (($file->filesize/1024) > $val) {
     return false;
   }
   return $file->filesize;
@@ -654,12 +654,12 @@ function file_validate_size(&$file, $val){
  * @return
  *  返回文件 mimetype
  */
-function file_validate_mime(&$file, $val = array()){
-  if(!$file->extension && strpos($file->filepath, '.') !== false){
+function file_validate_mime(&$file, $val = array()) {
+  if (!$file->extension && strpos($file->filepath, '.') !== false) {
     $file->extension = end(explode('.', $file->filepath));
   }
   
-  if(in_array($file->extension, $val)){
+  if (in_array($file->extension, $val)) {
     $file->filemime = file_get_mimetype($file->extension);
     return $file->filemime;
   }
@@ -668,8 +668,8 @@ function file_validate_mime(&$file, $val = array()){
 /**
  * 文件上传状态代码解析
  */
-function file_validate_error($error){
-  switch($error){
+function file_validate_error($error) {
+  switch ($error) {
     case UPLOAD_ERR_OK:
       return false;
     case UPLOAD_ERR_INI_SIZE:
@@ -696,17 +696,17 @@ function file_validate_error($error){
  * @return
  *  返回用户存储目录，默认为用户id及年月命名
  */
-function file_get_path($ac = NULL){
-  if(!$ac) $ac = $GLOBALS['user'];
-  if($path = var_get('file_user_directory', 'user-[uid]/[date_Y]-[date_m]')){
+function file_get_path($ac = NULL) {
+  if (!$ac) $ac = $GLOBALS['user'];
+  if ($path = var_get('file_user_directory', 'user-[uid]/[date_Y]-[date_m]')) {
     $path = module_invoke('system', 'token_replace', $path);
     $path = module_invoke('user', 'token_replace', $path, $ac);
-    if($path){
+    if ($path) {
       $path = file_directory_path() . '/' .$path;
     }
   }
   
-  if(!$path){
+  if (!$path) {
     $path = file_directory_path() . '/' .$path;
   }
   
@@ -716,7 +716,7 @@ function file_get_path($ac = NULL){
 /**
  * 文件系统根目录
  */
-function file_directory_path(){
+function file_directory_path() {
   return var_get('file_directory_path', $GLOBALS['conf_dir'].'/files');
 }
 
@@ -731,12 +731,12 @@ function file_directory_path(){
  * @return
  *  返回目录路径，若创建失败，则返回 false
  */
-function file_mkdir($path, $mode = 0775, $recursive = 1){
-  if(is_dir($path)){
+function file_mkdir($path, $mode = 0775, $recursive = 1) {
+  if (is_dir($path)) {
     return $path;
-  }else if(mkdir($path, $mode, $recursive)){
+  } else if (mkdir($path, $mode, $recursive)) {
     return $path;
-  }else{
+  } else {
     return false;
   }
 }
@@ -744,13 +744,13 @@ function file_mkdir($path, $mode = 0775, $recursive = 1){
 /**
  * 文件删除、更新、浏览操作
  */
-function file_operate($file, $op){
-  switch($op){
+function file_operate($file, $op) {
+  switch ($op) {
     case 'delete':
-      if(strpos($filepath->filemime, 'image') !== false){
+      if (strpos($filepath->filemime, 'image') !== false) {
         $thumb = 1;
       }
-      if(file_delete($file->fid, $thumb, $file->filepath)){
+      if (file_delete($file->fid, $thumb, $file->filepath)) {
         echo 1;
         exit;
       }
@@ -761,7 +761,7 @@ function file_operate($file, $op){
 /**
  * 文件权限验证
  */
-function file_is_access($file, $op = 'view'){
+function file_is_access($file, $op = 'view') {
   return user_access('file all '.$op) || (user_access('file one '.$op) && $file->uid == $GLOBALS['user']->uid);
 }
 
@@ -772,9 +772,9 @@ function file_is_access($file, $op = 'view'){
  * @param (bool) $invoke
  *  是否触发 hook_file_load()
  */
-function file_load($fid, $invoke = NULL){
-  if($files = db_query('SELECT * FROM {files} WHERE fid = ?', array($fid), array('return' => 'one'))){
-    if($invoke) module_invoke_all('file_load', $files);
+function file_load($fid, $invoke = NULL) {
+  if ($files = db_query('SELECT * FROM {files} WHERE fid = ?', array($fid), array('return' => 'one'))) {
+    if ($invoke) module_invoke_all('file_load', $files);
     return $files;
   }
 }
@@ -790,11 +790,11 @@ function file_load($fid, $invoke = NULL){
  * @return
  *  数据库记录删除成功则返回 true
  */
-function file_delete($fid, $thumb = true, $filepath = 0){
-  if(!$filepath){
+function file_delete($fid, $thumb = true, $filepath = 0) {
+  if (!$filepath) {
     $filepath = db_query('SELECT filepath FROM {files} WHERE fid = ?', array($fid), array('return' => 'column'));
   }
-  if(db_exec('DELETE FROM {files} WHERE fid = ?', array($fid))){
+  if (db_exec('DELETE FROM {files} WHERE fid = ?', array($fid))) {
     file_delete_file($filepath, ($thumb ? $fid : 0));
     return true;
   }
@@ -810,8 +810,8 @@ function file_delete($fid, $thumb = true, $filepath = 0){
  * @return
  *  文件删除成功返回 true，缩略图文件夹删除操作将静默。
  */ 
-function file_delete_file($filepath, $fid = NULL){
-  if($fid){
+function file_delete_file($filepath, $fid = NULL) {
+  if ($fid) {
     $filename = basename($filepath);
     // 删除缩略图文件夹
     file_delete_dir(str_replace(end(explode('/', $filepath)), $fid, $filepath));
@@ -826,13 +826,13 @@ function file_delete_file($filepath, $fid = NULL){
  * @return
  *  静默，并屏蔽错误抛出
  */
-function file_delete_dir($dir, $recursive = 1){
-  if(is_dir($dir)){
-    if($objs = glob($dir.'/*')){
-      foreach($objs as $obj) {
-        if(is_dir($obj)){
-          if($recursive) file_delete_dir($obj, $recursive);
-        }else{
+function file_delete_dir($dir, $recursive = 1) {
+  if (is_dir($dir)) {
+    if ($objs = glob($dir.'/*')) {
+      foreach ($objs as $obj) {
+        if (is_dir($obj)) {
+          if ($recursive) file_delete_dir($obj, $recursive);
+        } else {
           @unlink($obj);
         }
       }
@@ -848,9 +848,9 @@ function file_delete_dir($dir, $recursive = 1){
  * @return
  *  删除失败则退出，不再删除后面的文件，并返回 false
  */
-function file_delete_array($files = array()){
-  foreach($files as $file){
-    if(!unlink($file)){
+function file_delete_array($files = array()) {
+  foreach ($files as $file) {
+    if (!unlink($file)) {
       return false;
     }
   }
@@ -1686,14 +1686,14 @@ function file_get_mimetype($key, $value = 0) {
     ),
   );
   
-  if($key){
+  if ($key) {
     $key = strtolower($key);
-    if(isset($type['extensions'][$key])){
+    if (isset($type['extensions'][$key])) {
       return $type['mimetypes'][$type['extensions'][$key]];
     }
-  }else if($value){
+  } else if ($value) {
     $key = strtolower($key);
-    if(isset($type['mimetypes'][$key])){
+    if (isset($type['mimetypes'][$key])) {
       return $type['extensions'][$type['mimetypes'][$key]];
     }
   }

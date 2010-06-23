@@ -1,29 +1,29 @@
 <?php
 // $Id$
 
-function captcha_page(){
-  if($_GET['form_id']){
+function captcha_page() {
+  if ($_GET['form_id']) {
     $value = $_GET;
-  }else if($_POST['form_id']){
+  } else if ($_POST['form_id']) {
     $value = $_POST;
-  }else{
+  } else {
     echo 'ERROR!';
     exit;
   }
   
-  if($value['name'] && $value['form_id']){
+  if ($value['name'] && $value['form_id']) {
     $str = _captcha_get($value['name'], $value['form_id'], $value['tag'], $value['type']);
     header('Cache-Control: no-cache, must-revalidate');
     header('Expires: Sat, 26 Jul 1997 05:00:00 GMT');
     
-    if($value['image']){
-      if($ttf = var_get('captcha_file_ttf')){
-        if(is_file($ttf)){
+    if ($value['image']) {
+      if ($ttf = var_get('captcha_file_ttf')) {
+        if (is_file($ttf)) {
           header('Content-type: image/png');
           list($width, $height) = explode('x', $value['image']);
           $len = mb_strlen($str, 'utf-8');
           
-          if($len*14 > $width){
+          if ($len*14 > $width) {
             $width = $len*14+40;
           }
           
@@ -48,18 +48,18 @@ function captcha_page(){
   print false;
   exit;
 }
-function captcha_get($name, $form_id, $form_token, $type, $image = 0){
-  if(!$image){
+function captcha_get($name, $form_id, $form_token, $type, $image = 0) {
+  if (!$image) {
     return _captcha_get($name, $form_id, $form_token, $type);
-  }else{
+  } else {
     return '<img class="form_captcha_img" src="'.url('captcha', array('query' => array(
     'name' => $name, 'form_id' => $form_id, 'image' => $image, 'tag' => $form_token,
     'timestamp' => '1'))).'" />';
   }
 }
 
-function _captcha_get($name, $form_id, $form_token, $type){
-  switch($type){
+function _captcha_get($name, $form_id, $form_token, $type) {
+  switch ($type) {
     case 1:
       $array1 = range(1, 199);
       $array2 = range('a', 'z');
@@ -99,7 +99,7 @@ function _captcha_get($name, $form_id, $form_token, $type){
   return $str;
 }
 
-function _captcha_zh(){
+function _captcha_zh() {
   $data = array(
     '西当太白有鸟道',
     '可以横绝峨眉巅',
@@ -116,7 +116,7 @@ function _captcha_zh(){
   return $data[array_rand($data)];
 }
 
-function _captcha_ask(){
+function _captcha_ask() {
   $data = array(
     array('世界上含沙量最大的河是？', '黄河'),
     array('世界上最早的字典？', '说文解字'),

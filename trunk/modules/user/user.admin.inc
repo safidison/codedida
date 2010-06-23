@@ -1,7 +1,7 @@
 <?php
 // $Id$
 
-function _user_admin_tabs(){
+function _user_admin_tabs() {
   dd_set_tabs(array(
     l(t('user', '用户设置'), 'admin/users/settings'),
     l(t('user', '用户列表'), 'admin/users'),
@@ -12,7 +12,7 @@ function _user_admin_tabs(){
   ));
 }
 
-function user_admin_default(){
+function user_admin_default() {
   _user_admin_tabs();
   $hr = array(
     t('user', '帐号'),
@@ -23,11 +23,11 @@ function user_admin_default(){
     array('data' => t('user', '最近活动'), 'field' => 'active'),
     t('user', '操作')
   );
-  if($fetch = pager_query('SELECT uid, name, mail, count, online, created, active, status FROM {users} WHERE uid > 0'. table_sql($hr), 20)){
-    foreach($fetch as $o){
+  if ($fetch = pager_query('SELECT uid, name, mail, count, online, created, active, status FROM {users} WHERE uid > 0'. table_sql($hr), 20)) {
+    foreach ($fetch as $o) {
     	$items = array(l(t('user', '编辑'), 'admin/users/view/'.$o->uid.'/edit'));
     	
-    	switch($o->status){
+    	switch ($o->status) {
     		case 1:
     			$items[] = l(t('user', '阻止'), 'admin/users/view/'.$o->uid.'/hide', array('attributes' => array('class' => 'confirm')));
     		break;
@@ -49,14 +49,14 @@ function user_admin_default(){
 }
 
 // 用户资料
-function user_admin_view($ac){
-	switch(arg(4)){
+function user_admin_view($ac) {
+	switch (arg(4)) {
 		case 'edit':
 		  _user_admin_tabs();
 			dd_set_sub_tabs(array(l(t('user', '%string 的资料编辑', array('%string' => $ac->name)), $_GET['q'])));
 		return dd_get_form('user_edit_form', $ac, 'admin');
 		case 'hide':
-			if(db_exec('UPDATE {users} SET status = 2, session = 0 WHERE uid = ?', array($ac->uid))){
+			if (db_exec('UPDATE {users} SET status = 2, session = 0 WHERE uid = ?', array($ac->uid))) {
         /**
          * 改变用户状态
          * 触发 hook_user_status()
@@ -66,7 +66,7 @@ function user_admin_view($ac){
 			dd_goto('admin/users');
 		exit;
 		case 'show': case 'active':
-			if(db_exec('UPDATE {users} SET status = 1, session = 0 WHERE uid = ?', array($ac->uid))){
+			if (db_exec('UPDATE {users} SET status = 1, session = 0 WHERE uid = ?', array($ac->uid))) {
         /**
          * 改变用户状态
          * 触发 hook_user_status()
@@ -79,24 +79,24 @@ function user_admin_view($ac){
 }
 
 //用户角色组权限分配
-function user_set_perm(){
+function user_set_perm() {
   global $conf;
   _user_admin_tabs();
   $perms = _user_perm();
-  if($fetch = db_query('SELECT * FROM {role} ORDER BY rid DESC', NULL, array('fetch' => 'array'))){
-    foreach($fetch as $role){
-      if($role['perm']){
+  if ($fetch = db_query('SELECT * FROM {role} ORDER BY rid DESC', NULL, array('fetch' => 'array'))) {
+    foreach ($fetch as $role) {
+      if ($role['perm']) {
         $role['perm'] = unserialize($role['perm']);
-      }else{
+      } else {
         $role['perm'] = array();
       }
       $roles[$role['rid']] = $role;
     }
   }
-  foreach($conf['modules'] as $name => $info){
-    if($perms[$name]){
-      foreach($perms[$name] as $key => $value){
-        foreach($roles as $rid => $role){
+  foreach ($conf['modules'] as $name => $info) {
+    if ($perms[$name]) {
+      foreach ($perms[$name] as $key => $value) {
+        foreach ($roles as $rid => $role) {
           $form['fields']['perm'][$name][$key][$rid] = array(
             '#type' => 'checkbox',
             '#default_value' => $role['perm'][$name][$key] ? 1: 0,
@@ -119,21 +119,21 @@ function user_set_perm(){
   return $form;
 }
 
-function _user_roles_theme($form, $fields){
+function _user_roles_theme($form, $fields) {
   global $conf;
   $roles = array();
   $roles = $form['settings']['#data'];
   $count = count($roles) + 1;
   $header[] = t('user', '权限名称');
-  foreach($roles as $role){
+  foreach ($roles as $role) {
     $header[] = $role['name'];
   }
-  foreach($fields['perm'] as $name => $perm){
+  foreach ($fields['perm'] as $name => $perm) {
     $table[] = array(array('data' => t($name, $conf['modules'][$name]['name']), 'colspan' => $count, 'class' => 'user_admin_role_module'));
-    foreach($perm as $value => $role){
+    foreach ($perm as $value => $role) {
       $p = array();
       $p[] = $role[key($role)]['#attributes']['title'];
-      foreach($roles as $rid => $v){
+      foreach ($roles as $rid => $v) {
         $p[] = $role[$rid]['#html'];
       }
       $table[] = $p;
@@ -144,15 +144,15 @@ function _user_roles_theme($form, $fields){
   return $output;
 }
 
-function user_set_perm_validate($form, $value){
-  if($value['perm']){
+function user_set_perm_validate($form, $value) {
+  if ($value['perm']) {
     $i = 1;
     $role = $form['settings']['#data'];
-    foreach($value['perm'] as $name => $perm){
-      if($perm){
-        foreach($perm as $p => $rids){
-          foreach($role as $rid => $v){
-            if($value['perm'][$name][$p][$rid]){
+    foreach ($value['perm'] as $name => $perm) {
+      if ($perm) {
+        foreach ($perm as $p => $rids) {
+          foreach ($role as $rid => $v) {
+            if ($value['perm'][$name][$p][$rid]) {
               $roles[$rid][$name][$p] = $i;
               ++$i;
             }
@@ -161,8 +161,8 @@ function user_set_perm_validate($form, $value){
       }
     }
   }
-  if($roles){
-    foreach($role as $rid => $v){
+  if ($roles) {
+    foreach ($role as $rid => $v) {
       db_exec('UPDATE {role} SET perm = ? WHERE rid = ?', array($roles[$rid] ? serialize($roles[$rid]) : '', $rid));
     }
     var_del('roles_perm_cache');
@@ -172,7 +172,7 @@ function user_set_perm_validate($form, $value){
 /**
  * 管理员新增会员
  */
-function user_admin_add(){
+function user_admin_add() {
 	global $conf;
 	_user_admin_tabs();
   $form = user_register_form('admin');
@@ -199,18 +199,18 @@ function user_admin_add(){
   return $form;
 }
 
-function user_admin_add_submit($form, $value){
-  if($account = user_insert((object)$value)){
+function user_admin_add_submit($form, $value) {
+  if ($account = user_insert((object)$value)) {
     dd_set_message(t('user', '用户 %string 添加成功', array('%string' => $account->mail)));
     $value['nid'] = $value['uid'] = $account->uid;
     field_get_node_save('user', 'field', (object)$value, NULL, $form);
     dd_goto('admin/users/add');
-  }else{
+  } else {
     dd_set_message(t('user', '用户 %string 添加失败', array('%string' => $account->mail)));
   }
 }
 
-function user_set_settings(){
+function user_set_settings() {
   _user_admin_tabs();
   $form['fields']['user']['register'] = array(
     '#type' => 'radio',
@@ -285,8 +285,8 @@ function user_set_settings(){
   );
   
   $options = array(0 => t('user', '默认'));
-  if($modules = var_get('modules')){
-    foreach($modules as $module => $info){
+  if ($modules = var_get('modules')) {
+    foreach ($modules as $module => $info) {
       $options[$module] =  $info['name'];
     }
   }
@@ -307,42 +307,42 @@ function user_set_settings(){
   return $form;
 }
 
-function user_set_settings_validate($form, $v){
-  if($v['user']['anonymous_role'] == $v['user']['default_role']){
+function user_set_settings_validate($form, $v) {
+  if ($v['user']['anonymous_role'] == $v['user']['default_role']) {
     dd_set_message(t('user', '游客默认角色不能与用户默认角色相同'), 'error');
     return true;
   }
-  foreach($v['user'] as $key => $value){
+  foreach ($v['user'] as $key => $value) {
     $val[$key] = $value;
   }
   var_set('user', $val);
-  if($v['user']['anonymous']) db_exec('UPDATE {users} SET name = ? WHERE uid = 0', array($v['user']['anonymous']));
+  if ($v['user']['anonymous']) db_exec('UPDATE {users} SET name = ? WHERE uid = 0', array($v['user']['anonymous']));
 }
 
-function user_admin_roles(){
+function user_admin_roles() {
   _user_admin_tabs();
   dd_set_sub_tabs(array(l(t('user', '角色'), 'admin/users/roles'), l(t('user', '新增'), 'admin/users/roles/add')), NULL, 'ul', array('class' => 'admin_tabs'));
   
-  if(arg(3) != 'add'){
-    switch($_GET['op']){
+  if (arg(3) != 'add') {
+    switch ($_GET['op']) {
       case 'edit':
-        if($_POST['value']){
+        if ($_POST['value']) {
           db_exec('UPDATE {role} SET name = ? WHERE rid = ?', array(trim(check_plain($_POST['value'])), $_GET['id']));
           cache_del('cid', 'user_roles');
           echo $_POST['value'];
         }
       exit;
       case 'delete':
-        if(db_exec('DELETE FROM {role} WHERE rid = ?', array($_GET['rid']))){
+        if (db_exec('DELETE FROM {role} WHERE rid = ?', array($_GET['rid']))) {
           cache_del('cid', 'user_roles');
           echo 1;
         }
       exit;
     }
-    if($fetch = pager_query('SELECT * FROM {role} ORDER BY rid ASC', 20)){
-      foreach($fetch as $o){
+    if ($fetch = pager_query('SELECT * FROM {role} ORDER BY rid ASC', 20)) {
+      foreach ($fetch as $o) {
         $perm = '';
-        if($o->perm) {
+        if ($o->perm) {
           $perm = _user_role_perms(unserialize($o->perm));
         }
         $table[] = array(
@@ -359,13 +359,13 @@ function user_admin_roles(){
     $output .= pager_view();
     
     dd_jqedit(array('dom' => '.jqedit_text', 'limit' => 16, 'opt' => array('type' => 'charcounter', 'onblur' => 'ignore', 'width' => 150)));
-  }else{
+  } else {
     $output .= dd_get_form('user_admin_roles_form');
   }
   return $output;
 }
 
-function user_admin_roles_form(){
+function user_admin_roles_form() {
   $form['settings']['#validate'][] = 'user_admin_roles_form_validate';
   $form['fields']['name'] = array(
     '#type' => 'textfield',
@@ -377,14 +377,14 @@ function user_admin_roles_form(){
   return $form;
 }
 
-function user_admin_roles_form_validate($form, $v){
-  if(dd_strlen($v['name']) > 16){
+function user_admin_roles_form_validate($form, $v) {
+  if (dd_strlen($v['name']) > 16) {
     $t['name']['#error'][] = t('user', '名称过长');
-  }else if(db_exec('INSERT INTO {role} (name) VALUES (?)', array(trim($v['name'])))){
+  } else if (db_exec('INSERT INTO {role} (name) VALUES (?)', array(trim($v['name'])))) {
     dd_set_message(t('user', '角色 %string 添加成功', array('%string' => $v['name'])));
     cache_del('cid', 'user_roles');
     dd_goto('admin/users/roles');
-  }else{
+  } else {
     dd_set_message(t('user', '添加失败，角色已经存在'));
   }
   return $t;
@@ -393,7 +393,7 @@ function user_admin_roles_form_validate($form, $v){
 /**
  * 用户字段管理
  */
-function user_admin_fields(){
+function user_admin_fields() {
 	$tabs = array(
 		l(t('user', '字段管理'), 'admin/users/fields'),
 		l(t('user', '添加字段'), 'admin/users/fields/add'),
@@ -401,15 +401,15 @@ function user_admin_fields(){
 	);
 	global $user;
 	
-	if($user->count < 3){
-	  if(!field_get_cache_field_key('user', 'field', 'avatar')){
+	if ($user->count < 3) {
+	  if (!field_get_cache_field_key('user', 'field', 'avatar')) {
   	  dd_set_help(t('user', '测试一下，创建一个头像字段，!link',
   	  array('!link' => l(t('user', '点这儿'), 'admin/users/fields/test'))));
 	  }
 	}
 	
   $args = arg();
-  switch($args[3]){
+  switch ($args[3]) {
   	case 'add':
       $field->type = 'field';
       $field->module = 'user';
@@ -433,8 +433,8 @@ function user_admin_fields(){
 /**
  * 创建一个头像字段
  */
-function _user_field_test(){
-  if(!field_get_cache_field_key('user', 'field', 'avatar')){
+function _user_field_test() {
+  if (!field_get_cache_field_key('user', 'field', 'avatar')) {
     $field = array(
       'name' => t('field', '头像'),
       'module' => 'user',
@@ -457,7 +457,7 @@ function _user_field_test(){
     
     $data = (object) $field;
     field_save($data);
-  }else{
+  } else {
     dd_set_message(t('user', '已经创建了'));
   }
   

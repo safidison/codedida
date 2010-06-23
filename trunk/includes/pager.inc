@@ -23,15 +23,15 @@ function pager_query($query, $limit = 10, $element = 0, $count = NULL, $args = a
   
   $page = isset($_GET['page']) ? $_GET['page'] : '';
   
-  if(!isset($count)) {
+  if (!isset($count)) {
     $count_query = preg_replace(array('/SELECT.*?FROM /As', '/ORDER BY .*/'), array('SELECT COUNT(*) FROM ', ''), $query);
-    if($options){
+    if ($options) {
       $count_opt = $options;
     }
     $count_opt['return'] = 'column';
     
     $pager_total_items[$element] = db_query($count_query, $args, $count_opt);
-  }else{
+  } else {
     $pager_total_items[$element] = $count;
   }
   
@@ -121,20 +121,20 @@ function pager_view(array $tags = array(), $limit = 10, $element = 0, $parameter
   $li_previous = pager_view_previous($tags['prev'], $limit, $element, 1, $parameters);
   $li_next = pager_view_next($tags['next'], $limit, $element, 1, $parameters);
   $li_last = pager_view_last($tags['last'], $limit, $element, $parameters);
-  if ($pager_total[$element] > 1){
-    if(!$tags['no_sum']){
+  if ($pager_total[$element] > 1) {
+    if (!$tags['no_sum']) {
       $items[] = array(
         'class' => 'pager_sum',
         'data' => $tags['sum'] . '<span class="pager_number">' .$pager_total_items[$element].'</span>',
       );
     }
-    if(!$tags['no_count']){
+    if (!$tags['no_count']) {
       $items[] = array(
         'class' => 'pager_count',
         'data' => $tags['count'] . '<span class="pager_number">' . $pager_current .'/' . $pager_max.'</span>',
       );
     }
-    if($li_first) {
+    if ($li_first) {
       $items[] = array(
         'class' => 'pager_first',
         'data' => $li_first,
@@ -147,14 +147,14 @@ function pager_view(array $tags = array(), $limit = 10, $element = 0, $parameter
       );
     }
     
-    if($i != $pager_max) {
+    if ($i != $pager_max) {
       if ($i > 1) {
         $items[] = array(
           'class' => 'pager_ellipsis',
           'data' => '…',
         );
       }
-      for(; $i <= $pager_last && $i <= $pager_max; $i++) {
+      for (; $i <= $pager_last && $i <= $pager_max; $i++) {
         if ($i < $pager_current) {
           $items[] = array(
             'class' => 'pager_item',
@@ -195,7 +195,7 @@ function pager_view(array $tags = array(), $limit = 10, $element = 0, $parameter
     }
     $key = $element + 1;
     
-    if(!$tags['no_input']){
+    if (!$tags['no_input']) {
       $items[] = array(
         'class' => 'pager_go_input',
         'data' => t('system', '转到第 !input 页', array('!input' => '<input type="text" value="'.floor($_GET['page']+1).'" alt="'.$key.'" class="form_text pager_form_go_input" id="pager_go_input_'.$key.'" /> ')),
@@ -227,7 +227,7 @@ function pager_view_previous($text, $limit, $element = 0, $interval = 1, $parame
 
     if ($page_new[$element] == 0) {
       $output = pager_view_first($text, $limit, $element, $parameters, $attributes);
-    }else {
+    } else {
       $output = pager_view_link($text, $page_new, $element, $parameters, $attributes);
     }
   }
@@ -242,7 +242,7 @@ function pager_view_next($text, $limit, $element = 0, $interval = 1, $parameters
     $page_new = pager_load_array($pager_page_array[$element] + $interval, $element, $pager_page_array);
     if ($page_new[$element] == ($pager_total[$element] - 1)) {
       $output = pager_view_last($text, $limit, $element, $parameters, $attributes);
-    }else {
+    } else {
       $output = pager_view_link($text, $page_new, $element, $parameters, $attributes);
     }
   }
@@ -267,7 +267,7 @@ function pager_view_link($text, $page_new, $element, $parameters = array(), $att
   }
 
   $query = array();
-  if(count($parameters)) {
+  if (count($parameters)) {
     $query[] = dd_query_string_encode($parameters, array());
   }
   $querystring = pager_get_querystring();
@@ -287,7 +287,7 @@ function pager_view_link($text, $page_new, $element, $parameters = array(), $att
     }
     if (isset($titles[$text])) {
       $attributes['title'] = $titles[$text];
-    }else if (is_numeric($text)) {
+    } else if (is_numeric($text)) {
       $attributes['title'] = '转到第 '.$text .' 页';
     }
   }

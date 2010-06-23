@@ -4,7 +4,7 @@
 /**
  * @Implement of hook_db_info()
  */
-function mysql_db_info(){
+function mysql_db_info() {
 	return array('mysql' => 'mysql');
 }
 
@@ -14,7 +14,7 @@ function mysql_db_info(){
  * @param (array) $dbc
  *  一组数据库连接信息，该信息由接口文件在 install.{type}.inc 中自行定义
  */
-function db_mysql_connect($dbc, & $error){
+function db_mysql_connect($dbc, & $error) {
   $dsn = $dbc['driver'] .':host='. $dbc['host'].';port='.$dbc['port'].';dbname='.$dbc['dbname'];
   try{
     $db = new PDO($dsn, $dbc['dbuser'], $dbc['dbpass'], array(
@@ -24,7 +24,7 @@ function db_mysql_connect($dbc, & $error){
     ));
 	  $db->exec('SET NAMES "utf8"');
 	  $db->exec("SET sql_mode='ANSI,TRADITIONAL'");
-  }catch(PDOException $e){
+  }catch(PDOException $e) {
   	$error = $e->getMessage();
   }
   return $db;
@@ -43,43 +43,43 @@ function db_mysql_connect($dbc, & $error){
  * @example 带条件带属性的查询：
  *  db_query("SELECT * FROM {test} WHERE id = :id", array(':id' => 10), array('fetch' => 'array'));
  */
-function db_mysql_query($sql, $args = array(), $opt = array()){
+function db_mysql_query($sql, $args = array(), $opt = array()) {
   global $db;
   
-  if($opt['limit']){
-    if(is_array($opt['limit'])){
+  if ($opt['limit']) {
+    if (is_array($opt['limit'])) {
       $sql .= ' LIMIT '.$opt['limit'][0].' , '.$opt['limit'][1];
-    }else{
+    } else {
       $sql .= ' LIMIT 0, '.$opt['limit'];
     }
   }
   
-  if($args){
-    if($smt = $db[$opt['target']]->prepare($sql)){
+  if ($args) {
+    if ($smt = $db[$opt['target']]->prepare($sql)) {
       $smt->execute($args);
     }
-  }else{
+  } else {
     $smt = $db[$opt['target']]->query($sql);
   }
   
-  if(!is_object($smt)){
+  if (!is_object($smt)) {
     db_error(1111, array('db_mysql_query', 0, $sql));
     return false;
   }
   
-  if(!db_error($smt->errorCode(), $smt->errorInfo())){
-    if(!$opt['fetch'] || $opt['fetch'] == 'object') {
+  if (!db_error($smt->errorCode(), $smt->errorInfo())) {
+    if (!$opt['fetch'] || $opt['fetch'] == 'object') {
       $opt['fetch'] = PDO::FETCH_OBJ;
-    }else if($opt['fetch'] == 'array'){
+    } else if ($opt['fetch'] == 'array') {
       $opt['fetch'] = PDO::FETCH_ASSOC;
     }
     
     $smt->setFetchMode($opt['fetch']);
     
-    if(!$opt['return']){
+    if (!$opt['return']) {
       return $smt->fetchAll();
-    }else{
-      switch($opt['return']){
+    } else {
+      switch ($opt['return']) {
         case 'one':
           return $smt->fetch();
         case 'column':
@@ -100,30 +100,30 @@ function db_mysql_query($sql, $args = array(), $opt = array()){
 /**
  * db_replace()
  */
-function db_mysql_replace($table, $args, array $opt = array()){ 
+function db_mysql_replace($table, $args, array $opt = array()) { 
   $tables = module_get_schema($table);
   
-  if(!is_array($tables['fields'])){
+  if (!is_array($tables['fields'])) {
     dd_set_message(t('system', '无效的数据表 !string', array('!string' => $table)), 'error');
     return false;
   }
   
-  if(is_object($args)){
+  if (is_object($args)) {
     $args = (array) $args;
   }
   
-  if(!is_array($args)){
+  if (!is_array($args)) {
     dd_set_message(t('system', '待写入内容必须是对象或数组'), 'error');
     return false;
   }
   
-  foreach($args as $field => $value){
-    if(!isset($tables['fields'][$field])){
+  foreach ($args as $field => $value) {
+    if (!isset($tables['fields'][$field])) {
       unset($args[$field]);
     }
   }
   
-  foreach($args as $field_name => $value){
+  foreach ($args as $field_name => $value) {
     $placeholder = ':'.$field_name;
     $fields[] = $field_name;
     $placeholders[] = $placeholder;
@@ -163,23 +163,23 @@ function db_mysql_replace($table, $args, array $opt = array()){
  *    array(':value' => 'test2', ':name' => 'test1')
  *  );
  */
-function db_mysql_exec($sql, $args = array(), $opt = array()){
+function db_mysql_exec($sql, $args = array(), $opt = array()) {
   global $db;
   static $transaction;
   
-  if($opt['transaction']){
-    switch($opt['transaction']){
+  if ($opt['transaction']) {
+    switch ($opt['transaction']) {
       case 'start':
         $db[$opt['target']]->beginTransaction();
         $transaction = true;
         
-        if(!$sql) return true;
+        if (!$sql) return true;
       break;
       case 'end':
         $db[$opt['target']]->commit();
         $transaction = false;
         
-        if(!$sql) return true;
+        if (!$sql) return true;
       break;
       case 'back':
         $db[$opt['target']]->rollBack();
@@ -193,45 +193,45 @@ function db_mysql_exec($sql, $args = array(), $opt = array()){
   
   $rowCount = 0;
   
-  if($args){
+  if ($args) {
     $smt = $db[$opt['target']]->prepare($sql);
-    if(!$args['values']){
-      if($smt->execute($args)){
+    if (!$args['values']) {
+      if ($smt->execute($args)) {
         $rowCount = $smt->rowCount();
-      }else{
+      } else {
       	db_error($smt->errorCode(), $smt->errorInfo());
-        if($opt['transaction']){
+        if ($opt['transaction']) {
           $db[$opt['target']]->rollBack();
         }
       }
-    }else{
-      foreach($args['values'] as $values){
-        if(!$args['placeholder']){
+    } else {
+      foreach ($args['values'] as $values) {
+        if (!$args['placeholder']) {
           $smt->execute($values);
-        }else{
+        } else {
           $smt->execute(array_combine($args['placeholder'], $values));
         }
         
-        if(!db_error($smt->errorCode(), $smt->errorInfo())){
+        if (!db_error($smt->errorCode(), $smt->errorInfo())) {
           $rowCount + $smt->rowCount();
-        }else if($opt['transaction']){
+        } else if ($opt['transaction']) {
           $db[$opt['target']]->rollBack();
         }
       }
     }
-  }else{
+  } else {
     try{
       $rowCount = $db[$opt['target']]->exec($sql);
-    }catch (Exception $e){
-      if($opt['transaction']){
+    }catch (Exception $e) {
+      if ($opt['transaction']) {
         $db[$opt['target']]->rollBack();
       }
     }
   }
   
-  if(!$opt['return']){
+  if (!$opt['return']) {
     return $rowCount;
-  }else if(isset($rowCount)){
+  } else if (isset($rowCount)) {
     /**
      * 有时候 update 没有受影响的列数，但请求者想要知道语句是否成功执行。
      * 若没有受影响的列数，返回 true，只表示语句已成功执行
@@ -243,10 +243,10 @@ function db_mysql_exec($sql, $args = array(), $opt = array()){
 /**
  * @Implement of db_show_tables()
  */
-function db_mysql_show_tables($target){
+function db_mysql_show_tables($target) {
   global $db;
-  if($smt = $db[$target]->query('SHOW TABLES')){
-    foreach($smt->fetchAll(PDO::FETCH_ASSOC) as $table){
+  if ($smt = $db[$target]->query('SHOW TABLES')) {
+    foreach ($smt->fetchAll(PDO::FETCH_ASSOC) as $table) {
       $tables[] = current($table);
     }
     return $tables;
@@ -256,9 +256,9 @@ function db_mysql_show_tables($target){
 /**
  * @Implement of db_get_version()
  */
-function db_mysql_get_version($target){
+function db_mysql_get_version($target) {
   global $db;
-  if($smt = $db[$target]->query('SELECT version()')){
+  if ($smt = $db[$target]->query('SELECT version()')) {
     return $smt->fetchColumn();
   }
 }
@@ -266,14 +266,14 @@ function db_mysql_get_version($target){
 /**
  * @Implement of db_is_table
  */
-function db_mysql_is_table($table, $target){
+function db_mysql_is_table($table, $target) {
   return (bool)db_query("SHOW TABLES LIKE '{".$table."}'", NULL, array('target' => $target, 'return' => 'one'));
 }
 
 /**
  * @Implement of db_drop_table()
  */
-function db_mysql_drop_table($table, $target){
+function db_mysql_drop_table($table, $target) {
   
   return db_query('DROP TABLE {'.$table.'}', NULL, array('target' => $target, 'return' => 'return'));
 }
@@ -281,14 +281,14 @@ function db_mysql_drop_table($table, $target){
 /**
  * @Implement of db_rename_table()
  */
-function db_mysql_rename_table($name, $new_name, $target){
+function db_mysql_rename_table($name, $new_name, $target) {
 	return db_query('ALTER TABLE {'. $name .'} RENAME TO {'. $new_name .'}', NULL, array('target' => $target, 'return' => 'return'));
 }
 
 /**
  * @Implement of db_field_set_default()
  */
-function db_mysql_field_set_default($table, $field, $value, $target){
+function db_mysql_field_set_default($table, $field, $value, $target) {
   $return = db_query('ALTER TABLE {'. $table .'} ALTER COLUMN '. $field .' SET DEFAULT ?', array($value), array('target' => $target));
   return isset($return);
 }
@@ -296,14 +296,14 @@ function db_mysql_field_set_default($table, $field, $value, $target){
 /**
  * @Implement of db_field_drop_default()
  */
-function db_mysql_field_drop_default($table, $field, $target){
+function db_mysql_field_drop_default($table, $field, $target) {
   return db_query('ALTER TABLE {'. $table .'} ALTER COLUMN '. $field .' DROP DEFAULT', NULL, array('target' => $target, 'return' => 'return'));
 }
 
 /**
  * @Implement of db_add_primary()
  */
-function db_mysql_add_primary($table, $fields, $target){
+function db_mysql_add_primary($table, $fields, $target) {
   return db_query('ALTER TABLE {'. $table .'} ADD PRIMARY KEY ('.
     _db_mysql_create_key_sql($fields) .')', NULL, array('target' => $target, 'return' => 'return'));
 }
@@ -311,16 +311,16 @@ function db_mysql_add_primary($table, $fields, $target){
 /**
  * @Implement of db_drop_primary()
  */
-function db_mysql_drop_primary($table, $target){
+function db_mysql_drop_primary($table, $target) {
   return db_query('ALTER TABLE {'. $table .'} DROP PRIMARY KEY', NULL, array('target' => $target, 'return' => 'return'));
 }
 
 /**
  * @Implement of db_add_unique_key()
  */
-function db_mysql_add_unique($table, $name, $fields, $target){
-  if($queryString = db_query('ALTER TABLE {'. $table .'} ADD UNIQUE KEY '.
-    $name .' ('. _db_mysql_create_key_sql($fields) .')', NULL, array('target' => $target, 'return' => 'queryString'))){
+function db_mysql_add_unique($table, $name, $fields, $target) {
+  if ($queryString = db_query('ALTER TABLE {'. $table .'} ADD UNIQUE KEY '.
+    $name .' ('. _db_mysql_create_key_sql($fields) .')', NULL, array('target' => $target, 'return' => 'queryString'))) {
     return array($queryString);
   }
 }
@@ -328,9 +328,9 @@ function db_mysql_add_unique($table, $name, $fields, $target){
 /**
  * @Implement of db_drop_unique()
  */
-function db_mysql_drop_unique($table, $name, $target){
-  if($queryString = db_query('ALTER TABLE {'. $table .'} DROP KEY '.
-    $name, NULL, array('target' => $target, 'return' => 'queryString'))){
+function db_mysql_drop_unique($table, $name, $target) {
+  if ($queryString = db_query('ALTER TABLE {'. $table .'} DROP KEY '.
+    $name, NULL, array('target' => $target, 'return' => 'queryString'))) {
     return array($queryString);
   }
 }
@@ -338,9 +338,9 @@ function db_mysql_drop_unique($table, $name, $target){
 /**
  * @Implement of db_add_index()
  */
-function db_mysql_add_index($table, $name, $fields, $target){
-  if($queryString = db_query('ALTER TABLE {'. $table .'} ADD INDEX '.
-    $name .' ('. _db_mysql_create_key_sql($fields) .')', NULL, array('target' => $target, 'return' => 'queryString'))){
+function db_mysql_add_index($table, $name, $fields, $target) {
+  if ($queryString = db_query('ALTER TABLE {'. $table .'} ADD INDEX '.
+    $name .' ('. _db_mysql_create_key_sql($fields) .')', NULL, array('target' => $target, 'return' => 'queryString'))) {
     return array($queryString);
   }
 }
@@ -348,9 +348,9 @@ function db_mysql_add_index($table, $name, $fields, $target){
 /**
  * @Implement of db_drop_index()
  */
-function db_mysql_drop_index($table, $name, $target){
-  if($queryString = db_query('ALTER TABLE {'. $table .'} DROP INDEX '.
-    $name, NULL, array('target' => $target, 'return' => 'queryString'))){
+function db_mysql_drop_index($table, $name, $target) {
+  if ($queryString = db_query('ALTER TABLE {'. $table .'} DROP INDEX '.
+    $name, NULL, array('target' => $target, 'return' => 'queryString'))) {
     return array($queryString);
   }
 }
@@ -371,10 +371,10 @@ function db_mysql_add_field($table, $field, $spec, $keys_new = array(), $target 
     $query .= ', ADD '. implode(', ADD ', _db_mysql_create_field_sql($keys_new));
   }
   
-  if($queryString = db_query($query, NULL, array('target' => $target, 'return' => 'queryString'))){
+  if ($queryString = db_query($query, NULL, array('target' => $target, 'return' => 'queryString'))) {
     $sql[] = $queryString;
     if (isset($spec['initial'])) {
-      if($queryString = db_query('UPDATE {'. $table .'} SET '. $field .' = ?', array($spec['initial']), array('target' => $target, 'return' => 'queryString'))){
+      if ($queryString = db_query('UPDATE {'. $table .'} SET '. $field .' = ?', array($spec['initial']), array('target' => $target, 'return' => 'queryString'))) {
         $sql[] = $queryString;
       }
     }
@@ -390,7 +390,7 @@ function db_mysql_add_field($table, $field, $spec, $keys_new = array(), $target 
  * @Implement of db_drop_field()
  */
 function db_mysql_drop_field($table, $field, $target) {
-  if($queryString = db_query('ALTER TABLE {'. $table .'} DROP '. $field, NULL, array('target' => $target, 'return' => 'queryString'))){
+  if ($queryString = db_query('ALTER TABLE {'. $table .'} DROP '. $field, NULL, array('target' => $target, 'return' => 'queryString'))) {
     return array($queryString);
   }
 }
@@ -398,11 +398,11 @@ function db_mysql_drop_field($table, $field, $target) {
 /**
  * @Implement of db_add_foreign()
  */
-function db_mysql_add_foreign($table, $field, $foreign, $target){
-	if(!db_is_table($table, $target)){
+function db_mysql_add_foreign($table, $field, $foreign, $target) {
+	if (!db_is_table($table, $target)) {
 		dd_set_message(t('表 @table 不存在', array('@table' => $table)), 'error');
-	}else if(db_is_table($foreign['table'], $target)){
-		if($foreign['field']){
+	} else if (db_is_table($foreign['table'], $target)) {
+		if ($foreign['field']) {
 			$sql = 'ALTER TABLE {'.$table."} ADD CONSTRAINT \n";
 			$sql .= 'f_'.$table.'_'.$foreign['table'].'_'.$field.'_'.$foreign['field'] . "\n";
 			$sql .= 'FOREIGN KEY ('.$field.")\n";
@@ -410,15 +410,15 @@ function db_mysql_add_foreign($table, $field, $foreign, $target){
 			$sql .= 'ON UPDATE ' . _db_mysql_add_foreign_bind($foreign['update']). "\n";
 			$sql .= 'ON DELETE '._db_mysql_add_foreign_bind($foreign['delete']);
 			
-			if($queryString = db_query($sql, NULL, array('target' => $target, 'return' => 'queryString'))){
+			if ($queryString = db_query($sql, NULL, array('target' => $target, 'return' => 'queryString'))) {
 				return $queryString;
 			}
 			
-		}else{
+		} else {
 			dd_set_message(t('必须提供主表字段值'), 'error');
 		}
 		
-	}else{
+	} else {
 		dd_set_message(t('表 @table 不存在', array('@table' => $foreign['table'])), 'error');
   }
 }
@@ -426,11 +426,11 @@ function db_mysql_add_foreign($table, $field, $foreign, $target){
 /**
  * @Implement of db_drop_foreign()
  */
-function db_mysql_drop_foreign($table, $field, $parent_table, $parent_field, $target = 'default'){
+function db_mysql_drop_foreign($table, $field, $parent_table, $parent_field, $target = 'default') {
   $key = 'f_'.$table.'_'.$parent_table.'_'.$field.'_'.$parent_field;
   
-  if($queryString = db_query('ALTER TABLE {'. $table .'} DROP FOREIGN KEY '.
-    $key, NULL, array('target' => $target, 'return' => 'queryString'))){
+  if ($queryString = db_query('ALTER TABLE {'. $table .'} DROP FOREIGN KEY '.
+    $key, NULL, array('target' => $target, 'return' => 'queryString'))) {
     
     @db_query('ALTER TABLE {'. $table .'} DROP INDEX '.
     $key, NULL, array('target' => $target, 'return' => 'queryString'));
@@ -442,10 +442,10 @@ function db_mysql_drop_foreign($table, $field, $parent_table, $parent_field, $ta
 function db_mysql_change_field($table, $field, $field_new, $spec, $keys_new, $target) {
   $sql = 'ALTER TABLE {'. $table .'} CHANGE '. $field .' '.
     _db_mysql_create_field_sql($field_new, _db_mysql_process_field($spec), $target);
-  if(count($keys_new)) {
+  if (count($keys_new)) {
     $sql .= ', ADD '. implode(', ADD ', _db_mysql_create_keys_sql($keys_new));
   }
-  if($queryString = db_query($sql, NULL, array('target' => $target, 'return' => 'queryString'))){
+  if ($queryString = db_query($sql, NULL, array('target' => $target, 'return' => 'queryString'))) {
     return array($queryString);
   }
 }
@@ -478,12 +478,12 @@ function db_mysql_create_table($name, $table, $target) {
     $sql .= ' COMMENT ' . db_mysql_get_comment($table['description'], $target);
   }
   
-	if($queryString = db_query($sql, NULL, array('target' => $target, 'return' => 'queryString'))){
+	if ($queryString = db_query($sql, NULL, array('target' => $target, 'return' => 'queryString'))) {
 		
 		$return[] = $queryString;
 		
-		if($table['foreign keys'] && is_array($table['foreign keys'])){
-			foreach($table['foreign keys'] as $key => $foreign){
+		if ($table['foreign keys'] && is_array($table['foreign keys'])) {
+			foreach ($table['foreign keys'] as $key => $foreign) {
 				$return[] = db_mysql_add_foreign($name, $key, $foreign, $target);
 			}
 		}
@@ -499,7 +499,7 @@ function _db_mysql_create_field_sql($name, $spec, $target) {
 
   if (isset($spec['length'])) {
     $sql .= '('. $spec['length'] .')';
-  }elseif (isset($spec['precision']) && isset($spec['scale'])) {
+  } elseif (isset($spec['precision']) && isset($spec['scale'])) {
     $sql .= '('. $spec['precision'] .', '. $spec['scale'] .')';
   }
 
@@ -526,7 +526,7 @@ function _db_mysql_create_field_sql($name, $spec, $target) {
     $sql .= ' DEFAULT NULL';
   }
   
-  if($spec['description']){
+  if ($spec['description']) {
     $sql .= ' COMMENT ' . db_mysql_get_comment($spec['description'], $target);
   }
   
@@ -579,9 +579,9 @@ function _db_mysql_create_keys_sql($spec) {
 function _db_mysql_create_key_sql($fields) {
   $return = array();
   foreach ($fields as $field) {
-    if(is_array($field)) {
+    if (is_array($field)) {
       $return[] = '`' . $field[0] . '`(' . $field[1] . ')';
-    }else {
+    } else {
       $return[] = '`' . $field . '`';
     }
   }
@@ -591,8 +591,8 @@ function _db_mysql_create_key_sql($fields) {
 /**
  * 外键约束行为
  */
-function _db_mysql_add_foreign_bind($type){
-	switch($type){
+function _db_mysql_add_foreign_bind($type) {
+	switch ($type) {
 		case 'null': // 子表设置为空
 			return 'SET NULL';
 		case 'default': // 子表设置默认值
@@ -604,7 +604,7 @@ function _db_mysql_add_foreign_bind($type){
 	}
 }
 
-function db_mysql_type_map(){
+function db_mysql_type_map() {
   static $map = array(
     'varchar:normal'  => 'VARCHAR',
     'char:normal'     => 'CHAR',

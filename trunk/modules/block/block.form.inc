@@ -4,12 +4,12 @@
 /**
  * 添加区块
  */
-function block_add_form($block = NULL){
+function block_add_form($block = NULL) {
 	global $conf;
   $item[] = l(t('block', '管理区块'), 'admin/blocks/settings');
   $item[] = l(t('block', '编辑区块'), 'admin/blocks/boxes');
   $item[] = l(t('block', '添加区块'), 'admin/blocks/boxes/add');
-  if($block->bid){
+  if ($block->bid) {
     $item[] = l(t('block', '编辑区块'), $_GET['q']);
   }
   dd_set_tabs($item);
@@ -38,20 +38,20 @@ function block_add_form($block = NULL){
 	return $form;
 }
 
-function block_add_form_validate($form, $v){
-  if(dd_strlen($v['title']) > 60){
+function block_add_form_validate($form, $v) {
+  if (dd_strlen($v['title']) > 60) {
     $t['title']['#error'][] = t('block', '长度不超过 %length 字符', array('%length' => '60'));
     return $t;
-  }else if($v['bid']){
+  } else if ($v['bid']) {
     // 编辑
     $ok = db_exec('UPDATE {boxes} SET title = ?, body = ?, format = ? WHERE bid = ?', array($v['title'], $v['body'], $v['format'], $v['bid']), array('return' => 1));
-  }else{
+  } else {
     // 新增
     $ok = db_exec('INSERT INTO {boxes} (title, body, format) VALUES (?, ?, ?)', array($v['title'], $v['body'], $v['format']));
   }
-  if($ok){
+  if ($ok) {
     dd_set_message(t('block', '操作成功'));
-  }else{
+  } else {
     dd_set_message(t('block', '操作失败'));
   }
   dd_goto('admin/blocks/boxes');
@@ -60,19 +60,19 @@ function block_add_form_validate($form, $v){
 /**
  * 自定义区块列表
  */
-function block_admin_boxes(){
+function block_admin_boxes() {
   dd_set_tabs(array(l(t('block', '管理区块'), 'admin/blocks/settings'), l(t('block', '编辑区块'), 'admin/blocks/boxes'), l(t('block', '添加区块'), 'admin/blocks/boxes/add')));
-  if($_GET['op'] == 'delete' && $_GET['id']){
-    if(db_exec('DELETE FROM {boxes} WHERE bid = ?', array($_GET['id']))){
+  if ($_GET['op'] == 'delete' && $_GET['id']) {
+    if (db_exec('DELETE FROM {boxes} WHERE bid = ?', array($_GET['id']))) {
       db_exec('DELETE FROM {blocks} WHERE module = ? AND delta = ?', array('block', 'boxes_'.$_GET['id']));
       dd_set_message(t('block', '删除成功'));
-    }else{
+    } else {
       dd_set_message(t('block', '删除失败'));
     }
     dd_goto('admin/blocks/boxes');
   }
-  if($fetch = db_query('SELECT * FROM {boxes}')){
-	  foreach($fetch as $o){
+  if ($fetch = db_query('SELECT * FROM {boxes}')) {
+	  foreach ($fetch as $o) {
 	    $table[] = array(
 	      t('block', $o->title),
 	      dd_imp(
