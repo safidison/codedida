@@ -244,10 +244,19 @@ function db_mysql_exec($sql, $args = array(), $opt = array()) {
  * @Implement of db_show_tables()
  */
 function db_mysql_show_tables($target) {
-  global $db;
+  global $db, $dbc;
+  
+  $prefix = $dbc[$target]['prefix'];
+  
   if ($smt = $db[$target]->query('SHOW TABLES')) {
     foreach ($smt->fetchAll(PDO::FETCH_ASSOC) as $table) {
-      $tables[] = current($table);
+      $name = current($table);
+      
+      if ($prefix && substr($name, 0, strlen($prefix)) == $prefix) {
+        $name = substr($name, strlen($prefix));
+      }
+      
+      $tables[] = $name;
     }
     return $tables;
   }

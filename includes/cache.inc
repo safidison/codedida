@@ -68,8 +68,10 @@ function cache_get($cid, $table = 'cache') {
  *  存储的表名
  * @param (int) $expire
  *  过期时间，以当前日期为基础，秒为单位。如：500，表示 500 秒后过期。默认为 0，即永不过期
+ * @param (bool) $replace
+ *  是否使用 db_replace 写入数据
  */
-function cache_set($cid, $data, $table = 'cache', $expire = NULL) {
+function cache_set($cid, $data, $table = 'cache', $expire = NULL, $replace = 1) {
   $cache = array();
   
   $cache['serialized'] = 0; // 序列化
@@ -90,7 +92,15 @@ function cache_set($cid, $data, $table = 'cache', $expire = NULL) {
   $cache['cid'] = $cid;
   $cache['created'] = $_SERVER['REQUEST_TIME'];
   
-  return db_replace($table, $cache);
+  if ($replace) {
+    return db_replace($table, $cache);
+  } else {
+    
+    db_exec('DELETE FROM {'.$table.'} WHERE cid = ?', array($cache['cid']));
+    return db_exec('INSERT INTO {'.$table.'} (cid, data, expire, created, serialized) VALUES (?, ?, ?, ?, ?)',
+    array($cache['cid'], $cache['data'], $cache['expire'], $cache['created'], $cache['serialized']));
+    
+  }
 }
 
 /**

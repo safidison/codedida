@@ -705,12 +705,16 @@ function module_get_table($module, $table = NULL) {
 
 function module_get_schema($table, $clear = NULL) {
   static $tables;
+  
   if (!isset($tables)) {
+    
     if ($clear || !$cache = cache_get('schema')) {
+      
       module_load_install();
       $_tables = db_show_tables();
       
       if ($lists = _module_invoke_all('schema')) {
+        
         foreach ($lists as $module => $ts) {
           module_alter_all('alter_schema', $module, $ts);
           foreach ($ts as $name => $fields) {
@@ -728,7 +732,8 @@ function module_get_schema($table, $clear = NULL) {
         }
       }
       
-      cache_set('schema', $tables);
+      cache_set('schema', $tables, 'cache', 0, 0);
+      
     } else {
       $tables = $cache->data;
     }
