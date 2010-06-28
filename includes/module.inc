@@ -38,7 +38,7 @@ function module_enabled_variable($op = 'all') {
     $themes = array();
     foreach (module_list('theme', 'enabled') as $name => $info) {
       if ($info['status'] == -1) {
-        var_set('default_theme', $info['filename'], 0);
+        var_set('default_theme', $info['filename'], 0, 0);
       }
       $themes[$name] = array(
         'filename' => $info['filename'],
@@ -59,7 +59,7 @@ function module_enabled_variable($op = 'all') {
         $themes[$name]['settings'] = $info['info']['settings'];
       }
     }
-    var_set('themes', $themes, 0);
+    var_set('themes', $themes, 0, 0);
   }
   if ($op == 'all' || $op == 'module') {
     $modules = array();
@@ -71,7 +71,7 @@ function module_enabled_variable($op = 'all') {
         'language' => $info['info']['language'],
       );
     }
-    var_set('modules', $modules, 0);
+    var_set('modules', $modules, 0, 0);
   }
 }
 

@@ -817,7 +817,9 @@ function system_install() {
   return $ret;
 }
 
-//创建系统主模块(system)配置表，非接口函数，供 install.php 在安装程序时使用。
+/**
+ * 创建系统主模块(system)配置表，非接口函数，供 install.php 在安装程序时使用
+ */
 function _system_install(){
 	$schema['system'] = array(
     'description' => '模块、主题注册表',
@@ -873,6 +875,7 @@ function _system_install(){
 		),
     'primary key' => array('filename')
 	);
+	
 	return db_create_table('system', $schema['system']);
 }
 

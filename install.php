@@ -47,6 +47,8 @@ if (is_file($setting_file)) {
 require_once './includes/bootstrap.inc';
 require_once './includes/database.inc';
 require_once './includes/form.inc';
+require_once './includes/cache.inc';
+
 conf_init();
 
 if (is_file('./install/install.php') && function_exists('install')) {
@@ -240,7 +242,7 @@ function dida_setup_data_test() {
 	  				if (db_exec('DELETE FROM {dida_test} WHERE tid = 10')) {
 					  	if (!db_drop_table('dida_test')) {
 					  		$error[] = '没有数据库表删除权限';
-					  	} else if (db_drop_table('system')) {
+					  	} else if (db_is_table('system')) {
 					  		$error[] = '系统配置表已经存在，该数据库中是否已经存在一个程序，建议使用全新数据库，或设置表前缀';
 					  	}
 	  				} else {
@@ -281,12 +283,15 @@ function dida_setup() {
     } else if (!$_POST['site_name']) {
       $error[] = '网站名称不能为空。';
     } else if (!$_POST['site_mail']) {
-      $error[] = '网站名称不能为空。';
+      $error[] = '站长邮箱不能为空。';
     } else if (!$_POST['status']) {
       $error[] = '请设置网站访问状态。';
     } else if (db_connect('default')) {
+      
       require_once './modules/system/system.install';
       require_once './includes/module.inc';
+      require_once './includes/menu.inc';
+      
       if (_system_install()) {
         if (module_set_list('theme') && module_set_list('module')) {
           db_exec('UPDATE {system} SET status = -1 WHERE filename = :name', array(':name' => 'default'));
@@ -411,7 +416,7 @@ function _install_setting_chmod() {
   global $database, $conf_dir, $setting_file;
   $text[] = '$database[\'default\'] = ' . var_export($database['default'], true).";\n\n";
   $text[] = '$installed = true; // 不允许运行 install.php ';
-  $text[] = 'define(\'DD_CACHE_FILE\', \'includes/cache.inc\'); // 缓存文件 ';
+  //$text[] = 'define(\'DD_CACHE_FILE\', \'includes/cache.inc\'); // 缓存文件 ';
   $text[] = 'define(\'DD_ADMIN_PATH\', \'admin\'); // 管理路径 ';
   $text[] = 'ini_set(\'arg_separator.output\', "&amp;");';
   $text[] = 'ini_set(\'magic_quotes_runtime\', 0);';
