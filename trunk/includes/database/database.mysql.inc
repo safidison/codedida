@@ -276,7 +276,14 @@ function db_mysql_get_version($target) {
  * @Implement of db_is_table
  */
 function db_mysql_is_table($table, $target) {
-  return (bool)db_query("SHOW TABLES LIKE '{".$table."}'", NULL, array('target' => $target, 'return' => 'one'));
+  return (bool) db_query("SHOW TABLES LIKE '{".$table."}'", NULL, array('target' => $target, 'return' => 'one'));
+}
+
+/**
+ * @Implement of db_is_field
+ */
+function db_mysql_is_field($table, $field, $target) {
+  return (bool) db_query('DESCRIBE {'.$table.'} ?', array($field), array('target' => $target));
 }
 
 /**

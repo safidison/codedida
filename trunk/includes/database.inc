@@ -133,6 +133,17 @@ function db_is_table($table, $target = 'default') {
 }
 
 /**
+ * 检查字段是否存在
+ */
+function db_is_field($table, $field, $target = 'default') {
+  global $dbc;
+  
+  if (empty($dbc[$target])) db_connect($target);
+  
+  return call_user_func('db_' . $dbc[$target]['driver'].'_is_field', $table, $field, $target);
+}
+
+/**
  * 列出所有表
  */
 function db_show_tables($target = 'default') {

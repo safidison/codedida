@@ -100,7 +100,7 @@ function bootstrap($op, $inc = NULL) {
           exit;
         }
       }
-      
+      module_get_schema('users', 1);
       dd_page_header();
       
       //载入模块
@@ -444,19 +444,27 @@ function dd_log($type, $value, $ext_id = NULL, $link = NULL, $status = NULL, $ui
  * $return 无返回值，但将即时更新全局变量 $conf
  * @param $clear = 1;
  *  清除配置文件缓存
+ * @param (bool) $replace
+ *  是否使用 db_replace 写入数据
  */
-function var_set($name, $value, $clear = 1) {
+function var_set($name, $value, $clear = 1, $replace = 1) {
   global $conf;
   $v = array(
     'value' => serialize($value),
     'name' => $name
   );
   
-  if (db_replace('variable', $v)) {
-    $conf[$name] = $value;
-    if ($clear) var_init();
+  if ($replace) {
+    if (!db_replace('variable', $v)) {
+      return;
+    }
+  } else {
+    db_exec('DELETE FROM {variable} WHERE name = ?', array($name));
+    db_exec('INSERT INTO {variable} (name, value) VALUES (?, ?)', array($name, serialize($value)));
   }
   
+  $conf[$name] = $value;
+  if ($clear) var_init();
 }
 
 function custom_set($name, $value) {
