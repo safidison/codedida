@@ -213,8 +213,12 @@ function template_preprocess_page(&$var, $args) {
   if ($_SESSION['database_debug']) {
     
     $table = $_SESSION['database_debug'];
+    
     if ($_SESSION['database_debug_count']) {
-      $table[] = $_SESSION['database_debug_count'];
+      $table[][] = array(
+        'data' => theme('table', array(), $_SESSION['database_debug_count']),
+        'colspan' => 3
+      );
       unset($_SESSION['database_debug_count']);
     }
     

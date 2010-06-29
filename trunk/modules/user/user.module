@@ -232,7 +232,8 @@ function user_access($string, $account = NULL, $reset = false) {
 function user_get_perms($rid = NULL) {
   static $perms;
   if (!isset($perms)) {
-    if (!$perms = var_get('roles_perm_cache')) {
+    $perms = var_get('roles_perm_cache', false);
+    if ($perms === false) {
       if ($fetch = db_query('SELECT rid, perm FROM {role}')) {
         $perms = array();
         foreach ($fetch as $row) {
