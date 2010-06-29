@@ -629,10 +629,8 @@ function db_debug() {
     if ($repeats) {
       foreach ($repeats as $key => $sql) {
         if ($sql['count'] > 1) {
-          $_SESSION['database_debug_count'][$key] = array(
-            'data' => t('system', '!sql 执行了 %count 次', array('!sql' => $sql['sql'], '%count' => $sql['count'])),
-            'colspan' => 3
-          );
+          $_SESSION['database_debug_count'][$key][0] = t('system', '!sql 执行了 %count 次',
+            array('!sql' => $sql['sql'], '%count' => $sql['count']));
         }
       }
     }
