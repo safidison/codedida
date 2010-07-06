@@ -3,6 +3,20 @@
 
 /**
  * @Implement of hook_update_x()
+ *  增加表 history，用做记录浏览历史
+ */
+function system_update_5(){
+  $ret = array();
+  
+  if($history = module_get_table('system', 'history')){
+    $ret = db_create_table('history', $history);
+  }
+  
+  return $ret;
+}
+
+/**
+ * @Implement of hook_update_x()
  *  storage 表增加一个扩展 id
  */
 function system_update_4(){
@@ -566,6 +580,61 @@ function system_schema() {
       'tex' => array('type', 'ext_id'),
     ),
     'primary key' => array('sid'),
+  );
+  $schema['history'] = array(
+    'description' => '浏览记录',
+    'fields' => array(
+      'hid' => array(
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => '主键，自增'
+      ),
+      'uid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => '用户 uid'
+      ),
+      'session' => array(
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'session id'
+      ),
+      'host' => array(
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => '主机'
+      ),
+      'path' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => '访问路径，仅统计 hook_menu 定义的路径'
+      ),
+      'referer' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => '来路'
+      ),
+      'timestamp' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => '时间'
+      ),
+    ),
+    'indexes' => array(
+      'uid' => array('uid'),
+    ),
+    'primary key' => array('hid'),
   );
   $schema['temp'] = array(
     'description' => '临时表，自动任务将定期清除该表。',

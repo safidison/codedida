@@ -114,11 +114,13 @@ h2.system_no_content{
   font-weight: bold;
   font-size: 1.4em;
 }
-.form_text{
+input[type="text"]{
   border:1px solid #B7BCC9;
+}
+.form_text{
   margin-right: 5px;
 }
-.inputhover{
+input.inputhover{
   border:1px solid #3474E8;
 }
 input.error {
@@ -336,10 +338,26 @@ legend.asc{
   font-weight: bold; 
 }
 
+#admin_custom_add_form{
+  text-align: center;
+}
+
+#admin_custom_add_form input{
+  margin: 2px 0;
+}
+
+.system_admin_block_link_remove{
+  display: block;
+  text-align: right;
+  color: #8B8986;
+  cursor: pointer;
+}
+.system_admin_block_link_remove_active{
+	color: #f00;
+}
 #field_form .fieldset-wrapper .dc_label{
   width: 80px;
 }
-
 #print{
   padding:5px 12px;
   text-align: left;

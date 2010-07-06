@@ -653,7 +653,7 @@ function _dd_form_element(&$form, $field, $value, $error) {
     $class[] = $field['#attributes']['class'];
   }
   
-  if ($field['#required'] && $field['#type'] != 'checkbox') {
+  if ($field['#required']) {
     $class[] = 'required';
   }
   
@@ -821,7 +821,7 @@ function dd_form_checkbox($field) {
     }
     foreach ($field['#options'] as $key => $op) {
       $field['#attributes']['id'] = $id .'_'. $key;
-      $output .= '<span class="form_checkbox_option"><input';
+      $output .= '<span class="form_checkbox_option" alt="'.$id.'"><input';
       if (is_array($field['#value']) && in_array($key, $field['#value'])) {
         $output .= ' checked="checked"';
       }

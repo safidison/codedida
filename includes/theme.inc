@@ -267,7 +267,7 @@ function template_preprocess_page(&$var, $args) {
  *  theme 名称
  */
 function theme_render_tpl($tpl, $var, $hook = NULL) {
-  $__cached = $hook == 'page' && !$_POST && ($GLOBALS['conf']['dd_cache_page'] == 2
+  $__cached = $hook == 'page' && !$var['messages'] && !$_POST && ($GLOBALS['conf']['dd_cache_page'] == 2
   || ($GLOBALS['conf']['dd_cache_page'] == 1 && $GLOBALS['user']->uid == 0));
   
   extract($var, EXTR_SKIP);
@@ -275,7 +275,7 @@ function theme_render_tpl($tpl, $var, $hook = NULL) {
   $__cached_path = false;
   
   if ($__cached) {
-    global $conf;
+    global $conf, $current_menu_data;
     
     $__getall = false;
     
@@ -296,13 +296,13 @@ function theme_render_tpl($tpl, $var, $hook = NULL) {
         $__cached_path = '[front]';
         $__cached_expire = var_get('dd_cache_page_expire', 3600);
         
-      } else if ($path = $_GET['q']) {
+      } else if ($current_menu_data['systemUrl']) {
           /**
            * 默认过期时间，执行 hook_cache_page_disable、hook_cache_page_enabled 时引用传递
            * 模块若需修改默认缓存时间，请设置此值
            */
           $__cached_expire = var_get('dd_cache_page_expire', 3600);
-          $__cached_path = $path;
+          $__cached_path = $current_menu_data['systemUrl'];
           $__ac_type = var_get('dd_cache_page_type', 'enabled');
           
           foreach ($conf['modules'] as $__module => $__info) {
@@ -316,7 +316,7 @@ function theme_render_tpl($tpl, $var, $hook = NULL) {
               $function = $__module .'_cache_page_'. $__ac_type;
               
               if (function_exists($function)) {
-                $disable = $function($path, $__cached_expire);
+                $disable = $function($current_menu_data['systemUrl'], $__cached_expire);
                 if (isset($disable)) {
                   if ($disable) {
                     $__cached_path = false;
@@ -333,7 +333,7 @@ function theme_render_tpl($tpl, $var, $hook = NULL) {
               $function = $__module .'_cache_page_enabled';
               if (function_exists($function)) {
                 
-                $enabled = $function($path, $__cached_expire);
+                $enabled = $function($current_menu_data['systemUrl'], $__cached_expire);
                 /**
                  * 只要有返回值(不包括 NULL)，则中断，不再执行
                  * 模块若认为当前路径必需保持实时更新，则返回 false，避免继续执行 hook
@@ -343,7 +343,7 @@ function theme_render_tpl($tpl, $var, $hook = NULL) {
                   // 若返回值不是 false，则需要缓存
                   
                   if ($enabled) {
-                    $__cached_path = $path;
+                    $__cached_path = $current_menu_data['systemUrl'];
                   } else {
                     $__cached_path = false;
                   }
@@ -360,7 +360,7 @@ function theme_render_tpl($tpl, $var, $hook = NULL) {
           }
        }
        
-       if ($__cached_path) unset($messages);
+       if ($__cached_path) unset($messages, $debug);
        
     }
   }

@@ -46,4 +46,59 @@ $(function() {
     }
     return false;
   });
+  
+  $('#system_admin_menu_list_didaSystemCustom li a').each(function() {
+  	$(this).after('<span class="system_admin_block_link_remove" style="display: none">移除这个链接</span>');
+  });
+  
+  $('#system_admin_menu_list_didaSystemCustom li').hover(function() {
+  	$(this).children('.system_admin_block_link_remove').show();
+  }, function() {
+  	$(this).children('.system_admin_block_link_remove').hide();
+  });
+  
+  $('.system_admin_block_link_remove').hover(function() {
+  	$(this).addClass('system_admin_block_link_remove_active');
+  }, function() {
+  	$(this).removeClass('system_admin_block_link_remove_active');
+  }).click(function() {
+  	var $$ = $(this).prev();
+  	if ($$.attr('alt')) {
+	    $.ajax({
+	      type: 'POST',
+	      dataType: 'html',
+	      url: Dida.url('ajax'),
+	      data: 'module=system&op=block_delete_link&id=' + $$.attr('alt'),
+	      success: function(data) {
+	    		if (data) {
+	    			$$.parent().remove();
+	    		}
+	      }
+	    });
+  	} else {
+  		$$.parent().remove();
+  	}
+  });
+  
+	$('#admin_custom_add_submit').click(function() {
+		var path = $('#custom_path').val(), title = $('#custom_title').val();
+		if (path && title) {
+	    $.ajax({
+	      type: 'POST',
+	      dataType: 'json',
+	      url: Dida.url('ajax'),
+	      data: 'module=system&op=block_set_link&path=' + path + '&title=' + title,
+	      success: function(data) {
+	    		if (data.path) {
+	    			$('#custom_path, #custom_title').val("");
+	    			var html = '<li><a title="'+data.title+'" href="'+data.path+'">'+data.title+'</a></li>';
+	    			$('#system_admin_menu_list_didaSystemCustom li.last').before(html);
+	    		}
+	      }
+	    });
+		} else {
+			alert('链接和标题不能为空');
+		}
+	});
+	
 });

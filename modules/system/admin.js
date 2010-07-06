@@ -24,31 +24,32 @@ $(function() {
 		dida_sorttable += '<input type="button" class="dida_sorttable_button_save" value="保存"/>';
 		dida_sorttable += '</div>';
 		
-		$('#block_left_system_adminLink').prepend(dida_sorttable);
-		$('#block_left_system_adminLink .dida_sorttable_button').hide();
+		$('#block_system_adminLink').prepend(dida_sorttable);
+		$('#block_system_adminLink .dida_sorttable_button').hide();
 		
-		var result = $("#block_left_system_adminLink > .block_content").sortable({
-			update: function(event, ui) { $('#block_left_system_adminLink .dida_sorttable_button').show(300); }
+		var result = $("#block_system_adminLink > .block_content").sortable({
+			update: function(event, ui) { $('#block_system_adminLink .dida_sorttable_button').show(300); },
+			handle: 'h3'
 		});
 		
-		$('#block_left_system_adminLink .dida_sorttable_button_cancel').click(function() {
+		$('#block_system_adminLink .dida_sorttable_button_cancel').click(function() {
 			result.sortable('cancel');
-			$('#block_left_system_adminLink .dida_sorttable_button').hide(300);
+			$('#block_system_adminLink .dida_sorttable_button').hide(300);
 		});
 		
-		$('#block_left_system_adminLink .dida_sorttable_button_save').click(function() {
+		$('#block_system_adminLink .dida_sorttable_button_save').click(function() {
 	    $.ajax({
 	      type: 'POST',
 	      dataType: 'html',
-	      url: Dida.url('sorttable'),
+	      url: Dida.url('ajax'),
 	      data: 'module=system&op=admin_menu&' + result.sortable('serialize'),
 	      success: function(data) {
 	      }
 	    });
-			$('#block_left_system_adminLink .dida_sorttable_button').hide(300);
+			$('#block_system_adminLink .dida_sorttable_button').hide(300);
 		});
 		
-		$("#block_left_system_adminLink > .block_content").disableSelection();
+		$("#block_system_adminLink > .block_content").disableSelection();
 	});
   
 });

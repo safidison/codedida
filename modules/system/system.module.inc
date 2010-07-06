@@ -142,7 +142,7 @@ function system_modules_theme($form, $fields) {
     
     $links = array();
     if ($module['status']['#value'] == 1) {
-      if ($module['install']['#value'] < $v['ver']) {
+      if ($module['install']['#value'] != -1 && $module['install']['#value'] < $v['ver']) {
         $links[] = l(t('system', '升级'), 'admin/modules/update', array('query' => 'name='.$module['filename']['#value']));
       }
       if ($module['uninstall']['#value']) {
