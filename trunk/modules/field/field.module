@@ -11,20 +11,6 @@
  */
 function field_menu() {
   $items = array();
-  $items['json/field/%'] = array(
-    'load_functions' => array(2 => '%0-9'),
-    'access_callback' => true,
-    'page_callback' => 'field_json',
-    'page_arguments' => array(2),
-    'file' => 'field.page.inc'
-  );
-  $items['json/field/auto/%'] = array(
-    'load_functions' => array(3 => '%0-9'),
-    'access_callback' => true,
-    'page_callback' => 'field_json_auto',
-    'page_arguments' => array(3),
-    'file' => 'field.page.inc'
-  );
   $items['fields/%'] = array(
     'load_functions' => array(1 => array('field_load')),
     'access_callback' => 'field_access',
@@ -57,6 +43,46 @@ function field_menu() {
  */
 function field_perm() {
 }
+
+/**
+ * @Implement of hook_system_tools_ajax()
+ */
+function field_system_tools_ajax($v, $g) {
+  dd_set_header('Content-Type: text/plain; charset=utf-8');
+  $json['error'] = 1;
+  
+  switch ($v['op']) {
+    case 'select':
+      if ($v['__default_value']) {
+        if ($fetch = db_query('SELECT tid, name FROM {fields_term} WHERE field_id = ? AND pid = ? 
+          ORDER BY weight ASC, tid ASC', array($g['fid'], $v['__default_value']))) {
+          foreach ($fetch as $o) {
+            $json['contents'][] = array('tid' => $o->tid, 'name' => $o->name);
+          }
+          $json['error'] = 0;
+        }
+      }
+    break;
+    case 'auto':
+      if ($field = field_load($g['fid'])) {
+        if ($field->data['validate']['type'] == 'custom_ok' && $field->data['validate']['settings']['values']) {
+          $json['error'] = 0;
+           switch ($field->data['validate']['settings']['value_type']) {
+            case 1: // 普通模式
+              $json['contents'] = dd_line_to_array($field->data['validate']['settings']['values'], 1);
+            break;
+            case 3: // php 模式
+              $field_value = $v['value'];
+              $field_type = 'autocomplete';
+              $json['contents'] = eval($field->data['validate']['settings']['values']);
+          }
+        }
+      }
+  }
+  
+  return json_encode($json);
+}
+
 
 /**
  * 字段权限验证
@@ -299,7 +325,7 @@ function field_field_type_textfield($op, $type = NULL, $field = NULL, $v = NULL)
         return array(
           '#attributes' => array('class' => 'ui_field_autocomplete '.$dom),
           '#autocomplete' => array(
-            'url' => url('json/field/auto/'.$field->field_id),
+            'url' => url('ajax', array('query' => 'fid='.$field->field_id.'&op=auto')),
             'dom' => '.'.$dom,
             'range' => true
           )
@@ -581,7 +607,7 @@ function field_field_type_tags($op, $type = NULL, $field = NULL, $v = NULL) {
         return array(
           '#attributes' => array('class' => 'ui_field_autocomplete '.$dom),
           '#autocomplete' => array(
-            'url' => url('json/field/auto/'.$field->field_id),
+            'url' => url('ajax', array('query' => 'fid='.$field->field_id.'&op=auto')),
             'dom' => '.'.$dom,
             'range' => true
           )
@@ -1541,7 +1567,7 @@ function field_field_call_links($field, &$links = NULL, $get = NULL) {
  * 有些类型可能需要提供界面和操作，故而在字段管理界面预留路径，用做自定义
  * 在字段管理界面下，当 $_GET['field_op'] == 'custom'，将回调函数
  * 以下主要为增强传统分类型字段的功能，便于通过界面管理
- * field_save_term() 等函数也可供模块直接操作上述类型的字段
+ * field_term_save() 等函数也可供模块直接操作上述类型的字段
  */
 function field_field_call_custom($field) {
   if (in_array($field->field_type, field_get_term_type())) {
@@ -1775,9 +1801,32 @@ function field_field_term_view($term) {
  * 删除分类，同时将删除所有子分类，及 field_node 表中相关数据
  */
 function field_term_delete($term) {
-  if (!$term->field_id) $term = field_term_load($term->tid);
-  if (db_exec('DELETE FROM {fields_term} WHERE field_id = ? AND (pid = ? OR tid = ?)', array($term->field_id, $term->tid, $term->tid))) {
-    module_alter_all('field_call_term_delete', $term);
+  if (is_numeric($term)) {
+    $term = field_term_load($term);
+  } else if (is_object($term)) {
+    
+    if (!$term->field_id) {
+      $term = field_term_load($term->tid);
+    }
+    
+  } else {
+    return false;
+  }
+  
+  if ($fetch = db_query('SELECT tid FROM {fields_term} WHERE field_id = ? AND pid = ?',
+    array($term->field_id, $term->tid))) {
+    foreach ($fetch as $o) {
+      $sub = field_term_load($o->tid);
+      if (db_exec('DELETE FROM {fields_term} WHERE tid = ?', array($o->tid))) {
+        module_invoke_all('field_call_term_delete', $sub);
+      }
+    }
+  }
+  
+  if (db_exec('DELETE FROM {fields_term} WHERE tid = ?', array($term->tid))) {
+    module_invoke_all('field_call_term_delete', $term);
+    cache_del('*', 'field_cache_options_', 'cache_field');
+    field_set_cache_term($term->field->module, $term->field->type);
     return true;
   }
 }
@@ -1856,7 +1905,7 @@ function field_term_import_validate($form, $v) {
           $data[] = $term;
         }
       }
-      field_batch_save_term($field, $v['pid'], $data);
+      field_term_batch_save($field, $v['pid'], $data);
       field_set_cache_term();
     }
   } else {
@@ -1956,10 +2005,10 @@ function field_term_form_validate($form, $v) {
     $term = (object)$v;
     /**
      * 1、触发自定义验证 hook_field_call_term_validate()
-     * 2、调用 field_save_term() 保存数据
+     * 2、调用 field_term_save() 保存数据
      * 3、触发自定义保存 hook_field_call_term_save()
      */
-    if ($term = field_save_term($field, $term)) {
+    if ($term = field_term_save($field, $term)) {
       field_set_cache_term();
       dd_set_message(t('field', '操作成功'));
     } else {
@@ -1975,7 +2024,7 @@ function field_term_form_validate($form, $v) {
 /**
  * 保存分类数据，若存在则更新
  */
-function field_save_term(&$field, $term, $batch = 0) {
+function field_term_save(&$field, $term, $batch = 0) {
   if ($error = module_invoke_all('field_call_term_validate', $field, $term)) {
     dd_set_message(implode('<br />', dd_array_multi2single($error)), 'error');
     return false;
@@ -1998,7 +2047,7 @@ function field_save_term(&$field, $term, $batch = 0) {
   
   if ($term->tid) {
     if (!db_query('SELECT tid FROM {fields_term} WHERE field_id = ? AND name = ? AND tid != ?', array($field->field_id, $term->name, $term->tid), array('return' => 'column'))) {
-      $newterm = field_update_term($term);
+      $newterm = field_term_update($term);
     } else {
       dd_set_message(t('field', '%string 已经存在', array('%string' => $term->name)), 'error');
       return false;
@@ -2015,12 +2064,12 @@ function field_save_term(&$field, $term, $batch = 0) {
     }
     if ($data[$term->field_id][$term->pid] && $tid = array_search($term->name, $data[$term->field_id][$term->pid])) {
       $term->tid = $tid;
-      $newterm = field_update_term($term);
+      $newterm = field_term_update($term);
     } else {
-      $newterm = field_insert_term($term);
+      $newterm = field_term_insert($term);
     }
   } else if (!db_query('SELECT tid FROM {fields_term} WHERE field_id = ? AND name = ?', array($field->field_id, $term->name), array('return' => 'column'))) {
-    $newterm = field_insert_term($term);
+    $newterm = field_term_insert($term);
   } else {
     dd_set_message(t('field', '%string 已经存在', array('%string' => $term->name)), 'error');
     return false;
@@ -2036,7 +2085,7 @@ function field_save_term(&$field, $term, $batch = 0) {
 /**
  * 写入分类数据
  */
-function field_insert_term($term) {
+function field_term_insert($term) {
   if (!$term->weight) $term->weight = 0;
   if (!$term->pid) $term->pid = 0;
   if (!$term->description) $term->description = '';
@@ -2049,7 +2098,7 @@ function field_insert_term($term) {
 /**
  * 更新分类数据
  */
-function field_update_term($term) {
+function field_term_update($term) {
   if (!$term->weight) $term->weight = 0;
   if (!$term->pid) $term->pid = 0;
   if (!$term->description) $term->description = '';
@@ -2063,20 +2112,20 @@ function field_update_term($term) {
 /**
  * 批量写入传统型分类字段(即 field_get_term_type())
  */
-function field_batch_save_term(&$field, $pid = 0, $data = array(), $message = 1) {
+function field_term_batch_save(&$field, $pid = 0, $data = array(), $message = 1) {
   if (!$data) return false;
   foreach ($data as $term) {
     if (is_array($term)) {
       if ($term['name']) {
         $term['pid'] = $pid;
-        if ($t = field_save_term($field, (object)$term, 1)) {
+        if ($t = field_term_save($field, (object)$term, 1)) {
           if ($message) dd_set_message(t('field', '%string 添加成功', array('%string' => $t->name)));
           if ($term['childrens'] && is_array($term['childrens'])) {
-            field_batch_save_term($field, $t->tid, $term['childrens'], $message);
+            field_term_batch_save($field, $t->tid, $term['childrens'], $message);
           }
         }
       }
-    } else if ($t = field_save_term($field, (object)array('pid' => $pid, 'name' => $term), 1)) {
+    } else if ($t = field_term_save($field, (object)array('pid' => $pid, 'name' => $term), 1)) {
       if ($message) dd_set_message(t('field', '%string 添加成功', array('%string' => $term)));
     }
   }
@@ -2159,7 +2208,7 @@ function field_field_call_save($field) {
    * 字段基本信息添加成功后，若有此值，则写入 field_term 表中
    */
   if ($field->children && in_array($field->field_type, field_get_term_type())) {
-   field_batch_save_term($field, 0, $field->children);
+   field_term_batch_save($field, 0, $field->children);
   }
   if ($field->data['validate']['type']) {
       // 回调自定义配置
@@ -2442,6 +2491,18 @@ function field_get_node_data($nid, $type = 'term', $clear = NULL) {
 }
 
 /**
+ * @Implement of hook_file_delete()
+ */
+function field_file_delete($file) {
+  if ($file->ext_type == 'field_file') {
+    if ($o = db_query('SELECT module, type FROM {fields} WHERE field_id = ?',
+      array($file->ext_id), array('return' => 'one'))) {
+      cache_del('cid', $o->module.$o->type.$file->ext_id2, 'cache_field');
+    }
+  }
+}
+
+/**
  * 加载节点下的字段数据
  * @param (string) $module
  *  创建字段的模块，即 fields.module
@@ -2640,7 +2701,7 @@ function field_get_node_form($module, $type, $node = NULL, &$form = NULL, $field
             if ($conf['field_term_children'][$field_id]) {
             	dd_add_js(array('fields' => array(
                 $data->field_key => array(
-	                'url' => url('json/field/'.$field_id),
+	                'url' => url('ajax', array('query' => 'fid='.$field_id.'&op=select')),
             		)
             	)), 'setting');
               $form['fields']['fields']['field_root_'.$data->field_key] = array(
@@ -2707,7 +2768,7 @@ function field_get_node_form($module, $type, $node = NULL, &$form = NULL, $field
             if ($conf['field_term_children'][$data->field_id]) {
             	dd_add_js(array('fields' => array(
                 $data->field_key => array(
-	                'url' => url('json/field/'.$data->field_id)
+	                'url' => url('ajax', array('query' => 'fid='.$data->field_id.'&op=select'))
             		)
             	)), 'setting');
               $form['fields']['fields']['field_root_'.$data->field_key] = array(
@@ -2922,7 +2983,7 @@ function field_get_multi_level_field($field, $value, &$form = NULL) {
       if ($conf['field_term_children'][$field->field_id]) {
         dd_add_js(array('fields' => array(
           $field->field_key => array(
-            'url' => url('json/field/'.$field->field_id),
+            'url' => url('ajax', array('query' => 'fid='.$field->field_id.'&op=select'))
           )
         )), 'setting');
         $form['fields']['fields']['field_root_'.$field->field_key] = array(
@@ -2991,7 +3052,7 @@ function field_get_multi_level_field($field, $value, &$form = NULL) {
       if ($conf['field_term_children'][$field->field_id]) {
         dd_add_js(array('fields' => array(
           $field->field_key => array(
-            'url' => url('json/field/'.$field->field_id)
+            'url' => url('ajax', array('query' => 'fid='.$field->field_id.'&op=select'))
           )
         )), 'setting');
         $form['fields']['fields']['field_root_'.$field->field_key] = array(

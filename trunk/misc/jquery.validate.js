@@ -1,5 +1,5 @@
 /*
- * jQuery validation plug-in 1.6
+ * jQuery validation plug-in 1.7
  *
  * http://bassistance.de/jquery-plugins/jquery-plugin-validation/
  * http://docs.jquery.com/Plugins/Validation
@@ -121,7 +121,7 @@ $.extend($.fn, {
 			var settings = $.data(element.form, 'validator').settings;
 			var staticRules = settings.rules;
 			var existingRules = $.validator.staticRules(element);
-			switch (command) {
+			switch(command) {
 			case "add":
 				$.extend(existingRules, $.validator.normalizeRule(argument));
 				staticRules[element.name] = existingRules;
@@ -174,7 +174,7 @@ $.extend($.expr[":"], {
 
 // constructor for validator
 $.validator = function( options, form ) {
-	this.settings = $.extend( {}, $.validator.defaults, options );
+	this.settings = $.extend( true, {}, $.validator.defaults, options );
 	this.currentForm = form;
 	this.init();
 };
@@ -219,7 +219,7 @@ $.extend($.validator, {
 			// hide error label and remove error class on focus if enabled
 			if ( this.settings.focusCleanup && !this.blockFocusCleanup ) {
 				this.settings.unhighlight && this.settings.unhighlight.call( this, element, this.settings.errorClass, this.settings.validClass );
-				this.errorsfor (element).hide();
+				this.errorsFor(element).hide();
 			}
 		},
 		onfocusout: function(element) {
@@ -238,7 +238,7 @@ $.extend($.validator, {
 				this.element(element);
 			// or option elements, check parent select in that case
 			else if (element.parentNode.name in this.submitted)
-				this.element(element.parentNode)
+				this.element(element.parentNode);
 		},
 		highlight: function( element, errorClass, validClass ) {
 			$(element).addClass(errorClass).removeClass(validClass);
@@ -252,7 +252,7 @@ $.extend($.validator, {
 	setDefaults: function(settings) {
 		$.extend( $.validator.defaults, settings );
 	},
-
+	
 	messages: {
 		required: "不能为空",
 		remote: "不正确的输入，请修改",
@@ -302,12 +302,13 @@ $.extend($.validator, {
 			});
 			
 			function delegate(event) {
-				var validator = $.data(this[0].form, "validator");
-				validator.settings["on" + event.type] && validator.settings["on" + event.type].call(validator, this[0] );
+				var validator = $.data(this[0].form, "validator"),
+					eventType = "on" + event.type.replace(/^validate/, "");
+				validator.settings[eventType] && validator.settings[eventType].call(validator, this[0] );
 			}
 			$(this.currentForm)
-				.delegate("focusin focusout keyup", ":text, :password, :file, select, textarea", delegate)
-				.delegate("click", ":radio, :checkbox, select, option", delegate);
+				.validateDelegate(":text, :password, :file, select, textarea", "focusin focusout keyup", delegate)
+				.validateDelegate(":radio, :checkbox, select, option", "click", delegate);
 
 			if (this.settings.invalidHandler)
 				$(this.currentForm).bind("invalid-form.validate", this.settings.invalidHandler);
@@ -354,7 +355,7 @@ $.extend($.validator, {
 
 		// http://docs.jquery.com/Plugins/Validation/Validator/showErrors
 		showErrors: function(errors) {
-			if (errors) {
+			if(errors) {
 				// add items to error list and map
 				$.extend( this.errorMap, errors );
 				this.errorList = [];
@@ -408,9 +409,13 @@ $.extend($.validator, {
 		},
 		
 		focusInvalid: function() {
-			if ( this.settings.focusInvalid ) {
+			if( this.settings.focusInvalid ) {
 				try {
-					$(this.findLastActive() || this.errorList.length && this.errorList[0].element || []).filter(":visible").focus();
+					$(this.findLastActive() || this.errorList.length && this.errorList[0].element || [])
+					.filter(":visible")
+					.focus()
+					// manually trigger focusin event; without it, focusin handler isn't called, findLastActive won't have anything to find
+					.trigger("focusin");
 				} catch(e) {
 					// ignore IE throwing errors when focusing hidden elements
 				}
@@ -470,7 +475,7 @@ $.extend($.validator, {
 		
 		prepareElement: function( element ) {
 			this.reset();
-			this.toHide = this.errorsfor (element);
+			this.toHide = this.errorsFor(element);
 		},
 	
 		check: function( element ) {
@@ -483,7 +488,7 @@ $.extend($.validator, {
 			
 			var rules = $(element).rules();
 			var dependencyMismatch = false;
-			for ( method in rules ) {
+			for( method in rules ) {
 				var rule = { method: method, parameters: rules[method] };
 				try {
 					var result = $.validator.methods[method].call( this, element.value.replace(/\r/g, ""), element, rule.parameters );
@@ -497,11 +502,11 @@ $.extend($.validator, {
 					dependencyMismatch = false;
 					
 					if ( result == "pending" ) {
-						this.toHide = this.toHide.not( this.errorsfor (element) );
+						this.toHide = this.toHide.not( this.errorsFor(element) );
 						return;
 					}
 					
-					if ( !result ) {
+					if( !result ) {
 						this.formatAndAdd( element, rule );
 						return false;
 					}
@@ -541,7 +546,7 @@ $.extend($.validator, {
 		
 		// return the first defined argument, allowing empty strings
 		findDefined: function() {
-			for (var i = 0; i < arguments.length; i++) {
+			for(var i = 0; i < arguments.length; i++) {
 				if (arguments[i] !== undefined)
 					return arguments[i];
 			}
@@ -588,7 +593,7 @@ $.extend($.validator, {
 				this.settings.highlight && this.settings.highlight.call( this, error.element, this.settings.errorClass, this.settings.validClass );
 				this.showLabel( error.element, error.message );
 			}
-			if ( this.errorList.length ) {
+			if( this.errorList.length ) {
 				this.toShow = this.toShow.add( this.containers );
 			}
 			if (this.settings.success) {
@@ -617,7 +622,7 @@ $.extend($.validator, {
 		},
 		
 		showLabel: function(element, message) {
-			var label = this.errorsfor ( element );
+			var label = this.errorsFor( element );
 			if ( label.length ) {
 				// refresh error/success class
 				label.removeClass().addClass( this.settings.errorClass );
@@ -652,7 +657,7 @@ $.extend($.validator, {
 		errorsFor: function(element) {
 			var name = this.idOrName(element);
     		return this.errors().filter(function() {
-				return $(this).attr('for') == name
+				return $(this).attr('for') == name;
 			});
 		},
 		
@@ -673,11 +678,11 @@ $.extend($.validator, {
 		},
 		
 		getLength: function(value, element) {
-			switch ( element.nodeName.toLowerCase() ) {
+			switch( element.nodeName.toLowerCase() ) {
 			case 'select':
 				return $("option:selected", element).length;
 			case 'input':
-				if ( this.checkable( element) )
+				if( this.checkable( element) )
 					return this.findByName(element.name).filter(':checked').length;
 			}
 			return value.length;
@@ -863,7 +868,7 @@ $.extend($.validator, {
 		
 		// To support custom messages in metadata ignore rule methods titled "messages"
 		if (rules.messages) {
-			delete rules.messages
+			delete rules.messages;
 		}
 		
 		return rules;
@@ -871,7 +876,7 @@ $.extend($.validator, {
 	
 	// Converts a simple string to a {string: true} rule, e.g., "required" to {required:true}
 	normalizeRule: function(data) {
-		if ( typeof data == "string" ) {
+		if( typeof data == "string" ) {
 			var transformed = {};
 			$.each(data.split(/\s/), function() {
 				transformed[this] = true;
@@ -897,7 +902,7 @@ $.extend($.validator, {
 			// check if dependency is met
 			if ( !this.depend(param, element) )
 				return "dependency-mismatch";
-			switch ( element.nodeName.toLowerCase() ) {
+			switch( element.nodeName.toLowerCase() ) {
 			case 'select':
 				// could be an array for select-multiple or a string, both are fine this way
 				var val = $(element).val();
@@ -955,7 +960,7 @@ $.extend($.validator, {
 					}
 				}, param));
 				return "pending";
-			} else if ( this.pending[element.name] ) {
+			} else if( this.pending[element.name] ) {
 				return "pending";
 			}
 			return previous.valid;
@@ -1102,41 +1107,42 @@ $.format = $.validator.format;
 
 // provides delegate(type: String, delegate: Selector, handler: Callback) plugin for easier event delegation
 // handler is only called when $(event.target).is(delegate), in the scope of the jquery-object for event.target 
-
-// provides triggerEvent(type: String, target: Element) to trigger delegated events
 ;(function($) {
-	$.each({
-		focus: 'focusin',
-		blur: 'focusout'	
-	}, function( original, fix ) {
-		$.event.special[fix] = {
-			setup:function() {
-				if ( $.browser.msie ) return false;
-				this.addEventListener( original, $.event.special[fix].handler, true );
-			},
-			teardown:function() {
-				if ( $.browser.msie ) return false;
-				this.removeEventListener( original,
-				$.event.special[fix].handler, true );
-			},
-			handler: function(e) {
-				arguments[0] = $.event.fix(e);
-				arguments[0].type = fix;
-				return $.event.handle.apply(this, arguments);
+	// only implement if not provided by jQuery core (since 1.4)
+	// TODO verify if jQuery 1.4's implementation is compatible with older jQuery special-event APIs
+	if (!jQuery.event.special.focusin && !jQuery.event.special.focusout && document.addEventListener) {
+		$.each({
+			focus: 'focusin',
+			blur: 'focusout'	
+		}, function( original, fix ){
+			$.event.special[fix] = {
+				setup:function() {
+					this.addEventListener( original, handler, true );
+				},
+				teardown:function() {
+					this.removeEventListener( original, handler, true );
+				},
+				handler: function(e) {
+					arguments[0] = $.event.fix(e);
+					arguments[0].type = fix;
+					return $.event.handle.apply(this, arguments);
+				}
+			};
+			function handler(e) {
+				e = $.event.fix(e);
+				e.type = fix;
+				return $.event.handle.call(this, e);
 			}
-		};
-	});
+		});
+	};
 	$.extend($.fn, {
-		delegate: function(type, delegate, handler) {
+		validateDelegate: function(delegate, type, handler) {
 			return this.bind(type, function(event) {
 				var target = $(event.target);
 				if (target.is(delegate)) {
 					return handler.apply(target, arguments);
 				}
 			});
-		},
-		triggerEvent: function(type, target) {
-			return this.triggerHandler(type, [$.event.fix({ type: type, target: target })]);
 		}
-	})
+	});
 })(jQuery);

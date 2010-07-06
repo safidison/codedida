@@ -95,7 +95,15 @@ function bootstrap($op, $inc = NULL) {
       // 读取缓存
       if (!$_POST && ($conf['dd_cache_page'] == 2
       || ($conf['dd_cache_page'] == 1 && $user->uid == 0))) {
-        if ($page_cache = cache_get_page((dd_is_front() ? '[front]' : $_GET['q']))) {
+        
+        global $current_menu_data;
+        
+        if ($_GET['q'] && $cache = cache_get($_GET['q'], 'cache_menu')) {
+          $current_menu_data = $cache->data;
+          unset($cache);
+        }
+        
+        if ($page_cache = cache_get_page((dd_is_front() ? '[front]' : $current_menu_data['systemUrl']))) {
           echo $page_cache;
           exit;
         }
@@ -126,6 +134,14 @@ function bootstrap($op, $inc = NULL) {
         case 3: //超级管理员可浏览
           if ($user->uid != 1 && $_GET['q'] != 'user/login') dd_get_online();
       }
+      
+      // 浏览记录，记录每个用户的每次访问
+      if (var_get('history_enabled', 0)) {
+        db_exec('INSERT INTO {history} (uid, session, host, timestamp, referer, path) VALUES 
+          (?, ?, ?, ?, ?, ?)', array($user->uid, session_id(), ip_address(), $_SERVER['REQUEST_TIME'],
+          dd_get_referer($_SERVER['HTTP_REFERER']), dd_get_referer($_SERVER['REQUEST_URI'])));
+      }
+      
     break;
     case 'data':
       /**
@@ -430,9 +446,19 @@ function dd_log($type, $value, $ext_id = NULL, $link = NULL, $status = NULL, $ui
     if (!$status) $status = 0;
     if (!isset($ext_id)) $ext_id = 0;
     
-    db_exec('INSERT INTO {logs} (uid, ext_id, type, status, value, url, timestamp, host) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-    array($uid, $ext_id, $type, $status, $value, ($link ? $link : $_SERVER['REQUEST_URI']), $_SERVER['REQUEST_TIME'], ip_address()));
+    db_exec('INSERT INTO {logs} (uid, ext_id, type, status, value, url, timestamp, host) 
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)', array($uid, $ext_id, $type, $status, $value, 
+    ($link ? $link : dd_get_referer($_SERVER['REQUEST_URI'])), $_SERVER['REQUEST_TIME'], ip_address()));
   }
+}
+
+/**
+ * 系统日志状态
+ * @param (int) $id
+ */
+function dd_logs_get_status($id = NULL){
+  $a = array(t('system', '普通'), t('system', '警告'), t('system', '严重'));
+  return isset($id) ? $a[$id] : $a;
 }
 
 /**
@@ -823,13 +849,45 @@ function dd_is_root_admin() {
 function user_logout() {
   global $user, $cookie_domain;
   
+  dd_log('user_logout', t('system', '用户退出'), 0, dd_get_referer($_SERVER['HTTP_REFERER']), 0, $user->uid);
+  
   module_invoke_all('user_logout', $user);
   
   setcookie(session_name(), '', -1, '/');
   session_destroy();
   $user = user_anonymous();
   dd_set_message(t('system', '退出成功'));
+  
   dd_goto('');
+}
+
+/**
+ * 获取站内来路
+ * @param (string) $url
+ */
+function dd_get_referer($url) {
+  static $data;
+  
+  if (!isset($data[$url])) {
+    if (substr($url, 0, 1) == '/') {
+      $a = $GLOBALS['base_path'];
+    } else if(substr($url, 0, 4) == 'http'){
+      $a = $GLOBALS['base_url'].'/';
+    }
+    
+    $strlen = strlen($a);
+    
+    if (substr($url, 0, $strlen) == $a) {
+      $data[$url] = substr($url, $strlen);
+      if (!$data[$url]) {
+        $data[$url] = '<front>';
+      }
+    } else {
+      $data[$url] = $url;
+    }
+  }
+  
+  return $data[$url];
 }
 
 /**

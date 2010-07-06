@@ -32,8 +32,8 @@ div.fieldset span.legend {
 }
 .su_files_table{
   overflow: auto;
-  max-height: 180px;
-  _height: 180px;
+  max-height: 150px;
+  _height: 150px;
 }
 #ck_swfupload .su_content{
 	text-align: right;
@@ -41,7 +41,7 @@ div.fieldset span.legend {
 }
 #ck_swfupload .su_content *{
 	height: 29px;
-	width: 65px;
+	width: 70px;
 	margin: 0 2px;
 }
 #ck_swfupload  .su_content input{

@@ -10,6 +10,7 @@ function menu_get_item($path = NULL) {
   static $access;
   if (!$path) {
     $url = $_GET['q'];
+    $get_view = true;
   } else {
     //检查当前用户是否有访问给定路径的权限
     if (isset($access[$path])) {
@@ -18,6 +19,7 @@ function menu_get_item($path = NULL) {
       $access[$path] = false;
     }
     $url = $path;
+    $get_view = false;
   }
   
   if (!$url) {
@@ -46,10 +48,19 @@ function menu_get_item($path = NULL) {
     }
     
     $systemUrl = $cacheUrl = $url;
+    $item = NULL;
     
-    if ($cache = cache_get($cacheUrl, 'cache_menu')) {
-      $current_menu_data = $item = $cache->data;
-    } else {
+    if ($get_view) {
+      if ($current_menu_data && $current_menu_data['systemUrl']) {
+        $item = $current_menu_data;
+      } else if ($cache = cache_get($cacheUrl, 'cache_menu')) {
+        $current_menu_data = $item = $cache->data;
+      }
+    } else if ($cache = cache_get($cacheUrl, 'cache_menu')) {
+      $item = $cache->data;
+    }
+      
+    if (!$item) {
       
       if ($toPath = menu_get_alias_path($url, 'alias')) {
       	$systemUrl = $url = $toPath;
@@ -63,9 +74,17 @@ function menu_get_item($path = NULL) {
       
       if ($item = db_query('SELECT * FROM {menu} WHERE path IN ('. implode (',', $array[1]) .') ORDER BY fit DESC', $array[0], array('return' => 'one', 'fetch' => 'array', 'limit' => 1))) {
       	$item['systemUrl'] = $systemUrl;
+      	if ($cacheUrl != $systemUrl) {
+      	  $item['aliasUrl'] = $cacheUrl;
+      	}
+      	
         cache_set($cacheUrl, $item, 'cache_menu');
-        $current_menu_data = $item;
+        
+        if ($get_view) {
+          $current_menu_data = $item;
+        }
       } else {
+        
         cache_set($cacheUrl, MENU_NOT_FOUND, 'cache_menu');
         
         $item = MENU_NOT_FOUND;

@@ -222,8 +222,8 @@ Dida.dialog = function(o) {
 		$('#dialog_wrapper').dialog({
 			title: page_title,
 			closeText: '关闭',
-			width: parseInt(params['width']) || 200,
-			height: parseInt(params['height']) || 150,
+			width: parseInt(params['width']) || 400,
+			height: parseInt(params['height']) || 250,
       modal: true,
 			autoOpen: true,
 			bgiframe: true,
@@ -340,6 +340,12 @@ $(function() {
       var url = $$.attr('href');
       $.get(url, {'timestamp': Dida.gettime()}, function(data) {
         if ($$.attr('type') != 'js') {
+        	var level = $$.attr('level');
+        	
+        	if (level && data == 1) {
+        		data = level;
+        	}
+        	
           switch (data) {
 	          case 'parent':
 	          	// 删除父级
@@ -361,11 +367,13 @@ $(function() {
 		          var fun = $$.attr('fun');
 		          if (data == 1) {
 		            var text = $$.attr('replace');
+		            
 		            if (fun) {
 		              eval(fun + '('+data+');');
-		            }else if (text) {
+		            } else if (text) {
 		              $$.attr('href', '#').unbind('click').text(text);
 		            }
+		            
 		          }else if (data && fun) {
 		            eval(fun + '('+data+');');
 		          } else {
@@ -619,15 +627,56 @@ $(function() {
   
   // ajax 验证
   if (settings.ajax_validate) {
+  	
   	$(settings.ajax_validate).each(function(i) {
   		var o = this;
+  		
   		if (o.ajax_submit) {
   			o.submitHandler = function(form) {
   				$(form).ajaxSubmit(o.options);
   			};
   		}
-  		$('#'+o.form_id).validate(o);
+  		
+  		$('#'+ o.form_id).validate(o);
+  		
   	});
+  	
+  	$.validator.addMethod("required", function(value, element, param) {
+  		if ( !this.depend(param, element) )
+  			return "dependency-mismatch";
+  		switch( element.nodeName.toLowerCase() ) {
+	  		case 'select':
+	  			var val = $(element).val();
+	  			return val && val.length > 0;
+	  		case 'input':
+	  			if ( this.checkable(element) ) {
+	  				if (element.type == 'checkbox') {
+	  					var name = $(element).parent('.form_checkbox_option').attr('alt');
+	  					if (name) {
+  							cd = false;
+  							var errorClass = this.settings.errorClass;
+  							$(element).parents('form').find('.'+name).each(function() {
+	  							if ($(this).attr('checked')) {
+	  								cd = true;
+	  								$(element).parents('form').find('.'+name).each(function() {
+	  									$(this).next('label.'+errorClass).hide();
+	  								});
+	  								return cd;
+	  								
+	  							}
+	  						});
+	  						
+	  						return cd;
+	  					}
+	  				}
+	  				
+	  				return this.getLength(value, element) > 0;
+	  			}
+	  		default:
+	  			return $.trim(value).length > 0;
+  		}
+  	});
+  	
   };
   
   //时间控件

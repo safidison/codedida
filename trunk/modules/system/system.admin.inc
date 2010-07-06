@@ -50,7 +50,7 @@ function system_admin_default() {
 }
 
 /**
- * 
+ * @Implement of hook_system_admin_default()
  */
 function system_system_admin_default() {
   global $conf;
@@ -95,6 +95,47 @@ function system_system_admin_default() {
 function system_status_php() {
   phpinfo();
   exit;
+}
+
+/**
+ * 系统日志、访问记录
+ */
+function system_admin_logs(){
+  $header = array(
+    array('data' => t('system', '用户'), 'field' => 'l.uid'),
+    array('data' => t('system', '时间'), 'field' => 'l.sid', 'sort' => 'desc'),
+    array('data' => t('system', '类型'), 'field' => 'l.type'),
+    array('data' => t('system', '状态'), 'field' => 'l.status'),
+    array('data' => t('system', '主机'), 'field' => 'l.host'),
+    array('data' => t('system', '路径'), 'field' => 'l.url'),
+  );
+  
+  $types = module_invoke_all('logs_info');
+  $status = dd_logs_get_status();
+  
+  if($fetch = pager_query('SELECT l.*, u.name FROM {logs} l LEFT JOIN {users} u ON l.uid = u.uid'.
+  table_sql($header), 50)){
+    foreach($fetch as $o){
+      $table[] = array(
+        theme('username', $o),
+        format_date($o->timestamp),
+        $types[$o->type] ? $types[$o->type] : $o->type,
+        $status[$o->status],
+        $o->host,
+        $o->url,
+      );
+      $table[][] = array(
+        'data' => dd_get_strong(t('system', '说明')).$o->value,
+        'colspan' => 5
+      );
+    }
+    
+    $output = theme('table', $header, $table);
+    $output .= pager_view();
+  }
+  
+  dd_set_breadcrumb(array(l(t('system', '系统管理'), 'admin'), t('system', '系统日志')));
+  return $output;
 }
 
 /**
@@ -316,6 +357,21 @@ function system_site_settings() {
     '#default_value' => var_get('sql_info', 1),
     '#options' => array(t('system', '不显示'), t('system', '显示'), t('system', '仅向超级管理员显示')),
   );
+  $form['fields']['history_enabled'] = array(
+    '#type' => 'radio',
+    '#title' => t('system', '访问记录'),
+    '#required' => true,
+    '#default_value' => var_get('history_enabled', 0),
+    '#options' => array(t('system', '不记录'), t('system', '记录')),
+    '#description' => t('system', '记录网站的每一次访问')
+  );
+  $form['fields']['history_enabled_limit'] = array(
+    '#type' => 'textfield',
+    '#title' => t('system', '保留最新'),
+    '#required' => true,
+    '#default_value' => var_get('history_enabled_limit', 100000),
+    '#field_suffix' => t('system', '条访问记录，0 为不限制')
+  );
   $form['fields']['site_mode'] = array(
     '#type' => 'radio',
     '#title' => t('system', '开发模式'),
@@ -473,7 +529,7 @@ function system_site_captcha_submit($form, $v) {
  * 错误设置
  */
 function system_site_error() {
-  if ($image = custom_get('image_error')) {
+  if ($image = var_get('image_error')) {
     $view = l(img($image, 
     t('system', '默认错误图片'), NULL, 
     array('width' => 100, 'height' => 100)), $image, array('html' => true));
@@ -577,7 +633,7 @@ function system_site_error_submit($form, $v) {
  * @param $file
  */
 function _system_image_error_save($form_id, $name, $file) {
-  custom_set('image_error', $file->filepath);
+  var_set('image_error', $file->filepath);
 }
 
 function _system_cache_htaccess() {

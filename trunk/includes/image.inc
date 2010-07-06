@@ -40,8 +40,7 @@ function image_get_thumb($fid, $filepath, $size, $style = 'scale') {
         }
       }
     } else {
-      $s = explode('x', $size);
-      $files[$fid][$size][$style] = 'images/error?width='.$s[0].'&height='.$s[1];
+      $files[$fid][$size][$style] = 'custom.php?module=system&op=image_error&size='.$size;
     }
   }
   return $files[$fid][$size][$style];

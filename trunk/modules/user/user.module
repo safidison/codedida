@@ -28,11 +28,6 @@ function user_menu() {
     'page_callback' => 'user_default',
     'file' => 'user.page.inc',
   );
-  $items['json/user'] = array(
-    'access_arguments' => array('user use search user'),
-    'page_callback' => 'user_page_json',
-    'file' => 'user.page.inc',
-  );
   $items['user/login'] = array(
     'title' => '登录',
     'access_callback' => 'user_is_not_login',
@@ -224,6 +219,26 @@ function user_access($string, $account = NULL, $reset = false) {
     //$account->roles[var_get_key('user', 'anonymous_role', 1)] = var_get_key('user', 'anonymous', '游客');
   }
   return isset($perm[$account->uid][$string]);
+}
+
+/**
+ * @Implement of hook_system_tools_ajax()
+ * 搜索用户，返回json数据
+ */
+function user_system_tools_ajax($v, $g) {
+  $data['error'] = 1;
+  
+  if ($v['op'] == 'auto' && $v['value']) {
+    if ($fetch = db_query('SELECT name FROM {users} WHERE name LIKE ?',
+    array('%'.$v['value'].'%'), array('limit' => 10))) {
+      $data['error'] = 0;
+      foreach ($fetch as $o) {
+        $data['contents'][] = $o->name;
+      }
+    }
+  }
+  
+  return json_encode($data);
 }
 
 /**
@@ -1360,10 +1375,13 @@ function user_user_page($ac) {
 function user_login($user) {
   user_session_reg($user);
   /**
-   * 登陆成功
+   * 登录成功
    * 触发 hook_user_login();
    */
   module_alter_all('user_login', $user);
+  
+  dd_log('user_login', t('system', '用户登录'), 0, dd_get_referer($_SERVER['HTTP_REFERER']), 0, $user->uid);
+  
   return $user;
 }
 

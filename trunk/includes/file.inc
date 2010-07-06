@@ -751,6 +751,7 @@ function file_operate($file, $op) {
         $thumb = 1;
       }
       if (file_delete($file->fid, $thumb, $file->filepath)) {
+        module_invoke_all('file_delete', $file);
         echo 1;
         exit;
       }
