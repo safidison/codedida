@@ -96,16 +96,27 @@ function bootstrap($op, $inc = NULL) {
       if (!$_POST && ($conf['dd_cache_page'] == 2
       || ($conf['dd_cache_page'] == 1 && $user->uid == 0))) {
         
-        global $current_menu_data;
-        
-        if ($_GET['q'] && $cache = cache_get($_GET['q'], 'cache_menu')) {
-          $current_menu_data = $cache->data;
-          unset($cache);
+        $__getall = false;
+        foreach ($_GET as $__key => $_v) {
+          if ($__key != 'q') {
+            $__getall = true;
+            break;
+          }
         }
         
-        if ($page_cache = cache_get_page((dd_is_front() ? '[front]' : $current_menu_data['systemUrl']))) {
-          echo $page_cache;
-          exit;
+        if ($__getall === false) {
+          if ($_GET['q'] && $cache = cache_get($_GET['q'], 'cache_menu')) {
+            
+            global $current_menu_data;
+            $current_menu_data = $cache->data;
+            unset($cache);
+            
+          }
+          
+          if ($page_cache = cache_get_page((dd_is_front() ? '[front]' : $current_menu_data['systemUrl']))) {
+            echo $page_cache;
+            exit;
+          }
         }
       }
       

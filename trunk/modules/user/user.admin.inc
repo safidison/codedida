@@ -328,13 +328,13 @@ function user_admin_roles() {
       case 'edit':
         if ($_POST['value']) {
           db_exec('UPDATE {role} SET name = ? WHERE rid = ?', array(trim(check_plain($_POST['value'])), $_GET['id']));
-          cache_del('cid', 'user_roles');
+          var_del('user_roles');
           echo $_POST['value'];
         }
       exit;
       case 'delete':
         if (db_exec('DELETE FROM {role} WHERE rid = ?', array($_GET['rid']))) {
-          cache_del('cid', 'user_roles');
+          var_del('user_roles');
           echo 1;
         }
       exit;
@@ -382,7 +382,7 @@ function user_admin_roles_form_validate($form, $v) {
     $t['name']['#error'][] = t('user', '名称过长');
   } else if (db_exec('INSERT INTO {role} (name) VALUES (?)', array(trim($v['name'])))) {
     dd_set_message(t('user', '角色 %string 添加成功', array('%string' => $v['name'])));
-    cache_del('cid', 'user_roles');
+    var_del('user_roles');
     dd_goto('admin/users/roles');
   } else {
     dd_set_message(t('user', '添加失败，角色已经存在'));

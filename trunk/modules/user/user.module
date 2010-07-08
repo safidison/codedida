@@ -1052,14 +1052,14 @@ function user_get_file_size($uid) {
 function user_data_roles($rid = NULL) {
   static $roles;
   if (!isset($roles)) {
-    if ($cache = cache_get('user_roles')) {
+    if ($cache = var_get('user_roles')) {
       $roles = $cache->data;
     } else {
       if ($fetch = db_query('SELECT * FROM {role} ORDER BY rid ASC')) {
         foreach ($fetch as $o) {
           $roles[$o->rid] = $o;
         }
-        cache_set('user_roles', $roles);
+        var_set('user_roles', $roles);
       }
     }
   }
