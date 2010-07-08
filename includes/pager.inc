@@ -28,9 +28,13 @@ function pager_query($query, $limit = 10, $element = 0, $count = NULL, $args = a
     if ($options) {
       $count_opt = $options;
     }
+    
     $count_opt['return'] = 'column';
     
-    $pager_total_items[$element] = db_query($count_query, $args, $count_opt);
+    if (!$pager_total_items[$element] = db_query($count_query, $args, $count_opt)) {
+      return false;
+    }
+    
   } else {
     $pager_total_items[$element] = $count;
   }
@@ -204,7 +208,6 @@ function pager_view(array $tags = array(), $limit = 10, $element = 0, $parameter
       dd_add_js(array('pager' => $js), 'setting');
     }
     
-    dd_add_js(array('pager' => $js), 'setting');
     return theme('item_list', $items, NULL, 'ul', array('class' => 'pager'));
   }
 }

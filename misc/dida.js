@@ -9,7 +9,11 @@ Dida.dejson = function(data) {
 
 Dida.getck = function(name) {
   var arr = document.cookie.match(new RegExp("(^| )"+name+"=([^;]*)(;|$)"));
-  if (arr != null) return unescape(arr[2]); return null;
+  if (arr != null) {
+  	return decodeURIComponent(arr[2]);
+  } else {
+  	return null;
+  }
 };
 
 Dida.gettime = function() {
@@ -295,15 +299,18 @@ Dida.dialog = function(o) {
 	return false;
 }
 
-function In_array(str, array) {
-  for (i = 0; i < array.length; i++) {
-    thisEntry = array[i].toString();
-    if (thisEntry == str) {
-      return true;
-    }
-  }
-  return false;
-}
+Dida.php = {
+	in_array: function(str, arr) {
+	  for (i = 0; i < arr.length; i++) {
+	    var thisEntry = arr[i].toString();
+	    if (thisEntry == str) {
+	      return true;
+	    }
+	  }
+	  return false;
+	}
+};
+
 $(function() {
   $('#keywords').one('click', function() {
     $(this).val('');
@@ -417,6 +424,7 @@ $(function() {
     dom = $(this).attr('alt');
     $('.' + dom).attr('checked', this.checked ? true : false);
   });
+  
   $('a.all_menu_ext').click(function() {
     dom = $(this).attr('alt');
     if ($(this).attr('rel') == 1) {
@@ -503,16 +511,19 @@ $(function() {
     }
     return false;
   });
+  
   $('.login_msg').click(function() {
     if (confirm('你需要登录才能进行此操作，立即登录？')) {
       location.href = Dida.url('user/login', {redirect: location.pathname});
     }
     return false;
   });
+  
   $('.confirm_msg').click(function() {
     alert($(this).attr('title'));
     return false;
   });
+  
   if (settings.multi) {
     for (var attr in settings.multi) {
       var element = settings.multi[attr];
@@ -537,13 +548,19 @@ $(function() {
       if (t != s.current && t < s.sum) {
         go =  t > s.sum ? s.sum : t;
         var h = location.href;
-        if (s.current != 0) {
-          var re = /page=\d*/i
-          h = h.replace(re, 'page=' + go);
-          location.href = h;
+        
+        if (go > 0) {
+        	if (h.indexOf('page=') != -1) {
+        		var re = /page=\d*/i;
+        		h = h.replace(re, 'page=' + go);
+        	} else {
+        		h = Dida.url(h, {'page': go});
+        	}
         } else {
-          location.href = Dida.url(h, {page: go});
+        	var re = /[\?|&]page=\d*/i;
+          h = h.replace(re, '');
         }
+        location.href = h;
       }
     }
   });
