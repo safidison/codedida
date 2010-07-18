@@ -6,6 +6,12 @@
  *  系统核心模块。
  */
 
+// 验证码类型
+define('DIDA_CAPTCHA_TYPE_INT', 1); // 纯数字
+define('DIDA_CAPTCHA_TYPE_ZH', 2); // 汉字
+define('DIDA_CAPTCHA_TYPE_MATH', 3); // 四则混合运算
+define('DIDA_CAPTCHA_TYPE_ASK', 4); // 问答式
+
 /**
  * @Implement of hook_menu
  */
@@ -31,7 +37,7 @@ function system_menu() {
     'page_callback' => 'system_images_error',
   );
   $items['files/editor'] = array(
-    'access_arguments' => 'file upload',
+    'access_arguments' => array('file upload'),
     'page_callback' => 'system_file_upload',
     'file' => 'system.file.inc',
   );
@@ -660,12 +666,15 @@ function system_block_view($theme, $config = object) {
     if ($value = _module_invoke_all('system_admin_menus')) {
       $table = cache_get('_admin_menu_list_'.$user->uid);
       
-      $content['didaSystemCustom'] = array(
-        system_get_custom_block_links($user->uid),
-        t('sytem', '快捷方式'),
-        '#weight' => $table->data ? $table->data[$module] : -100
-      );
+      if (var_get('admin_custom_links', 1)) {
       
+        $content['didaSystemCustom'] = array(
+          system_get_custom_block_links($user->uid),
+          t('sytem', '快捷方式'),
+          '#weight' => $table->data ? $table->data[$module] : -100
+        );
+        
+      }
       foreach ($value as $module => $infos) {
         $menus = $infos[0];
         module_alter_all('alter_admin_menus', $module, $menus);
@@ -689,32 +698,35 @@ function system_block_view($theme, $config = object) {
   }
   
   if (is_array($content)) {
-    
-    $custom_path = $custom_title = true;
-    
-    if ($content['didaSystemCustom'][0]) {
-      foreach ($content['didaSystemCustom'][0] as $c) {
-        if (is_array($c) && $c[1] == $_GET['q']) {
-          $custom_path = $custom_title = false;
+    if (var_get('admin_custom_links', 1)) {
+      $custom_path = $custom_title = true;
+      
+      if ($content['didaSystemCustom'][0]) {
+        foreach ($content['didaSystemCustom'][0] as $c) {
+          if (is_array($c) && $c[1] == $_GET['q']) {
+            $custom_path = $custom_title = false;
+          }
         }
       }
-    }
-    
-    if ($custom_path) {
-      $custom_path = $_GET['q'];
-    }
-    if ($custom_title) {
-      if ($custom_title = dd_get_title()) {
-        if (strpos($custom_title, '-') !== false) {
-          $custom_title = trim(current(explode('-', $custom_title)));
+      
+      if ($custom_path) {
+        $custom_path = $_GET['q'];
+      }
+      if ($custom_title) {
+        if ($custom_title = dd_get_title()) {
+          if (strpos($custom_title, '-') !== false) {
+            $custom_title = trim(current(explode('-', $custom_title)));
+          }
         }
       }
+      $add = '<div id="admin_custom_add_form">';
+      $add .= t('system', '链接：').'<input type="text" id="custom_path" name="custom_path" value="'.$custom_path.'" />';
+      $add .= t('system', '标题：').'<input type="text" id="custom_title" name="custom_title" value="'.$custom_title.'" />';
+      $add .= '<input type="submit" value="'.t('system', '添加链接').'" id="admin_custom_add_submit" /></div>';
+      $content['didaSystemCustom'][0][] = $add;
+    } else {
+      unset($content['didaSystemCustom']);
     }
-    $add = '<div id="admin_custom_add_form">';
-    $add .= t('system', '链接：').'<input type="text" id="custom_path" name="custom_path" value="'.$custom_path.'" />';
-    $add .= t('system', '标题：').'<input type="text" id="custom_title" name="custom_title" value="'.$custom_title.'" />';
-    $add .= '<input type="submit" value="'.t('system', '添加链接').'" id="admin_custom_add_submit" /></div>';
-    $content['didaSystemCustom'][0][] = $add;
     
     foreach ($content as $module => $m) {
       $items = array();

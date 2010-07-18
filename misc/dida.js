@@ -514,7 +514,7 @@ $(function() {
   
   $('.login_msg').click(function() {
     if (confirm('你需要登录才能进行此操作，立即登录？')) {
-      location.href = Dida.url('user/login', {redirect: location.pathname});
+      location.href = Dida.url('user/login', {redirect: $(this).attr('href') ? $(this).attr('href') : location.pathname});
     }
     return false;
   });

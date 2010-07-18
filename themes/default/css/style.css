@@ -22,6 +22,7 @@ h1, h2, h3, h4, h5{
   margin: 2px 0;
   padding: 2px 0;
   color: #0F48A7;
+  font-size: 16px;
 }
 thead{
   text-align: center;
@@ -214,6 +215,10 @@ ul.top-menu li a:hover, ul.top-menu li a.active{
   width: 30px;
 }
 /*form*/
+form{
+	margin: 0;
+	padding: 0;
+}
 .form_item{
   margin: 3px 0;
 }

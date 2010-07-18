@@ -380,6 +380,17 @@ function system_site_settings() {
     '#description' => t('system', '开发模式将禁用某些缓存，以便于调试'),
     '#options' => array(t('system', '否'), t('system', '是')),
   );
+  $form['fields']['admin_custom_links'] = array(
+    '#type' => 'radio',
+    '#title' => t('system', '管理区块快捷方式'),
+    '#required' => true,
+    '#default_value' => var_get('admin_custom_links', 1),
+    '#options' => array(
+      t('system', '禁止'),
+      t('system', '允许'),
+    ),
+    '#description' => t('system', '允许拥有后台管理权限的用户添加一些快捷链接，供自己使用'),
+  );
   $form['fields']['cache_css_and_js'] = array(
     '#type' => 'radio',
     '#title' => t('system', '合并CSS和JS'),
@@ -832,7 +843,7 @@ function system_cache_clear_submit($form, $value) {
     dd_set_message(t('system', 'menu 信息缓存清除成功'));
   }
   if ($value['value']['cache_hook']) {
-    cache_del('cid', 'cache_hook');
+    module_hook_set_cache();
     theme_get_cache();
     dd_set_message(t('system', 'hook 缓存清除成功'));
   }

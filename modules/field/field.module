@@ -51,7 +51,7 @@ function field_system_tools_ajax($v, $g) {
   dd_set_header('Content-Type: text/plain; charset=utf-8');
   $json['error'] = 1;
   
-  switch ($v['op']) {
+  switch ($g['op']) {
     case 'select':
       if ($v['__default_value']) {
         if ($fetch = db_query('SELECT tid, name FROM {fields_term} WHERE field_id = ? AND pid = ? 
@@ -325,7 +325,7 @@ function field_field_type_textfield($op, $type = NULL, $field = NULL, $v = NULL)
         return array(
           '#attributes' => array('class' => 'ui_field_autocomplete '.$dom),
           '#autocomplete' => array(
-            'url' => url('ajax', array('query' => 'fid='.$field->field_id.'&op=auto')),
+            'url' => url('ajax', array('query' => 'fid='.$field->field_id.'&op=auto&module=field')),
             'dom' => '.'.$dom,
             'range' => true
           )
@@ -607,7 +607,7 @@ function field_field_type_tags($op, $type = NULL, $field = NULL, $v = NULL) {
         return array(
           '#attributes' => array('class' => 'ui_field_autocomplete '.$dom),
           '#autocomplete' => array(
-            'url' => url('ajax', array('query' => 'fid='.$field->field_id.'&op=auto')),
+            'url' => url('ajax', array('query' => 'fid='.$field->field_id.'&op=auto&module=field')),
             'dom' => '.'.$dom,
             'range' => true
           )
@@ -1826,6 +1826,7 @@ function field_term_delete($term) {
   if (db_exec('DELETE FROM {fields_term} WHERE tid = ?', array($term->tid))) {
     module_invoke_all('field_call_term_delete', $term);
     cache_del('*', 'field_cache_options_', 'cache_field');
+    field_get_cache_field(NULL, 1);
     field_set_cache_term($term->field->module, $term->field->type);
     return true;
   }
@@ -1906,6 +1907,7 @@ function field_term_import_validate($form, $v) {
         }
       }
       field_term_batch_save($field, $v['pid'], $data);
+      field_get_cache_field(NULL, 1);
       field_set_cache_term();
     }
   } else {
@@ -2009,6 +2011,7 @@ function field_term_form_validate($form, $v) {
      * 3、触发自定义保存 hook_field_call_term_save()
      */
     if ($term = field_term_save($field, $term)) {
+      field_get_cache_field(NULL, 1);
       field_set_cache_term();
       dd_set_message(t('field', '操作成功'));
     } else {
@@ -2701,7 +2704,7 @@ function field_get_node_form($module, $type, $node = NULL, &$form = NULL, $field
             if ($conf['field_term_children'][$field_id]) {
             	dd_add_js(array('fields' => array(
                 $data->field_key => array(
-	                'url' => url('ajax', array('query' => 'fid='.$field_id.'&op=select')),
+	                'url' => url('ajax', array('query' => 'fid='.$field_id.'&op=select&module=field')),
             		)
             	)), 'setting');
               $form['fields']['fields']['field_root_'.$data->field_key] = array(
@@ -2768,7 +2771,7 @@ function field_get_node_form($module, $type, $node = NULL, &$form = NULL, $field
             if ($conf['field_term_children'][$data->field_id]) {
             	dd_add_js(array('fields' => array(
                 $data->field_key => array(
-	                'url' => url('ajax', array('query' => 'fid='.$data->field_id.'&op=select'))
+	                'url' => url('ajax', array('query' => 'fid='.$data->field_id.'&op=select&module=field'))
             		)
             	)), 'setting');
               $form['fields']['fields']['field_root_'.$data->field_key] = array(
@@ -2983,7 +2986,7 @@ function field_get_multi_level_field($field, $value, &$form = NULL) {
       if ($conf['field_term_children'][$field->field_id]) {
         dd_add_js(array('fields' => array(
           $field->field_key => array(
-            'url' => url('ajax', array('query' => 'fid='.$field->field_id.'&op=select'))
+            'url' => url('ajax', array('query' => 'fid='.$field->field_id.'&op=select&module=field'))
           )
         )), 'setting');
         $form['fields']['fields']['field_root_'.$field->field_key] = array(
@@ -3052,7 +3055,7 @@ function field_get_multi_level_field($field, $value, &$form = NULL) {
       if ($conf['field_term_children'][$field->field_id]) {
         dd_add_js(array('fields' => array(
           $field->field_key => array(
-            'url' => url('ajax', array('query' => 'fid='.$field->field_id.'&op=select'))
+            'url' => url('ajax', array('query' => 'fid='.$field->field_id.'&op=select&module=field'))
           )
         )), 'setting');
         $form['fields']['fields']['field_root_'.$field->field_key] = array(

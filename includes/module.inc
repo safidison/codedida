@@ -359,10 +359,10 @@ function module_set_disabled($modules = array()) {
 function module_clear_cache() {
   module_enabled_variable('module');
   cache_del('cid', 'user_perm');
-  cache_del('cid', 'cache_hook');
   cache_del('empty', NULL, 'cache_menu');
   cache_del('*', 'admin_menus_');
   cache_del('cid', 'schema');
+  module_hook_set_cache();
   var_init();
   menu_set_item();
 }
@@ -388,8 +388,13 @@ function module_set_enabled($list, $type, $modules = array()) {
       
       if ($info['dependencies']) {
         foreach ($info['dependencies'] as $key => $dependencies) {
-          if (!$result['modules'][$dependencies] && $result['modules'][$dependencies]['status'] == 1) {
-            dd_set_message(t('system', '%name 依赖于 %module，请先启用 %module', array('%name' => t($v['filename'], $lists[$v['filename']]['info']['name']), '%module' => t($dependencies, $lists[$dependencies]['info']['name']))));
+          if (!$result[$dependencies] || $result[$dependencies]['status'] == 0) {
+            
+            dd_set_message(t('system', '%name 依赖于 %module，请先启用 %module', array(
+              '%name' => t($v['filename'], $result[$v['filename']]['info']['name']),
+              '%module' => $dependencies)
+            ));
+            
             return false;
           }
         }
@@ -425,7 +430,8 @@ function module_set_enabled($list, $type, $modules = array()) {
         $query = array_merge($success['query'], $query);
       }
       
-      db_query('UPDATE {system} SET status = 1, install = ?, weight = ?, info = ? WHERE filename = ?', array($v['install'], $v['weight'], $v['info'], $v['filename']));
+      db_query('UPDATE {system} SET status = 1, install = ?, weight = ?, info = ? WHERE filename = ?',
+      array($v['install'], $v['weight'], $v['info'], $v['filename']));
       
       if ($v['status'] != 1) {
         $function = $v['filename'] . '_enabled';
@@ -438,7 +444,7 @@ function module_set_enabled($list, $type, $modules = array()) {
     module_clear_cache();
     
     if ($query) {
-      return $query;
+      return dd_array2_to('value', $query);
     } else {
       return array();
     }
@@ -519,13 +525,50 @@ function module_alter($modules, $hook, &$data, &$value1 = NULL, &$value2 = NULL,
  */
 function module_alter_all($hook, &$data, &$value1 = NULL, &$value2 = NULL, &$value3 = NULL) {
   global $conf;
-  
-  foreach ($conf['modules'] as $module => $info) {
-    $function = $module .'_'. $hook;
-    if (function_exists($function)) {
-      $function($data, $value1, $value2, $value3);
+  if ($GLOBALS['conf']['site_mode'] == 0) {
+    if ($functions = module_hook_get_cache($hook)) {
+      foreach ($functions as $function) {
+        $function($data, $value1, $value2, $value3);
+      }
+    }
+  } else {
+    // 开发模式
+    foreach ($GLOBALS['conf']['modules'] as $module => $info) {
+      $function = $module .'_'. $hook;
+      if (function_exists($function)) {
+        $function($data, $value1, $value2, $value3);
+      }
     }
   }
+}
+
+/**
+ * 获取 hook 缓存
+ * @param (string) $hook
+ */
+function module_hook_get_cache($hook) {
+  $hooks = var_get('hook_cache');
+  
+  if (!isset($hooks[$hook])) {
+    global $conf;
+    $hooks[$hook] = false;
+    foreach ($conf['modules'] as $module => $info) {
+      $function = $module .'_'. $hook;
+      if (function_exists($function)) {
+        $hooks[$hook][$module] = $function;
+      }
+    }
+    var_set('hook_cache', $hooks);
+  }
+  return $hooks[$hook];
+}
+
+/**
+ * 写入 hook 列表，目前仅清除旧的缓存数据，计划未来各模块的 hook 定义及实现，必须强制注册
+ * @param (string) $hook
+ */
+function module_hook_set_cache() {
+  var_del('hook_cache');
 }
 
 /**
@@ -534,19 +577,37 @@ function module_alter_all($hook, &$data, &$value1 = NULL, &$value2 = NULL, &$val
  *  返回值递归合并
  */
 function module_invoke_all() {
-  global $conf;
   $args = func_get_args();
   $hook = $args[0];
   unset($args[0]);
   $return = array();
-  foreach ($conf['modules'] as $module => $info) {
-    $function = $module .'_'. $hook;
-    if (function_exists($function)) {
-      $result = call_user_func_array($function, $args);
-      if (is_array($result)) {
-        $return = array_merge_recursive($return, $result);
-      } else if (isset($result)) {
-        $return[] = $result;
+  
+  if ($GLOBALS['conf']['site_mode'] == 0) {
+    /**
+     * 非开发模式，直接使用缓存中的 hook 实现列表。
+     * 若有新的接口实现，应清除缓存，调用 module_hook_set_cache() 亦可
+     */
+    if ($functions = module_hook_get_cache($hook)) {
+      foreach ($functions as $function) {
+        $result = call_user_func_array($function, $args);
+        if (is_array($result)) {
+          $return = array_merge_recursive($return, $result);
+        } else if (isset($result)) {
+          $return[] = $result;
+        }
+      }
+    }
+  } else {
+    // 开发模式
+    foreach ($GLOBALS['conf']['modules'] as $module => $info) {
+      $function = $module .'_'. $hook;
+      if (function_exists($function)) {
+        $result = call_user_func_array($function, $args);
+        if (is_array($result)) {
+          $return = array_merge_recursive($return, $result);
+        } else if (isset($result)) {
+          $return[] = $result;
+        }
       }
     }
   }
@@ -562,12 +623,23 @@ function module_invoke_first() {
   $args = func_get_args();
   $hook = $args[0];
   unset($args[0]);
-  foreach ($conf['modules'] as $module => $info) {
-    $function = $module .'_'. $hook;
-    if (function_exists($function)) {
-      $result = call_user_func_array($function, $args);
-      if (isset($result)) {
-        return $result;
+  if ($GLOBALS['conf']['site_mode'] == 0) {
+    if ($functions = module_hook_get_cache($hook)) {
+      foreach ($functions as $function) {
+        $result = call_user_func_array($function, $args);
+        if (isset($result)) {
+          return $result;
+        }
+      }
+    }
+  } else {
+    foreach ($GLOBALS['conf']['modules'] as $module => $info) {
+      $function = $module .'_'. $hook;
+      if (function_exists($function)) {
+        $result = call_user_func_array($function, $args);
+        if (isset($result)) {
+          return $result;
+        }
       }
     }
   }
@@ -579,16 +651,26 @@ function module_invoke_first() {
  *  返回值按模块系统名称索引
  */
 function _module_invoke_all() {
-  global $conf;
   $args = func_get_args();
   $hook = $args[0];
   unset($args[0]);
   $return = array();
-  foreach ($conf['modules'] as $module => $info) {
-    $function = $module .'_'. $hook;
-    if (function_exists($function)) {
-      if ($result = call_user_func_array($function, $args)) {
-        $return[$module] = $result;
+  if ($GLOBALS['conf']['site_mode'] == 0) {
+    if ($functions = module_hook_get_cache($hook)) {
+      foreach ($functions as $module => $function) {
+        if ($result = call_user_func_array($function, $args)) {
+          $return[$module] = $result;
+        }
+      }
+    }
+  } else {
+    // 开发模式
+    foreach ($GLOBALS['conf']['modules'] as $module => $info) {
+      $function = $module .'_'. $hook;
+      if (function_exists($function)) {
+        if ($result = call_user_func_array($function, $args)) {
+          $return[$module] = $result;
+        }
       }
     }
   }
@@ -610,6 +692,9 @@ function module_get_ver($module, $load = NULL) {
       }
     }
   }
+  
+  $updates['install'] = $array['install'] = function_exists($module.'_install');
+  
   if (count($updates) == 0) {
     return $updates;
   }
@@ -706,7 +791,7 @@ function module_get_table($module, $table = NULL) {
 function module_get_schema($table, $clear = NULL) {
   static $tables;
   
-  if (!isset($tables)) {
+  if (!isset($tables) || !$clear) {
     
     if ($clear || !$cache = cache_get('schema')) {
       

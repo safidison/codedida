@@ -21,13 +21,13 @@ function cache_del($type = 'cid', $cid = NULL, $table = 'cache') {
       db_exec('DELETE FROM {'. $table .'} WHERE cid = ?', array($cid));
     break;
     case 'all':
-      db_exec('DELETE FROM {cache}');
-      db_exec('DELETE FROM {cache_menu}');
-      db_exec('DELETE FROM {cache_page}');
-      db_exec('DELETE FROM {cache_form}');
+      db_exec('TRUNCATE TABLE {cache}');
+      db_exec('TRUNCATE TABLE {cache_menu}');
+      db_exec('TRUNCATE TABLE {cache_page}');
+      db_exec('TRUNCATE TABLE {cache_form}');
     break;
     case 'empty':
-      db_exec('DELETE FROM {'. $table .'}');
+      db_exec('TRUNCATE TABLE {'. $table .'}');
     break;
     case '*':
       db_exec('DELETE FROM {'. $table .'} WHERE cid LIKE ?', array('%'.$cid.'%'));

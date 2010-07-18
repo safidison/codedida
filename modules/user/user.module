@@ -228,7 +228,7 @@ function user_access($string, $account = NULL, $reset = false) {
 function user_system_tools_ajax($v, $g) {
   $data['error'] = 1;
   
-  if ($v['op'] == 'auto' && $v['value']) {
+  if ($g['op'] == 'auto' && $v['value']) {
     if ($fetch = db_query('SELECT name FROM {users} WHERE name LIKE ?',
     array('%'.$v['value'].'%'), array('limit' => 10))) {
       $data['error'] = 0;
@@ -602,7 +602,11 @@ function user_edit_submit($form, &$value) {
     $ac->name = $value['_dida_values']->name;
   }
   
-  $value['_dida_values']->pass = md5($value['_dida_values']->pass);
+  if (isset($value['_dida_values']->pass)) {
+    $value['_dida_values']->pass = md5($value['_dida_values']->pass);
+  } else {
+    unset($value['_dida_values']->pass);
+  }
   
   if (db_write_record('users', $value['_dida_values'], array('uid'))) {
     /**
@@ -796,12 +800,11 @@ function user_register_form($op = 'user') {
   }
   
   $ac = new stdClass();
-  $ac = $GLOBALS['user'];
   
   field_get_node_form('user', 'field', $ac, $form);
   module_alter_all('user_register_form', $form, $op, $ac);
   
-  $form['fields']['submit'] = array(
+  $form['fields']['button'] = array(
     '#type' => 'submit',
     '#weight' => 100,
     '#submit' => 'user_register_submit',
@@ -1052,9 +1055,7 @@ function user_get_file_size($uid) {
 function user_data_roles($rid = NULL) {
   static $roles;
   if (!isset($roles)) {
-    if ($cache = var_get('user_roles')) {
-      $roles = $cache->data;
-    } else {
+    if (!$roles = var_get('user_roles')) {
       if ($fetch = db_query('SELECT * FROM {role} ORDER BY rid ASC')) {
         foreach ($fetch as $o) {
           $roles[$o->rid] = $o;
@@ -1819,6 +1820,11 @@ function user_cache_page_enabled($path, &$expire) {
       
     }
     
+  } else if ($args[0] == 'admin') {
+    
+    // admin 页面均不缓存，并禁止其它模块处理
+    return false;
+    
   }
   
   return NULL;
@@ -1841,6 +1847,9 @@ function user_cache_page_disable($path, &$expire) {
   
   if ($args[0] == 'user') {
     return $args[1] == 'edit' || $args[1] == 'login' || $args[1] == 'register';
+  } else if ($args[0] == 'admin') {
+    // admin 页面均不缓存 
+    return true;
   }
   
   return NULL;
