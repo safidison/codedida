@@ -86,16 +86,33 @@ function theme() {
    * 在模块文件夹，以 tpl 命名文件夹，在tpl 下可分多级目录。在主题文件夹覆写，以模块名称命名文件夹
    */
   if ($theme['tpl']) {
-    foreach ($theme['args'] as $key => $val) {
-      $var[$val] = $args[$key];
+    
+    $var = array();
+    if (is_array($theme['args'])) {
+      foreach ($theme['args'] as $key => $val) {
+        if ($val == 'theme_config') {
+          dd_set_message(t('system', 'hook_theme 中 args 参数不能以 theme_config 命名，这是一个保留字符'), 'error');
+          continue;
+        }
+        $var[$val] = $args[$key];
+      }
     }
-    $var['temp'] = $temp;
+    
+    $var['theme_config']->temp = $temp;
+    $var['theme_config']->tpl[] = $theme['tpl'];
+    
     $args = array(&$var, $hook);
     
     /**
-     * 引用传递参数，可用于在 template.php 中覆写
+     * 主题或模块可对 theme 进行覆写，顺序如下：
      */
-    $functions = array('template_preprocess', 'template_preprocess_'.$hook, $temp['filename']. '_preprocess_'. $hook);
+    $functions = array(
+      'template_preprocess',
+      'template_preprocess_'.$hook,
+      $theme['module'].'_template_preprocess_'.$hook,
+      $temp['filename']. '_preprocess_'. $hook
+    );
+    
     foreach ($functions as $function) {
       if (function_exists($function)) {
         call_user_func_array($function, $args);
@@ -103,17 +120,28 @@ function theme() {
     }
     
     /**
-     * tpl_call：根据传递的参数动态调用 tpl，加载是回调函数，函数返回一个 tpl
+     * tpl_call：根据传递的参数动态调用 tpl。回调函数，函数返回一个 tpl
      */
     if ($theme['tpl_call']) {
       if (function_exists($theme['tpl_call'])) {
-        $var['tpl'] = call_user_func_array($theme['tpl_call'], $args);
+        $var['theme_config']->tpl = call_user_func_array($theme['tpl_call'], $args);
       }
     }
     
-    if (is_array($var['tpl'])) {
-      $tpls = array_reverse($var['tpl']);
-      foreach ($tpls as $tpl) {
+    
+    if (!is_array($var['theme_config']->tpl)) {
+      $var['theme_config']->tpl = array($var['theme_config']->tpl);
+      $tpl_count = 1;
+    } else {
+      $tpl_count = count($var['theme_config']->tpl);
+    }
+    
+    if ($tpl_count > 1) {
+      $var['theme_config']->tpl = array_reverse($var['theme_config']->tpl);
+    }
+    
+    if ($hook == 'page') {
+      foreach ($var['theme_config']->tpl as $tpl) {
         $tpl = $temp['path'] . '/' .$tpl;
         if (is_file($tpl)) {
           return theme_render_tpl($tpl, $var, $hook);
@@ -121,20 +149,23 @@ function theme() {
       }
     }
     
-    /**
-     * 在当前主题中覆盖。将 tpl 文件复制到主题文件夹下，必须以模块名为目录名，即：themename/modulename/
-     */
-    if (is_file($temp['path'].'/'.$theme['module'].'/'.$theme['tpl'])) {
-      
-      return theme_render_tpl($temp['path'].'/'.$theme['module'].'/'.$theme['tpl'], $var, $hook);
-      
-    } else if (is_file($module_path.'/tpl/'.$theme['tpl'])) {
+    foreach ($var['theme_config']->tpl as $tpl) {
       /**
-       * 调用模块目录中的 tpl
+       * 在当前主题中覆盖。将 tpl 文件复制到主题文件夹下，必须以模块名为目录名，即：themename/modulename/
        */
-      return theme_render_tpl($module_path.'/tpl/'.$theme['tpl'], $var, $hook);
-      
+      if (is_file($temp['path'].'/'.$theme['module'].'/'.$tpl)) {
+        
+        return theme_render_tpl($temp['path'].'/'.$theme['module'].'/'.$tpl, $var, $hook);
+        
+      } else if (is_file($module_path.'/tpl/'.$tpl)) {
+        /**
+         * 调用模块目录中的 tpl
+         */
+        return theme_render_tpl($module_path.'/tpl/'.$tpl, $var, $hook);
+        
+      }
     }
+    
   } else if ($theme['fun']) {
     /**
      * 回调函数处理 theme 请求
@@ -232,9 +263,8 @@ function template_preprocess_page(&$var, $args) {
     unset($_SESSION['database_debug']);
   }
   
-  $tpls[] = 'page.tpl.php';
   if (dd_is_front()) {
-    $tpls[] = 'page_front.tpl.php';
+    $var['theme_config']->tpl[] = 'page_front.tpl.php';
     $var['args_id'] = 'page_wrapper_front';
   } else {
     $i = 0;
@@ -245,16 +275,13 @@ function template_preprocess_page(&$var, $args) {
         $args_id .= '_'.$arg;
         $args_value .= 'page_wrapper'.$args_id . ' ';
       }
-      $tpls[] = $tpl .'_'. $arg . '.tpl.php';
+      $var['theme_config']->tpl[] = $tpl .'_'. $arg . '.tpl.php';
       if (!is_numeric($arg)) {
         $tpl .= '_'. $arg;
       }
     }
     $var['args_id'] = rtrim($args_value, ' ');
   }
-  
-  $var['tpl'] = $tpls;
-  
 }
 
 /**
@@ -532,9 +559,9 @@ function table_header($cell, $header, $ts) {
         $image = img('misc/images/arrow-desc.png', '排序图标', '倒序排列');
       } else {
         $ts['sort'] = 'asc';
-        $image = img('misc/images/arrow-desc.png', '排序图标', '倒序排列');
+        $image = img('misc/images/arrow-asc.png', '排序图标', '正序排列');
       }
-      $ts['sort'] = (($ts['sort'] == 'asc') ? 'desc' : 'asc');
+      
       if (isset($cell['class'])) {
         $cell['class'] .= ' active';
       } else {

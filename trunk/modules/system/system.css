@@ -130,6 +130,7 @@ input.error {
   padding: 5px 12px;
   margin: 5px 0;
   color: #3B5815;
+  display: none;
 }
 .form_captcha{
   color: #030ADE;

@@ -827,7 +827,8 @@ function dd_user_validate() {
     if (!$user->__SETVALIDATE) {
       if ($active > ($user->active + 600)) {
         //每600秒验证一次用户session
-        if (!db_query('SELECT uid FROM {users} WHERE uid = ? AND session = ?', array($user->uid, $_COOKIE[session_name()]), array('return' => 'column'))) {
+        if (!db_query('SELECT uid FROM {users} WHERE uid = ? AND session = ?',
+        array($user->uid, $_COOKIE[session_name()]), array('return' => 'column'))) {
           $user = user_logout();  // 游客
           dd_set_message('登录超时，请重新登录', 'error');
         } else {
@@ -845,6 +846,19 @@ function dd_user_validate() {
   }
   
   date_default_timezone_set(var_get('default_timezone', 'Asia/Taipei'));
+  
+  // 管理员强制要求某个用户退出
+  if ($user->uid && $GLOBALS['conf']['dida_user_enforce_logout']) {
+    $key = array_search($user->uid, $GLOBALS['conf']['dida_user_enforce_logout']);
+    if ($key !== false) {
+      unset($GLOBALS['conf']['dida_user_enforce_logout'][$key]);
+      var_set('dida_user_enforce_logout', $GLOBALS['conf']['dida_user_enforce_logout']);
+      
+      // 强行退出
+      $user = user_logout();
+      $user = user_anonymous();
+    }
+  }
 }
 
 /**
@@ -1011,6 +1025,71 @@ function format_date($timestamp, $type = 'default', $format = '') {
   return date($format, $timestamp);
 }
 
+/**
+ * 时间格式化，距离当前多少时间
+ * @param (int) $timestamp
+ *  时间戳
+ * @param (int) $granularity
+ *  显示层级，默认为 年 周 天 小时 分钟 秒
+ */
+function format_interval($timestamp, $granularity = 5) {
+  $units = array(31536000 => '年', 604800 => '周', 86400 => '天', 3600 => '小时', 60 => '分钟', 1 => '秒');
+  $output = '';
+  foreach ($units as $key => $value) {
+    if ($timestamp >= $key) {
+      $output .= floor($timestamp / $key) . $value;
+      $timestamp %= $key;
+      $granularity--;
+    }
+    if ($granularity == 0) {
+      break;
+    }
+  }
+  return $output ? $output : '0 秒';
+}
+
+/**
+ * 日期转时间戳，日期格式：2010-05-25 或 2010/05/25 或 2010-05-25 12:24:32
+ */ 
+function format_date_mktime($text) {
+  static $data;
+  if (!isset($data[$text])) {
+    $data[$text] = '';
+    
+    if (strpos($text, '-') !== false) {
+      $t = '-';
+    } else if (strpos($text, '/') !== false) {
+      $t = '/';
+    } else {
+      $t = NULL;
+    }
+    
+    $time = array(0, 0, 0);
+    
+    if (strpos($text, ':') !== false) {
+      if ($a = end(explode(' ', $text, 2))) {
+        $time = explode(':', $a);
+      }
+    }
+    
+    if ($t) {
+      $d = explode($t, $text);
+      if (count($d) == 3) {
+        $data[$text] = mktime($time[0], $time[1], $time[2], $d[1], $d[2], $d[0]);
+      }
+    }
+  }
+  return $data[$text];
+}
+
+// 获取当前日期零点时间戳
+function format_get_current() {
+  static $time;
+  if (!isset($time)) {
+    $time = format_date_mktime(format_date(time(), 'custom', 'Y-m-d'));
+  }
+  return $time;
+}
 /**
  * 处理 PHP 错误信息
  */
@@ -2413,65 +2492,7 @@ function filter_xss_bad_protocol($string, $decode = TRUE) {
   return check_plain($string);
 }
 
-// 时间格式化
-function format_interval($timestamp, $granularity = 5) {
-  $units = array(31536000 => '年', 604800 => '周', 86400 => '天', 3600 => '小时', 60 => '分钟', 1 => '秒');
-  $output = '';
-  foreach ($units as $key => $value) {
-    if ($timestamp >= $key) {
-      $output .= floor($timestamp / $key) . $value;
-      $timestamp %= $key;
-      $granularity--;
-    }
-    if ($granularity == 0) {
-      break;
-    }
-  }
-  return $output ? $output : '0 秒';
-}
 
-/**
- * 日期转时间戳，日期格式：2010-05-25 或 2010/05/25 或 2010-05-25 12:24:32
- */ 
-function format_date_mktime($text) {
-  static $data;
-  if (!isset($data[$text])) {
-    $data[$text] = '';
-    
-    if (strpos($text, '-') !== false) {
-      $t = '-';
-    } else if (strpos($text, '/') !== false) {
-      $t = '/';
-    } else {
-      $t = NULL;
-    }
-    
-    $time = array(0, 0, 0);
-    
-    if (strpos($text, ':') !== false) {
-      if ($a = end(explode(' ', $text, 2))) {
-        $time = explode(':', $a);
-      }
-    }
-    
-    if ($t) {
-      $d = explode($t, $text);
-      if (count($d) == 3) {
-        $data[$text] = mktime($time[0], $time[1], $time[2], $d[1], $d[2], $d[0]);
-      }
-    }
-  }
-  return $data[$text];
-}
-
-// 获取当前日期零点时间戳
-function format_get_current() {
-  static $time;
-  if (!isset($time)) {
-    $time = format_date_mktime(format_date(time(), 'custom', 'Y-m-d'));
-  }
-  return $time;
-}
 
 //字母数字混合模式的随机数
 function dd_range_str() {

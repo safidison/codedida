@@ -185,7 +185,7 @@ function user_admin_add() {
     '#required' => 1,
     '#options' => $opt,
   );
-  $form['fields']['submit'] = array(
+  $form['fields']['button'] = array(
     '#type' => 'submit',
     '#weight' => 100,
     '#submit' => 'user_admin_add_submit',
@@ -230,7 +230,7 @@ function user_set_settings() {
     '#type' => 'textfield',
     '#title' => t('user', '游客名称'),
     '#required' => true,
-    '#default_value' => var_get_key('user', 'anonymous', t('user', '读者')),
+    '#default_value' => var_get_key('user', 'anonymous', t('user', '游客')),
   );
   $form['fields']['user']['select_theme'] = array(
     '#type' => 'radio',

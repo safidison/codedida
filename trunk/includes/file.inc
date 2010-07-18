@@ -17,6 +17,7 @@
       'ext_id' => 0, // 扩展 Id
       'ext_id2' => 0, // 扩展 Id
       'ext_type' => '', // 扩展类型
+      'status' => 1, // 文件状态，默认为 1，即正常
       'image' => array( // 验证图片
         'type' => array('jpg', 'png', 'gif'),
         'size' => '200x300',
@@ -103,8 +104,12 @@ function file_image_view($fid, $opt = array()) {
 
 /**
  * 验证上传字段
+ * @param (array) $form
+ *  表单
+ * @param (bool) $save
+ *  验证完成后是否保存
  */
-function file_form_validate($form) {
+function file_form_validate($form, $save = true) {
   if ($_FILES) {
     foreach ($_FILES as $key => $field) {
       if (!empty($field['name'])) {
@@ -113,11 +118,11 @@ function file_form_validate($form) {
             $error[$key]['#error'][] = t('system', '必须上传文件');
           }
           $form['fields'][$key]['#filename'] = $key;
-          if ($msg = _file_form_validate($field, $form['fields'][$key])) {
+          if ($msg = _file_form_validate($field, $form['fields'][$key], $save)) {
             $error[$key]['#error'] = $msg;
           }
         } else if (is_array($field['name'])) {
-          $error[$key] = _file_form_subvalidate($form['fields'][$key], $field);
+          $error[$key] = _file_form_subvalidate($form['fields'][$key], $field, $save);
         }
       }
     }
@@ -129,8 +134,14 @@ function file_form_validate($form) {
 
 /**
  * 检查上传字段
+ * @param (array) $files
+ *  文件对象
+ * @param (array) $field
+ *  表单字段
+ * @param (bool) $save
+ *  检查通过后是否保存
  */
-function _file_form_validate($files, $field) {
+function _file_form_validate($files, $field, $save = true) {
   if (!$field['#filesave']) return false;
   if ($field['#multi']) {
     for ($i = 0; $i < $field['#multi']; ++$i) {
@@ -141,55 +152,111 @@ function _file_form_validate($files, $field) {
           'size' => $files['size'][$i],
           'tmp_name' => $files['tmp_name'][$i],
         );
-      } else if ($t !== 4) {
+      } else if ($t !== UPLOAD_ERR_NO_FILE) { 
         return $t;
       }
     }
   } else if (!$t = file_validate_error($files['error'])) {
     $file[] = $files;
-  } else if ($t !== 4) {
+  } else if ($t !== UPLOAD_ERR_NO_FILE) {
     return $t;
   }
   
-  if ($field['#call_function']) {
-    $error = call_user_func($field['#call_function'],  $field['#form_id'],  $field['#name'], $file);
-  } else if ($field['#filesave']) {
-    $error = file_form_save($field, $file);
-  } else {
-    return true;
+  if ($save) {
+    if ($field['#call_function']) {
+      $error = call_user_func($field['#call_function'],  $field['#form_id'],  $field['#name'], $file);
+    } else if ($field['#filesave']) {
+      $error = file_form_save($field, $file);
+    }
   }
+  
   return $error;
 }
 
 /**
  * 检查子字段
  */
-function _file_form_subvalidate($form, $files) {
+function _file_form_subvalidate($form, $files, $save = true) {
   foreach ($files['name'] as $key => $field) {
+    
+    $file = array(
+      'name' => $files['name'][$key],
+      'type' => $files['type'][$key],
+      'size' => $files['size'][$key],
+      'tmp_name' => $files['tmp_name'][$key],
+      'error' => $files['error'][$key],
+    );
+    
     if (is_string($field)) {
-      $file = array(
-        'name' => $files['name'][$key],
-        'type' => $files['type'][$key],
-        'size' => $files['size'][$key],
-        'tmp_name' => $files['tmp_name'][$key],
-        'error' => $files['error'][$key],
-       );
       if ($form[$key]['#type'] == 'file') {
         if ($form[$key]['#required'] && !$field) {
           $error[$key]['#error'][] = t('system', '必须上传文件');
         }
         $form[$key]['#filename'] = $key;
-        if ($t = _file_form_validate($file, $form[$key])) {
+        if ($t = _file_form_validate($file, $form[$key], $save)) {
           $error[$key]['#error'] = $t;
         }
-      } else if (is_array($field)) {
-        if ($t = _file_form_subvalidate($form[$key], $file)) {
-          $error[$key] = $t;
-        }
+      }
+    } else if (is_array($field)) {
+      if ($t = _file_form_subvalidate($form[$key], $file, $save)) {
+        $error[$key] = $t;
       }
     }
   }
   return $error;
+}
+
+/**
+ * 将 $_FILES 转换为二维数组，排除未上传字段
+ */
+function file_get_array_data() {
+  $files = array();
+  foreach ($_FILES as $key => $field) {
+    if (is_string($field['name'])) {
+      if ($field['error'] === UPLOAD_ERR_OK) {
+        $files[$key] = $field;
+      }
+    } else if (is_array($field['name'])) {
+      if ($r = _file_get_array_data($_FILES[$key], $key)) {
+        $files = array_merge($files, $r);
+      }
+    }
+  }
+  
+  return $files;
+}
+
+function _file_get_array_data(array $array, $keys = '') {
+  if (!$array['name']) return false;
+  
+  foreach ($array['name'] as $key => $field) {
+    
+    $file = array(
+      'name' => $array['name'][$key],
+      'type' => $array['type'][$key],
+      'size' => $array['size'][$key],
+      'tmp_name' => $array['tmp_name'][$key],
+      'error' => $array['error'][$key],
+    );
+    
+    if ($keys) {
+      $index = $keys . '_' . $key;
+    } else {
+      $index = $key;
+    }
+    
+    if (is_string($field)) {
+      if ($file['error'] === UPLOAD_ERR_OK) {
+        $files[$index] = $file;
+      }
+    } else if (is_array($field)) {
+      if ($r = _file_get_array_data($file, $index)) {
+        $files = array_merge($files, $r);
+      }
+    }
+  }
+  
+  return $files;
 }
 
 /**
@@ -460,6 +527,7 @@ function file_save_validate(&$file, $validate) {
   }
   
   $file->status = isset($validate['status']) ? $validate['status']: 1;
+  $file->filebody = isset($validate['filebody']) ? $validate['filebody']: '';
   
   if (is_array($validate)) {
     foreach ($validate as $key => $val) {
@@ -526,9 +594,17 @@ function file_save($file) {
   
   if (!$file->timestamp) $file->timestamp = $_SERVER['REQUEST_TIME'];
   
-  if (db_exec('INSERT INTO {files} (uid, filename, filepath, filemime, filesize, status, timestamp, ext_id, ext_id2, ext_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', array($file->uid, $file->filename, $file->filepath, $file->filemime, $file->filesize, $file->status, $file->timestamp, $file->ext_id, $file->ext_id2, $file->ext_type))) {
+  if (!isset($file->body)) $file->body = '';
+  
+  if (db_exec('INSERT INTO {files} (uid, filename, filepath, filemime, filesize, status,
+  timestamp, ext_id, ext_id2, ext_type, filebody) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+  array($file->uid, $file->filename, $file->filepath, $file->filemime,
+  $file->filesize, $file->status, $file->timestamp, $file->ext_id,
+  $file->ext_id2, $file->ext_type, $file->body))) {
+    
     $file->fid = db_last_insert_id();
     return $file;
+    
   }
 }
 
@@ -682,8 +758,8 @@ function file_validate_error($error) {
       return t('system', '临时文件夹不存在');
     case UPLOAD_ERR_CANT_WRITE:
       return t('system', '文件写入失败');
-    case UPLOAD_ERR_NO_FILE:
-      return 4;
+    case UPLOAD_ERR_NO_FILE: // 4
+      return UPLOAD_ERR_NO_FILE;
     default:
       return true;
   }
@@ -773,7 +849,7 @@ function file_is_access($file, $op = 'view') {
  * @param (bool) $invoke
  *  是否触发 hook_file_load()
  */
-function file_load($fid, $invoke = NULL) {
+function file_load($fid, $invoke = true) {
   if ($files = db_query('SELECT * FROM {files} WHERE fid = ?', array($fid), array('return' => 'one'))) {
     if ($invoke) module_invoke_all('file_load', $files);
     return $files;

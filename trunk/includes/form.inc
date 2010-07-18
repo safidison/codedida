@@ -115,7 +115,7 @@ function dd_get_form($form_id) {
     }
     
   	// 基本验证：必填字段，选项字段数据是否被修改
-    if (!$error = dd_form_required($form, $form_values)) {
+    if ((!$error = dd_form_required($form, $form_values)) && (!$error = file_form_validate($form, false))) {
     	// 回调表单验证函数
     	
       if (is_array($form['settings']['#validate'])) {
@@ -131,7 +131,7 @@ function dd_get_form($form_id) {
       }
       
       // 所有验证通过后再处理文件字段
-      if (!$error && (!$error = file_form_validate($form))) {
+      if (!$error && (!$error = file_form_validate($form, true))) {
       	// 文件字段处理完毕后回调提交函数
       	
         //删除表单session，防止重复提交
@@ -501,7 +501,7 @@ function dd_form_cmp($a, $b) {
 /**
  * 解析表单
  */
-function dd_form_field(&$form, $value, $error) {
+function dd_form_field(&$form, $value, $error = array()) {
   
   foreach ($form['fields'] as $key => $field) {
     if ($field['#type'] || isset($field['#value'])) {
@@ -517,7 +517,7 @@ function dd_form_field(&$form, $value, $error) {
           $parents[$child_key] = $child;
         }
       }
-      $fields[$key] = dd_form_subfield($form, $sub_field, $value, $error);
+      $fields[$key] = dd_form_subfield($form, $sub_field, $value, $error[$key]);
       if ($parents && $fields[$key]) {
         $parents['#children'] = count($sub_field);
         $fields[$key] += $parents;
@@ -549,7 +549,7 @@ function dd_form_subfield(&$form, $field, $value, $error) {
           $parents[$child_key] = $child;
         }
       }
-      $fields[$sub_key] = dd_form_subfield($form, $child_field, $value, $error);
+      $fields[$sub_key] = dd_form_subfield($form, $child_field, $value, $error[$sub_key]);
       if ($parents && $fields[$sub_key]) {
         $parents['#children'] = count($child_field);
         $fields[$sub_key] += $parents;
