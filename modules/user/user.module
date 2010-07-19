@@ -1355,6 +1355,9 @@ function user_view($account) {
  */
 function user_user_page($ac) {
   $item[] = dd_get_strong(t('user', '注册时间')) . format_date($ac->created);
+  if ($ac->login) {
+    $item[] = dd_get_strong(t('user', '上次登录')) . format_date($ac->login);
+  }
   if ($ac->field_view) {
     foreach ($ac->field_view as $key => $data) {
       if ($key != 'avatar') {
