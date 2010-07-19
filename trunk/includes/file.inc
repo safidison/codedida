@@ -535,6 +535,12 @@ function file_save_validate(&$file, $validate) {
         case 'ext_id':
           $file->ext_id = $val;
         break;
+        case 'timestamp':
+          $file->timestamp = $val;
+        break;
+        case 'filebody':
+          $file->filebody = $val;
+        break;
         case 'ext_id2':
           $file->ext_id2 = $val;
         break;
@@ -594,13 +600,15 @@ function file_save($file) {
   
   if (!$file->timestamp) $file->timestamp = $_SERVER['REQUEST_TIME'];
   
-  if (!isset($file->body)) $file->body = '';
+  if (!isset($file->filebody)) $file->filebody = '';
+  
+  if ($file->body)  $file->filebody = $file->body;
   
   if (db_exec('INSERT INTO {files} (uid, filename, filepath, filemime, filesize, status,
   timestamp, ext_id, ext_id2, ext_type, filebody) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
   array($file->uid, $file->filename, $file->filepath, $file->filemime,
   $file->filesize, $file->status, $file->timestamp, $file->ext_id,
-  $file->ext_id2, $file->ext_type, $file->body))) {
+  $file->ext_id2, $file->ext_type, $file->filebody))) {
     
     $file->fid = db_last_insert_id();
     return $file;
