@@ -65,7 +65,7 @@ function bootstrap($op, $inc = NULL) {
       header('Content-Type:text/css');
     }
     
-    echo file_get_contents($filepath);
+    echo @file_get_contents($filepath);
     
     exit;
   }
@@ -161,6 +161,7 @@ function bootstrap($op, $inc = NULL) {
       require_once './includes/database.inc';
       //初始化默认数据库连接
       db_connect('default');
+      
     break;
     case 'custom':
       /**
