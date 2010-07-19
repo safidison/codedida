@@ -6,17 +6,22 @@ require_once './includes/bootstrap.inc';
 
 header('charset=utf-8');
 
-$includes = NULL;
-
-if ($_GET['includes']) {
-  if (strpos($_GET['includes'], '|') !== false) {
-    $includes = explode('|', $_GET['includes']);
-  } else {
-    $includes[] = $_GET['includes'];
+if ($_GET['bootstrap'] != 'full') {
+  $includes = NULL;
+  
+  if ($_GET['includes']) {
+    if (strpos($_GET['includes'], '|') !== false) {
+      $includes = explode('|', $_GET['includes']);
+    } else {
+      $includes[] = $_GET['includes'];
+    }
   }
+  
+  bootstrap('custom', $includes);
+} else {
+  
+  bootstrap('full');
 }
-
-bootstrap('custom', $includes);
 
 if ($GLOBALS['conf']['modules'][$_GET['module']]) {
   // 加载模块主文件

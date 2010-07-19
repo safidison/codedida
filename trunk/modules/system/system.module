@@ -258,7 +258,87 @@ function system_call_custom($v) {
       require_once './includes/image.inc';
       system_images_error();
     break;
+    case 'cache_clear':
+      dd_add_css('modules/system/system.css');
+      dd_add_js('modules/system/system.js');
+      dd_add_css('modules/system/admin.css');
+      return theme('print', dd_get_form('_system_call_custom_form', 'cache_clear'));
+    break;
+    case 'install':
+      return theme('print', dd_get_form('_system_call_custom_form', 'install'));
   }
+}
+
+function _system_call_custom_form($op) {
+  if ($op == 'cache_clear') {
+    require_once './modules/system/system.admin.inc';
+    $form['fields']['value'] = array(
+      '#type' => 'checkbox',
+      '#options' => module_invoke_all('system_cache_clear', 'list'),
+    );
+  }
+  
+  $form['fields']['op'] = array(
+    '#type' => 'hidden',
+    '#default_value' => $op,
+    '#constant' => 1
+  );
+  
+  $form['fields']['name'] = array(
+    '#title' => t('system', '昵称'),
+    '#type' => 'textfield',
+    '#required' => 1,
+  );
+  $form['fields']['pass'] = array(
+    '#title' => t('system', '密码'),
+    '#type' => 'password',
+    '#required' => 1,
+  );
+  $form['fields']['button'] = array(
+    '#type' => 'submit',
+    '#value' => t('system', '验证密码以执行操作')
+  );
+  
+  if ($op == 'cache_clear') {
+    $form['fields']['button']['#field_prefix'] = dd_cp_checkbox(1, array('alt' => '_system_call_custom_cache_clear_type_value'));
+  }
+  
+  $form['settings'] = array(
+    '#ajax_validate' => 1,
+    '#validate' => array('_system_call_custom_form_validate')
+  );
+  return $form;
+} 
+
+function _system_call_custom_form_validate(&$form, &$v) {
+  if ($uid = db_query('SELECT uid FROM {users} WHERE name = ? AND pass = ?',
+  array($v['name'], md5($v['pass'])), array('return' => 'column'))) {
+    if ($uid == 1) {
+      if ($v['op'] == 'cache_clear') {
+        system_cache_clear_submit($form, $v);
+      } else if ($v['op'] == 'install') {
+        // 升级模块
+        global $conf;
+        $modules = array_keys($conf['modules']);
+        
+        $query = module_set_enabled('enabled', 'module', $modules);
+        
+        if (!empty($query) && is_array($query)) {
+          dd_set_message('升级成功，升级中执行了以下 sql：<br>' .implode('<br>', $query));
+        } else {
+          dd_set_message(t('system', '没有模块需要升级'));
+        }
+        
+        dd_goto(NULL);
+      }
+    } else {
+      $t['name']['#error'][] = t('system', '只有 uid 为 1的用户才能使用此功能');
+    }
+  } else {
+    $t['name']['#error'][] = t('system', '帐号和密码不匹配');
+  }
+  
+  return $t;
 }
 
 /**

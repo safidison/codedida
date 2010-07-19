@@ -21,6 +21,9 @@
 .system_admin_default_block_system a{
   padding-left: 12px;
 }
+#_system_call_custom_form_value .form_checkbox_option{
+  display: block;
+}
 /*jqui*/
 .jqedit_text textarea, .jqedit_text button{
   font-size: 12px;
