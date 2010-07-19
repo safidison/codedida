@@ -791,34 +791,58 @@ function module_get_table($module, $table = NULL) {
 function module_get_schema($table, $clear = NULL) {
   static $tables;
   
-  if (!isset($tables) || !$clear) {
+  if (!isset($tables) || $clear) {
     
     if ($clear || !$cache = cache_get('schema')) {
       
-      module_load_install();
+      $tables = false;
+      
       $_tables = db_show_tables();
       
-      if ($lists = _module_invoke_all('schema')) {
+      if ($modules = module_list('module', 'all')) {
         
-        foreach ($lists as $module => $ts) {
-          module_alter_all('alter_schema', $module, $ts);
-          foreach ($ts as $name => $fields) {
-            if (in_array($name, $_tables)) {
-              if ($fields['fields']) {
-                $_fields = array('module' => $module);
-                foreach ($fields['fields'] as $field_name => $field) {
-                  unset($field['description']);
-                  $_fields['fields'][$field_name] = $field;
+        foreach ($modules as $module => $info) {
+          
+          $install_filepath = './'.$info['path'] .'/'. $module. '.install';
+          if (is_file($install_filepath)) include_once $install_filepath;
+          
+          $function = $module .'_alter_schema';
+          if (function_exists($function)) {
+            $alter_schemas[$module] = $function;
+          }
+          
+        }
+        
+        foreach ($modules as $module => $info) {
+          $function = $module .'_schema';
+          if (function_exists($function)) {
+            if ($ts = $function()) {
+              if ($alter_schemas) {
+                foreach ($alter_schemas as $alter_schema) {
+                  $alter_schema($module, $ts);
                 }
-                $tables[$name] = $_fields;
               }
+              
+              foreach ($ts as $name => $fields) {
+                if (in_array($name, $_tables)) {
+                  if ($fields['fields']) {
+                    $_fields = array('module' => $module);
+                    foreach ($fields['fields'] as $field_name => $field) {
+                      unset($field['description']);
+                      $_fields['fields'][$field_name] = $field;
+                    }
+                    $tables[$name] = $_fields;
+                  }
+                }
+              }
+              
             }
           }
         }
+        
+        cache_set('schema', $tables, 'cache', 0, 0);
+        
       }
-      
-      cache_set('schema', $tables, 'cache', 0, 0);
-      
     } else {
       $tables = $cache->data;
     }

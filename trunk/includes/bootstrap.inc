@@ -394,6 +394,7 @@ function url($path = NULL, $options = array()) {
   if ($options['fragment']) {
     $options['fragment'] = '#'. $options['fragment'];
   }
+  
   global $conf, $base_url, $base_path;
   if (is_array($options['query'])) {
     $options['query'] = dd_query_string_encode($options['query']);
@@ -418,12 +419,14 @@ function url($path = NULL, $options = array()) {
     if ($options['query']) {
       $path = $path .'&'. $options['query'];
     }
+    
     $url = $base_path . $path .$options['fragment'];
   }
+  
   if (!$options['absolute']) {
     return $url;
   } else {
-    return $GLOBALS['base_url'] . $url;
+    return $GLOBALS['base_root'] . $url;
   }
 }
 
@@ -975,12 +978,8 @@ function conf_init() {
  * 转至安装文件
  */
 function dd_to_install() {
-  if (!$to = trim(dirname($_SERVER['SCRIPT_NAME']), '\,/')) {
-    $to = '/';
-  } else {
-    $to .= '/';
-  }
-  header('Location: '.$to.'install.php');
+  conf_init();
+  header('Location: '.$GLOBALS['base_path'].'install.php');
   exit;
 }
 

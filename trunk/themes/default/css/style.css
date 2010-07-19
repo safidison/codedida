@@ -111,6 +111,7 @@ li{
 	clear: both;
 	height: 120px;
   text-align: center;
+  border-top: 1px solid #ccc;
 }
 
 #main {
