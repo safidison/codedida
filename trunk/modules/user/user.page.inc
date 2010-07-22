@@ -15,29 +15,6 @@ function user_default() {
  */
 function user_page_pass() {
   switch ($_GET['type']) {
-    case 'mail':
-      if ($_GET['ajax'] == 'submit') {
-        if ($_POST['name']) {
-          $o = db_query('SELECT status, name, uid, mail FROM {users} WHERE name = ?', array($_POST['name']), array('return' => 'one'));
-        } else if ($_POST['mail']) {
-          $o = db_query('SELECT status, name, uid, mail FROM {users} WHERE mail =?', array($_POST['mail']), array('return' => 'one'));
-        } else {
-          dd_js_print('$(\'#ajax_description\').html("邮箱或昵称必填一项").show(300);');
-        }
-        if ($o->uid) {
-          if ($o->status == 1) {
-            if (_user_newpass($o->uid, $o->name, $o->mail)) {
-              dd_js_print('$(\'#ajax_description\').html("找回密码的方式已发送到你的邮箱，请注意查收。").show(300);');
-            } else {
-              dd_js_print('$(\'#ajax_description\').html("找回失败，请重试。").show(300);');
-            }
-          } else if (!$o->status) {
-            $str = addslashes('你的账号还未激活。'.l('立即激活', 'user/activation/').'。');
-            dd_js_print('$(\'#ajax_description\').html("'.$str.'").show(300);');
-          }
-        }
-      }
-    exit();
     case 'newpass':
       if ($_GET['str'] && $_GET['uid']) {
         if ($uid = db_query('SELECT uid FROM {users} WHERE uid = ? AND newpass = ? AND active > ?', array($_GET['uid'], $_GET['str'], ($_SERVER['REQUEST_TIME'] - 86400)), array('return' => 'column'))) {
@@ -56,16 +33,11 @@ function user_page_pass() {
       }
     break;
   }
+  
   $form['settings'] = array(
-    '#ajax_validate' => true,
+    '#values_object' => true,
+    '#validate' => array('user_page_pass_validate'),
     '#description' => t('user', '请输入注册邮箱或昵称'),
-    '#ajax_submit' => array(
-      'des' => true,
-      'options' => array(
-        'dataType' => 'script',
-        'url' => url('user/pass', array('query' => array('type' => 'mail', 'ajax' => 'submit'))),
-      ),
-    ),
   );
   $form['fields']['mail'] = array(
     '#type' => 'textfield',
@@ -77,9 +49,41 @@ function user_page_pass() {
   );
   $form['fields']['submit'] = array(
     '#type' => 'submit',
+    '#submit' => 'user_page_pass_submit',
     '#value' => '确认'
   );
   return $form;
+}
+
+function user_page_pass_validate(&$form, &$v) {
+  if ($v['name']) {
+    $v['_dida_values']->_ac = db_query('SELECT status, name, uid, mail FROM {users} WHERE name = ?',
+    array($v['name']), array('return' => 'one'));
+  } else if ($v['mail']) {
+    $v['_dida_values']->_ac = db_query('SELECT status, name, uid, mail FROM {users} WHERE mail =?',
+    array($v['mail']), array('return' => 'one'));
+  } else {
+    $t['mail']['#error'][] = t('user', '邮箱或昵称必填一项');
+  }
+  
+  if (!isset($v['_dida_values']->_ac->uid)) {
+    $t['mail']['#error'][] = t('user', '帐号或邮箱尚未注册');
+  } else if ($v['_dida_values']->_ac->status == 0) {
+    $t['mail']['#error'][] = t('user', '你的帐号还未激活，<a href="!link">立即激活</a>',
+    array('!link' => url('user/activation')));
+  }
+  
+  return $t;
+}
+
+function user_page_pass_submit(&$form, &$v) {
+  if ($v['_dida_values']->_ac->uid) {
+    if (_user_newpass($v['_dida_values']->_ac->uid, $v['_dida_values']->_ac->name, $v['_dida_values']->_ac->mail)) {
+      dd_set_message(t('user', '找回密码的方式已发送到你的邮箱，请注意查收'));
+    } else {
+      dd_set_message(t('user', '找回失败，请重试'));
+    }
+  }
 }
 
 /**
