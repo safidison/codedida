@@ -45,7 +45,17 @@ DirectoryIndex index.php
 <IfModule mod_rewrite.c>
   RewriteEngine on
   
+  # 将 css、js 交由系统处理，如目录下有其它程序，可能有未知错误产生
   RewriteRule .*.(css|js)$ /index.php?_didaCssOrJsCache=true&type=$1 [L,QSA]
+  
+  # 以下两种方式不能同时启用
+  # 使用 www 访问，未加 www 前缀的访问将跳转
+  # RewriteCond %{HTTP_HOST} !^www\. [NC]
+  # RewriteRule ^ http://www.%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+  #
+  # 不使用 www 前缀，以 www 前缀的访问将跳转
+  # RewriteCond %{HTTP_HOST} ^www\.(.+)$ [NC]
+  # RewriteRule ^ http://%1%{REQUEST_URI} [L,R=301]
   
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d

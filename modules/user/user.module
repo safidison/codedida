@@ -1083,7 +1083,7 @@ function user_roles_opt() {
 function user_login_form($url = NULL) {
   global $conf;
   if (!$url) {
-    if ($q = dd_query_string_encode($_REQUEST, array_merge(array('q', 'ajax'), array_keys($_COOKIE)))) {
+    if ($q = dd_query_string_encode($_GET, array_merge(array('q', 'ajax'), array_keys($_COOKIE)))) {
       $q = '&' . $q;
     }
     if (strpos($_GET['q'], 'user/login') !== false) {
@@ -1144,7 +1144,7 @@ function user_login_form($url = NULL) {
   
   $form['fields']['submit'] = array(
     '#type' => 'submit',
-    '#value' => t('user', '确认登录'),
+    '#value' => t('user', '登录'),
     '#weight' => 100,
     '#prefix' => '<div id="user_login_form_submit" class="form_item form_item_submit">',
   );
