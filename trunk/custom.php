@@ -4,7 +4,7 @@
 if (!$_GET['module']) die('byebye');
 require_once './includes/bootstrap.inc';
 
-header('charset=utf-8');
+header('Content-Type: text/html; charset=utf-8');
 
 if ($_GET['bootstrap'] != 'full') {
   $includes = NULL;

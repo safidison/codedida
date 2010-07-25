@@ -227,7 +227,7 @@ function menu_set_alias($path, $alias, $type, $tid) {
 // 更新别名
 function menu_update_alias($alias, $oldalias) {
   $alias = trim($alias);
-  if (db_exex('UPDATE {alias} SET alias = ? WHERE alias = ?', array($alias, $oldalias)) && $path = db_query('SELECT path FROM {alias} WHERE alias = ?', array($alias), array('return' => 'column'))) {
+  if (db_exec('UPDATE {alias} SET alias = ? WHERE alias = ?', array($alias, $oldalias)) && $path = db_query('SELECT path FROM {alias} WHERE alias = ?', array($alias), array('return' => 'column'))) {
     cache_del('cid', $oldalias, 'cache_menu');
     return $path;
   }
