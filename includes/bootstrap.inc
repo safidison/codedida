@@ -1202,6 +1202,27 @@ function dd_http_request($url, $data = NULL, $method = 'POST', $headers = array(
     return $result;
   }
   
+  if (is_array($data) || is_object($data)) {
+    $http_data = '';
+    foreach ($data as $key => $value) {
+      $http_data .= rawurlencode(trim($key)) .'=' . rawurlencode(trim($value)) . '&';
+    }
+    $http_data = substr($http_data, 0, -1);
+  } else {
+    $http_data = $data;
+  }
+  
+  
+  // GET 方式，将参数附加在 url 之后
+  if (isset($http_data) && $method == 'GET') {
+    if (isset($uri['query'])) {
+      $uri['query'] .= '&' .$http_data;
+    } else {
+      $uri['query'] = $http_data;
+    }
+    unset($http_data);
+  }
+  
   // 解析路径
   $path = isset($uri['path']) ? $uri['path'] : '/';
   if (isset($uri['query'])) {
@@ -1213,15 +1234,6 @@ function dd_http_request($url, $data = NULL, $method = 'POST', $headers = array(
     'Host' => "Host: $host",
     'User-Agent' => 'User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; zh-CN; rv:1.9.2.3) Gecko/20100401 Firefox/3.6.3 GTBDFff GTB7.0 ',
   );
-  
-  if (is_array($data) || is_object($data)) {
-    foreach ($data as $key => $value) {
-      $http_data .= rawurlencode(trim($key)) .'=' . rawurlencode(trim($value)) . '&';
-    }
-    $http_data = substr($http_data, 0, -1);
-  } else {
-    $http_data = $data;
-  }
   
   $content_length = strlen($http_data);
   if ($content_length > 0 || $method == 'POST' || $method == 'PUT') {
@@ -1242,9 +1254,13 @@ function dd_http_request($url, $data = NULL, $method = 'POST', $headers = array(
       $defaults[$header] = $header .': '. $value;
     }
   }
+  
   $request = $method .' '. $path ." HTTP/1.0\r\n";
-  $request .= implode("\r\n", $defaults);
+  if ($defaults) {
+    $request .= implode("\r\n", $defaults);
+  }
   $request .= "\r\n\r\n";
+  
   $request .= $http_data;
   
   $result->request = $request;
