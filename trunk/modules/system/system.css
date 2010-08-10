@@ -172,7 +172,19 @@ legend.desc{
 legend.asc{
   background: url(../../misc/images/arrow-asc.png) left 0 no-repeat;
 }
-
+.ja_loading {
+  background-image: url(../../misc/throbber.gif);
+  background-repeat: no-repeat;
+  background-position:left -19px;
+  padding-left: 12px;
+}
+span.ja_loading {
+  display: block;
+  float: left;
+  width: 16px;
+  height: 20px;
+  padding: 0;
+}
 /*tabs*/
 .tabs{
   height: 30px;

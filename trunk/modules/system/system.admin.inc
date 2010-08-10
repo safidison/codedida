@@ -815,7 +815,7 @@ function system_cache_clear() {
   );
   $form['fields']['submit'] = array(
     '#type' => 'submit',
-    '#field_prefix' => dd_cp_checkbox(1, array('alt' => 'system_cache_clear_type_value')),
+    '#field_prefix' => dd_form_ajax_all_check(array('alt' => 'system_cache_clear_type_value')),
     '#value' => t('system', '清除缓存'),
     '#submit' => 'system_cache_clear_submit',
   );

@@ -72,7 +72,7 @@ function user_menu() {
   );
   $items['user/edit'] = array(
     'title' => '编辑资料',
-    'access_callback' => 'user_is_login',
+    'access_callback' => 'user_is_edit',
     'page_callback' => 'user_page_edit',
     'file' => 'user.page.inc',
   );
@@ -188,6 +188,21 @@ function user_is_not_login($goto = NULL) {
 }
 
 /**
+ * 判断编辑权限
+ * @param (object) $ac
+ */
+function user_is_edit($ac = NULL) {
+  if (!isset($ac->uid)) {
+    $ac = $GLOBALS['user'];
+  }
+  
+  if ($ac->uid > 0) {
+    return $ac->uid == $GLOBALS['uid'] && user_access('user change own', $ac) 
+    || user_access('admin user edit all', $ac);
+  }
+}
+
+/**
  * 权限验证
  */
 function user_access($string, $account = NULL, $reset = false) {
@@ -288,10 +303,12 @@ function user_perm() {
     'admin user roles' => t('user', '用户角色'),
     'admin user fields' => t('user', '用户字段'),
     'admin user settings' => t('user', '用户设置'),
-    'admin user change mail' => t('user', '修改用户邮箱'),
-    'admin user change name' => t('user', '修改用户昵称'),
-    'user change mail' => t('user', '修改自己的邮箱'),
-    'user change name' => t('user', '修改自己的昵称'),
+    'admin user edit all' => t('user', '编辑所有用户资料'),
+    'admin user change mail' => t('user', '编辑用户邮箱'),
+    'admin user change name' => t('user', '编辑用户昵称'),
+    'user change own' => t('user', '编辑自己的资料'),
+    'user change mail' => t('user', '编辑自己的邮箱'),
+    'user change name' => t('user', '编辑自己的昵称'),
   );
 }
 

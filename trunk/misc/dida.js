@@ -101,16 +101,6 @@ Dida.onun = function(msg) {
   }
 };
 
-Dida.callFunc = function(cb) {
-	if (typeof cb == 'function') {
-		eval(cb);
-	} else {
-    var func;
-    func = eval(cb);
-    return func.apply(null, Array.prototype.slice.call(arguments, 1));
-  }
-};
-
 Dida.parseQuery = function(query) {
    var Params = {};
    if (!query) {return Params;}
@@ -299,6 +289,11 @@ Dida.dialog = function(o) {
 	return false;
 }
 
+Dida.dialog_colse = function() {
+	$('#dialog_wrapper').remove();
+	location.reload();
+}
+
 Dida.php = {
 	in_array: function(str, arr) {
 	  for (i = 0; i < arr.length; i++) {
@@ -310,6 +305,60 @@ Dida.php = {
 	  return false;
 	}
 };
+
+Dida.ajaxSuccess = function(obj, data, type) {
+  if (obj.attr('type') != 'js') {
+  	var level = obj.attr('level');
+  	
+  	if (level && data == 1) {
+  		data = level;
+  	}
+  	
+    switch (data) {
+      case 'parent':
+      	// 删除父级
+      	obj.parent().remove();
+      break;
+      case 'two':
+      	// 删除祖级
+      	obj.parent().parent().remove();
+      break;
+      case 'own':
+      	// 删除本身
+      	obj.remove();
+      break;
+      case 'tr':
+      	// 删除上级中第一个匹配的 tr
+      	obj.closest('tr').remove();
+      break;
+      default:
+        var fun = obj.attr('fun');
+        if (data == 1) {
+          var text = obj.attr('replace');
+          if (fun) {
+            eval(fun + '(1);');
+          } else if (text) {
+          	if (type == 'a') {
+          		obj.attr('href', '#').unbind('click').text(text);
+          	} else {
+          		obj.attr('disabled', true).after('<span class="msgjs">' + text + '</span>');
+          	}
+          }
+          
+        }else if (data && fun) {
+          eval(fun + '('+data+');');
+        } else if (type == 'a') {
+          alert(data ? data : '操作失败');
+        } else {
+        	obj.after('<span class="msgjs">' + (data ? data : '操作失败') + '</span>');
+        }
+    }
+  } else {
+    eval(data);
+  }
+  
+  $(this).removeClass('ja_loading');
+}
 
 $(function() {
   $('#keywords').one('click', function() {
@@ -343,53 +392,11 @@ $(function() {
   $('.confirmajax').click(function() {
     msg = $(this).attr('alt');
     if (confirm((msg ? msg : '确认此操作吗？'))) {
+    	$(this).addClass('ja_loading');
       var $$ = $(this);
       var url = $$.attr('href');
       $.get(url, {'timestamp': Dida.gettime()}, function(data) {
-        if ($$.attr('type') != 'js') {
-        	var level = $$.attr('level');
-        	
-        	if (level && data == 1) {
-        		data = level;
-        	}
-        	
-          switch (data) {
-	          case 'parent':
-	          	// 删除父级
-	            $$.parent().remove();
-	          break;
-	          case 'two':
-	          	// 删除祖级
-	            $$.parent().parent().remove();
-	          break;
-	          case 'own':
-	          	// 删除本身
-	            $$.remove();
-	          break;
-	          case 'tr':
-	          	// 删除上级中第一个匹配的 tr
-	            $$.closest('tr').remove();
-	          break;
-	          default:
-		          var fun = $$.attr('fun');
-		          if (data == 1) {
-		            var text = $$.attr('replace');
-		            
-		            if (fun) {
-		              eval(fun + '('+data+');');
-		            } else if (text) {
-		              $$.attr('href', '#').unbind('click').text(text);
-		            }
-		            
-		          }else if (data && fun) {
-		            eval(fun + '('+data+');');
-		          } else {
-		            alert(data ? data : '操作失败');
-		          }
-          }
-        } else {
-          eval(data);
-        }
+      	Dida.ajaxSuccess($$, data, 'a');
       })
     }
     return false;
@@ -478,6 +485,7 @@ $(function() {
       $('.' + c).not($('input.form_all_check')).each(function() {
         if (this.checked) {
           var $$ = $(this);
+          $$.after('<span class="ja_loading"></span>');
           url = $$.attr('href') ? $$.attr('href') : href;
           var opt = {};
           opt.timestamp = Dida.gettime();
@@ -486,25 +494,8 @@ $(function() {
             opt.name = $(this).attr('alt');
           }
           $.get(url, opt, function(data) {
-            if ($$.attr('type') != 'js') {
-              var fun = $$.attr('fun');
-              if (data == 1) {
-                var text = $$.attr('rel');
-                if (fun) {
-                  eval(fun + '('+data+');');
-                }else if (text) {
-                  $$.attr('disabled', true).after('<span class="msgjs">' + text + '</span>');
-                } else {
-                  $$.parent().parent().remove();
-                }
-              }else if (data && fun) {
-                eval(fun + '('+data+');');
-              } else {
-                $$.after('<span class="msgjs">' + (data ? data : '操作失败') + '</span>');
-              }
-            } else {
-              eval(data);
-            }
+          	$$.next('ja_loading').remove();
+          	Dida.ajaxSuccess($$, data, 'input');
           })
         }
       })

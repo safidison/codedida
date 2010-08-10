@@ -226,8 +226,8 @@ function file_get_array_data() {
   return $files;
 }
 
-function _file_get_array_data(array $array, $keys = '') {
-  if (!$array['name']) return false;
+function _file_get_array_data($array, $keys = '') {
+  if (!is_array($array) || !$array['name']) return false;
   
   foreach ($array['name'] as $key => $field) {
     
@@ -471,7 +471,7 @@ function file_create_name(&$file, $validate = NULL, $rename = 1) {
     return false;
   }
   
-  $file->filepath = $savepath .'/'. $file->filename;
+  $file->filepath = $savepath .'/'. strtr($file->filename, array(' ' => '-', '　' => '-'));
   
   // 重命名浏览器可执行的文件
   
@@ -481,6 +481,8 @@ function file_create_name(&$file, $validate = NULL, $rename = 1) {
     $file->filename .= '.txt';
     $file->extension = 'txt';
   }
+  
+  
   
   if (!$rename) {
     return true;
@@ -579,6 +581,10 @@ function file_save_validate(&$file, $validate) {
             return false;
           }
         break;
+        default:
+          if (!isset($file->{$key})) {
+          $file->{$key} = $val;
+          }
       }
     }
   }
@@ -590,30 +596,32 @@ function file_save_validate(&$file, $validate) {
  * 文件信息写入数据库
  */
 function file_save($file) {
-  if (!$file->ext_id) $file->ext_id = 0;
+ // if (!$file->ext_id) $file->ext_id = 0;
   
-  if (!$file->ext_id2) $file->ext_id2 = 0;
+ // if (!$file->ext_id2) $file->ext_id2 = 0;
   
-  if (!$file->ext_type) $file->ext_type = '';
+ // if (!$file->ext_type) $file->ext_type = '';
   
   if (!$file->uid) $file->uid = $GLOBALS['user']->uid;
   
   if (!$file->timestamp) $file->timestamp = $_SERVER['REQUEST_TIME'];
   
-  if (!isset($file->filebody)) $file->filebody = '';
+ // if (!isset($file->filebody)) $file->filebody = '';
   
   if ($file->body)  $file->filebody = $file->body;
   
+  /*
   if (db_exec('INSERT INTO {files} (uid, filename, filepath, filemime, filesize, status,
   timestamp, ext_id, ext_id2, ext_type, filebody) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
   array($file->uid, $file->filename, $file->filepath, $file->filemime,
   $file->filesize, $file->status, $file->timestamp, $file->ext_id,
   $file->ext_id2, $file->ext_type, $file->filebody))) {
-    
-    $file->fid = db_last_insert_id();
+  */
+  
+  if (db_write_record('files', $file)) {
     return $file;
-    
   }
+  
 }
 
 /**
@@ -1302,6 +1310,7 @@ function file_get_mimetype($key, $value = 0) {
       343 => 'x-conference/x-cooltalk',
       344 => 'x-epoc/x-sisx-app',
       345 => 'x-world/x-vrml',
+      348 => 'application/iac'
     ),
     'extensions' => array(
       'ez' => 0,
@@ -1768,6 +1777,7 @@ function file_get_mimetype($key, $value = 0) {
       'f4a' => 346,
       'f4b' => 346,
       'flv' => 347,
+      'iac' => 348,
     ),
   );
   
@@ -1777,9 +1787,10 @@ function file_get_mimetype($key, $value = 0) {
       return $type['mimetypes'][$type['extensions'][$key]];
     }
   } else if ($value) {
-    $key = strtolower($key);
-    if (isset($type['mimetypes'][$key])) {
-      return $type['extensions'][$type['mimetypes'][$key]];
+    $value = strtolower($value);
+    $key = array_search($value, $type['mimetypes']);
+    if ($key !== false) {
+      return array_search($key, $type['extensions']);
     }
   }
 }
