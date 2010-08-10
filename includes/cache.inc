@@ -203,7 +203,9 @@ function cache_get_page($path) {
       $timestamp = fread($handle, 10);
       
       // 发送 header，检查客户端版本
-      dd_page_cache_header($timestamp);
+      //dd_page_cache_header($timestamp);
+      
+      dd_page_header();
       
       return fread($handle, filesize($filepath));
     }

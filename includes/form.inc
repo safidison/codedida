@@ -835,26 +835,6 @@ function dd_form_checkbox($field) {
   return $output . dd_form_error($field);
 }
 
-/**
- * 全选
- * @param (string) $key
- *  字段键名
- * @param unknown_type $att
- * @param unknown_type $value
- */
-function dd_cp_checkbox($key = '0', $att = NULL, $value = NULL) {
-  if (!isset($att['class'])) {
-    $att['class'] = 'form_all_check';
-  }
-  if (!isset($att['alt'])) {
-    $att['alt'] = 'field_check_dom';
-  }
-  if (!isset($value)) {
-    $value = t('system', '全选');
-  }
-  return dd_form_checkbox(array('#name' => 'check',  '#attributes' => $att, '#options' => array($key => $value)));
-}
-
 function dd_form_ajax_form($url, $title = '确认提交', $att = NULL) {
  $att['alt'] = $url;
  $att['class'] = 'dd_form_ajax_form_button';
@@ -866,15 +846,70 @@ function dd_form_ajax_form($url, $title = '确认提交', $att = NULL) {
 	));
 }
 
-function dd_cp_delete($url, $title = NULL, $class = 0) {
-  return dd_form_button(array('#name' => 'admin_delete_button[]', '#value' => ($title ? $title : '确认删除'), '#attributes' => array('alt' => $url, 'class' => 'admin_delete_button', 'rel' => $class ? $class : 'admin_delete_check')));
+/**
+ * 全选
+ * @param (array) $att
+ * @param (string) $value
+ */
+function dd_form_ajax_all_check($att = NULL, $value = NULL) {
+  $output = '<input type="checkbox" name="admin_check_all[]" ';
+  
+  if (!isset($att['class'])) {
+    $att['class'] = 'form_all_check';
+  }
+  if (!isset($att['alt'])) {
+    $att['alt'] = 'field_check_dom';
+  }
+  
+  $output .= dd_attributes($att);
+  $output .= ' />';
+  
+  $output .= !isset($value) ? '全选' : $value;
+  return $output;
 }
 
-function dd_form_allcheck($alt, $str = '全选', $att = NULL) {
-  return '<input type="checkbox" class="form_all_check '.$alt.'" alt="'.$alt.'" '.dd_attributes($att).' />'.$str;
+/**
+ * 配合全选按钮，class 对应全选按钮 alt 属性
+ * @param (array) $att
+ */
+function dd_form_ajax_check($att = NULL) {
+  $output = '<input type="checkbox" name="admin_delete_check[]" ';
+  
+  if (!isset($att['class'])) {
+    $att['class'] = 'admin_field_check_dom';
+  }
+  
+  $output .= drupal_attributes($att);
+  $output .= ' />';
+  
+  return $output;
 }
 
-//下拉框字段
+/**
+ * 配合全选，通过 ajax 执行批量操作，rel 对应被选中对象的 class 属性
+ * @param (array) $att
+ */
+function dd_form_ajax_button($att = NULL) {
+  $output = '<input name="admin_delete_button[]" type="button" ';
+  if (!isset($att['value'])) {
+    $att['value'] = '确认删除';
+  }
+  
+  if (!isset($att['rel'])) {
+    $att['rel'] = 'admin_field_check_dom';
+  }
+  
+  $att['class'] = 'admin_delete_button';
+  
+  $output .= dd_attributes($att);
+  $output .= ' />';
+  return $output;
+}
+
+/**
+ * 下拉框字段
+ * @param (array) $field
+ */
 function dd_form_select($field) {
   $output = dd_form_label($field) . '<select name="'.$field['#name'].'"'.dd_attributes($field['#attributes']).'>';
   foreach ($field['#options'] as $key => $op) {

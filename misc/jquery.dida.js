@@ -11,8 +11,9 @@ jQuery.fn.extend({
     $('.js_menu_level_parent').css({position: 'relative'}).hover(function() {
       var _c = $(this).children('ul').eq(0);
       _c.css({left: (this.offsetWidth - _c.width())/2 + 'px', top: this.offsetHeight, display:'block'});
+      $(this).addClass('active');
     },function() {
-      $(this).children('ul').eq(0).hide();
+      $(this).removeClass('active').children('ul').eq(0).hide();
     });
     
     $('.js_menu_level_children').css({position: 'relative'}).hover(function() {

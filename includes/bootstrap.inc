@@ -267,6 +267,7 @@ function dd_get_absolute_url() {
  * 页面不存在
  */
 function dd_get_not() {
+  header('HTTP/1.1 404 Not Found');
   if ($GLOBALS['conf']['page_not_history']) {
     dd_set_message(t('system', '抱歉，%string 不存在', array('%string' => dd_get_absolute_url())), 'error');
     dd_goto(dd_get_history());
@@ -283,6 +284,7 @@ function dd_get_not() {
 function dd_get_access() {
   global $user;
   if ($user->uid > 0) {
+    header('HTTP/1.1 403 Forbidden');
     if ($GLOBALS['conf']['page_access_history']) {
       dd_set_message(t('system', '抱歉，没有权限访问该地址 %string', array('%string' => dd_get_absolute_url())), 'error');
       dd_goto(dd_get_history());
@@ -1348,7 +1350,7 @@ function dd_http_request($url, $data = NULL, $method = 'POST', $headers = array(
     case 307: // 临时重定向
       $location = $result->headers['Location'];
       if ($retry) {
-        $result = dd_http_request($result->headers['Location'], $headers, $method, $data, --$retry);
+        $result = dd_http_request($result->headers['Location'], $data, $method, $headers, --$retry);
         $result->redirect_code = $result->code;
       }
       $result->redirect_url = $location;

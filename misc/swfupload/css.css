@@ -19,21 +19,21 @@ div.ck_swfupload_wrappe, #files_view, #ck_swfupload{
 
 div.fieldset {
 	border:  1px solid #afe14c;
-	margin: 10px 0;
-	padding: 20px 10px;
+	margin: 5px 0;
+	padding: 5px 10px;
 }
 div.fieldset span.legend {
 	position: relative;
 	background-color: #FFF;
 	padding: 3px;
-	top: -30px;
+	top: -10px;
 	font: 700 14px Arial, Helvetica, sans-serif;
 	color: #73b304;
 }
 .su_files_table{
   overflow: auto;
-  max-height: 150px;
-  _height: 150px;
+  max-height: 130px;
+  _height: 130px;
 }
 #ck_swfupload .su_content{
 	text-align: right;
@@ -118,7 +118,10 @@ div.ck_swfupload_view img{
 }
 #ck_files{
   width: 100%;
-  height: 300px;
+  height: 280px;
+  background: #fff;
+  overflow: auto;
+  border: none;
 }
 #swf_tabs a{
   padding: 7px 10px;

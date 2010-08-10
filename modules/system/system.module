@@ -300,7 +300,7 @@ function _system_call_custom_form($op) {
   );
   
   if ($op == 'cache_clear') {
-    $form['fields']['button']['#field_prefix'] = dd_cp_checkbox(1, array('alt' => '_system_call_custom_cache_clear_type_value'));
+    $form['fields']['button']['#field_prefix'] = dd_form_ajax_all_check(array('alt' => '_system_call_custom_cache_clear_type_value'));
   }
   
   $form['settings'] = array(
@@ -960,7 +960,7 @@ function dd_get_editor($dom, $v = array()) {
 			)
 		);
 		
-		dd_add_js('var toolbar = '.dd_to_js($toolbar).';', 'inline_nojq', 0, 'footer');
+		dd_add_js('var toolbar = '.dd_to_js($toolbar).';function updateTextArea(dom){$("#"+dom).val(CKEDITOR.instances[dom].getData());};', 'inline_nojq', 0, 'footer');
 	}
   if (!isset($v['extraPlugins'])) {
     $v['extraPlugins'] = 'swfupload,autosave,bodybreak,insertcode,smiley';
@@ -1014,7 +1014,10 @@ function dd_get_editor($dom, $v = array()) {
 		case 'medium': default:
 			$v['toolbar'] = ':::code:::toolbar.medium';
 	}
-	dd_add_js('CKEDITOR.replace(\''.$dom.'\', '.dd_to_js($v).');', 'inline_nojq', 0, 'footer');
+	
+  $js = 'CKEDITOR.instances["'.$dom.'"].on("instanceReady", function(){this.document.on("keyup", function(){updateTextArea(\''.$dom.'\');});this.document.on("paste", function(){updateTextArea(\''.$dom.'\');});});';
+	
+	dd_add_js('CKEDITOR.replace(\''.$dom.'\', '.dd_to_js($v).');' . $js, 'inline_nojq', 0, 'footer');
 	$i = 1;
 }
 
