@@ -618,7 +618,7 @@ function _dd_form_fieldset($field, $type) {
     	$output .= '<a href="#">'.$field['#fieldset_legend'].'</a></legend><div class="fieldset-wrapper">';
     }
     if (!$field['#type'] && $field['#description']) {
-      $output .= '<div class="description form_description form_setting_description">'.$field['#description'].'</div>';
+      $output .= '<div class="description form_description form_setting_description form_fieldset_description">'.$field['#description'].'</div>';
     }
   } else if ($field['#fieldset_suffix']) {
   	$output = '</div></fieldset>';

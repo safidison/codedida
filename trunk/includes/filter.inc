@@ -20,7 +20,7 @@ function filter_view($text, $format = NULL, $type = NULL, $id = NULL) {
   
   if ($conf['filters'][$format] && is_array($conf['filters'][$format])) {
     foreach ($conf['filters'][$format] as $filter) {
-      $text = call_user_func($filter['module'] . '_filter', 'view', $filter['delta'], $filter['format'], $text, $filter['filter']);
+      $text = call_user_func($filter['module'] . '_filter', 'view', $filter['delta'], $filter['format'], $text, $filter['filter'], $type, $id);
     }
   }
   return $text;

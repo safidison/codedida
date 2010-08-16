@@ -1173,6 +1173,7 @@ function system_admin_format() {
     break;
     default:
       if ($lists = _module_invoke_all('filter', 'list')) {
+        
         $allLists = array();
         foreach ($lists as $module => $filters) {
           foreach ($filters as $delta => $filter) {
@@ -1362,7 +1363,7 @@ function system_admin_filter_form($fid = NULL) {
     );
     $form['fields']['filter'] = array(
 	    '#fieldset_prefix' => 'asc',
-	    '#fieldset_legend' => t('system', '过滤器'),
+	    '#fieldset_legend' => t('system', '过滤器列表'),
       '#fieldset_suffix' => 1,
       '#description' => t('system', '权重将决定过滤器调用的先后顺序，多个过滤器之间可能存在冲突')
     );
@@ -1382,26 +1383,32 @@ function system_admin_filter_form($fid = NULL) {
           $op[] = l(t('system', '清除'), $filter->delete.'/'.$filter->delta, dd_redirect());
         }
       }
+      
+      $form['fields']['filter'][$key] = array(
+        '#fieldset_prefix' => 'asc',
+        '#fieldset_legend' => t('system', $filter->title),
+        '#fieldset_suffix' => 1,
+        '#description' => dd_imp($op) . check_plain($filter->description),
+        '#fieldset' => true,
+      );
       $form['fields']['filter'][$key]['filter_id'] = array(
           '#type' => 'hidden',
           '#constant' => 1,
           '#default_value' => $filter->filter_id,
         );
       $form['fields']['filter'][$key]['check'] = array(
-          '#title' => t('system', $filter->title),
-          '#field_prefix' => t('system', '启用'),
+          '#title' => t('system', '启用'),
           '#prefix' => '<div>',
           '#type' => 'checkbox',
           '#default_value' => $filter->fid ? 1 : 0,
         );
       $form['fields']['filter'][$key]['weight'] = array(
-          '#field_prefix' => t('system', '权重'),
+          '#title' => t('system', '权重'),
           '#type' => 'weight',
-          '#start' => -10,
+          '#start' => -30,
           '#suffix' => '</div>',
           '#default_value' => $filter->weight ? $filter->weight : 0,
-          '#end' => 10,
-          '#description' => dd_imp($op) . check_plain($filter->description)
+          '#end' => 30,
         );
     }
   }

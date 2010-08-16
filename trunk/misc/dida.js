@@ -307,6 +307,9 @@ Dida.php = {
 };
 
 Dida.ajaxSuccess = function(obj, data, type) {
+	
+	obj.removeClass('ja_loading');
+	
   if (obj.attr('type') != 'js') {
   	var level = obj.attr('level');
   	
@@ -314,59 +317,68 @@ Dida.ajaxSuccess = function(obj, data, type) {
   		data = level;
   	}
   	
-    switch (data) {
-      case 'parent':
-      	// 删除父级
-      	obj.parent().remove();
-      break;
-      case 'two':
-      	// 删除祖级
-      	obj.parent().parent().remove();
-      break;
-      case 'own':
-      	// 删除本身
-      	obj.remove();
-      break;
-      case 'tr':
-      	// 删除上级中第一个匹配的 tr
-      	obj.closest('tr').remove();
-      break;
-      default:
-        var fun = obj.attr('fun');
-        if (data == 1) {
-          var text = obj.attr('replace');
-          if (fun) {
-            eval(fun + '(1);');
-          } else if (text) {
-          	if (type == 'a') {
-          		obj.attr('href', '#').unbind('click').text(text);
-          	} else {
-          		obj.attr('disabled', true).after('<span class="msgjs">' + text + '</span>');
-          	}
-          }
-          
-        }else if (data && fun) {
-          eval(fun + '('+data+');');
-        } else if (type == 'a') {
-          alert(data ? data : '操作失败');
-        } else {
-        	obj.after('<span class="msgjs">' + (data ? data : '操作失败') + '</span>');
-        }
-    }
+  	var fun = obj.attr('fun');
+  	
+  	if (fun) {
+  		
+  		// 调用函数，依次传递：返回值、当前元素、类型
+  		Dida.callFunc(fun, data, obj, type);
+  		
+  	} else {
+  	
+	    switch (data) {
+	      case 'parent':
+	      	// 删除父级
+	      	obj.parent().remove();
+	      break;
+	      case 'two':
+	      	// 删除祖级
+	      	obj.parent().parent().remove();
+	      break;
+	      case 'own':
+	      	// 删除本身
+	      	obj.remove();
+	      break;
+	      case 'tr':
+	      	// 删除上级中第一个匹配的 tr
+	      	obj.closest('tr').remove();
+	      break;
+	      
+	      default:
+	        if (data == 1) {
+	        	
+	          var text = obj.attr('replace');
+	          if (text) {
+	          	if (type == 'a') {
+	          		obj.attr('href', '#').unbind('click').text(text);
+	          	} else {
+	          		obj.attr('disabled', true).after('<span class="msgjs">' + text + '</span>');
+	          	}
+	          }
+	          
+	        } else if (type == 'a') {
+	          alert(data ? data : '操作失败');
+	        } else {
+	        	obj.after('<span class="msgjs">' + (data ? data : '操作失败') + '</span>');
+	        }
+	    }
+  	}
   } else {
+  	
     eval(data);
+    
   }
-  
-  $(this).removeClass('ja_loading');
 }
 
 $(function() {
   $('#keywords').one('click', function() {
     $(this).val('');
   });
+  
   $('.button_goto').click(function() {
     location.href = $(this).attr('href');
   });
+  
   $('.homepage_button').click(function() {
     if ($.browser.msie) {
       this.style.behavior='url(#default#homepage)';this.setHomePage($(this).attr('href'))
@@ -375,6 +387,7 @@ $(function() {
     }
     return false;
   });
+  
   $('.favorites_button').click(function() {
     Dida.favorite($(this).attr('title'), $(this).attr('href'));
     return false;
@@ -575,6 +588,7 @@ $(function() {
       });
     }
   };
+  
   //自动完成
   if (settings.auto) {
   	var ui_auto = {};
@@ -621,6 +635,7 @@ $(function() {
       }
     });
   }
+  
   if (settings.sort) {
     var element = settings.sort;
     $(element).each(function(i) {
@@ -632,6 +647,16 @@ $(function() {
       });
     });
   };
+  
+  if (settings.markItUp && typeof(Dida.markitup) == 'object') {
+  	$(settings.markItUp).each(function() {
+  		if (this.dom) {
+	  		var $$ = this;
+	  		var type = $$.type || 'html';
+	  		$(this.dom).markItUp(Dida.markitup[type].settings($$.options));
+  		}
+  	});
+  }
   
   // ajax 验证
   if (settings.ajax_validate) {
@@ -714,6 +739,7 @@ $(function() {
       $(o.dom).datepicker(o).focus(function() { this.blur(); });
     });
   };
+  
   function uidata_vali(obj, text, instance, type) {
   	var val_end, val_start;
   	if (type == 'start') {

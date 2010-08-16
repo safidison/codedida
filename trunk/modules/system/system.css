@@ -173,10 +173,10 @@ legend.asc{
   background: url(../../misc/images/arrow-asc.png) left 0 no-repeat;
 }
 .ja_loading {
-  background-image: url(../../misc/throbber.gif);
+  background-image: url(../../misc/images/throbber.gif);
   background-repeat: no-repeat;
   background-position:left -19px;
-  padding-left: 12px;
+  padding-left: 15px;
 }
 span.ja_loading {
   display: block;
