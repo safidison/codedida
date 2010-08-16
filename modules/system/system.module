@@ -547,35 +547,70 @@ function _system_filter_tags($fid, array $tags = array()) {
 }
 
 /**
+ * 代码高亮
+ * @param (array) $mat
+ */
+function _system_filter_code_higth($mat) {
+  if ($mat[2]) {
+    $output = '<pre class="brush: '.$mat[1].';">';
+    $output .= str_replace(array('<br class="system_filter"/>', '<', '>'), array("\n", '&lt;', '&gt;'), $mat[2]);
+    $output .= '</pre>';
+  } else {
+    $output = $mat[0];
+  }
+  
+  return $output;
+}
+
+/**
  * hook_filter
  * 过滤器接口
- * @param $op = string
+ * @param (string) $op
  *  操作类型：
  *   view - 执行过滤，list - 获取列表，add - 添加过滤器，form - 添加\编辑表单
  *   validate - 表单验证，save - 表单保存，delete - 删除过滤器
- * @param $delta = int
+ * @param (int) $delta
  *  过滤器在模块内部的编号
- * @param $format = int
+ * @param (int) $format
  *  调用该种过滤器的输入格式编号
- * @param $value = object 或 sting
+ * @param (object or string) $value
  *  过滤器数据或表单数据，执行过滤时为需过滤的文本
- * @param $filter_id = int
+ * @param (string) $node_type
+ *  view 时，节点自定义类型
+ * @param (int) $node_nid
+ *  view 时，节点自定义 id
+ * @param (int) $filter_id
  *  后台添加的过滤器 id
  * @return *
  */
-function system_filter($op, $delta = NULL, $format = NULL, $value = NULL, $filter_id = NULL) {
+function system_filter($op, $delta = NULL, $format = NULL, $value = NULL, $filter_id = NULL, $node_type = NULL, $node_nid = NULL) {
   switch ($op) {
     case 'view':
-      if ($delta < 3) {
+      if ($delta < 100) {
         switch ($delta) {
           case 0:
+            
             $value = check_plain($value);
+            
           break;
           case 1:
-            $value = nl2br($value);
+            //$value = nl2br($value);
+            
+            // 换行符前是 html 标签，则不替换
+            $value = preg_replace('/([^>])\n/', "$1<br class=\"system_filter\"/>", str_replace("\r\n", "\n", $value));
           break;
           case 2:
             $value = filter_tags_php($value);
+          break;
+          case 3: // 代码高亮
+            
+            if (strpos($value, '[code=') === false) {
+              return $value;
+            }
+            
+            dd_get_highlighter();
+            $value = preg_replace_callback('/\[code=([^\/]*?)\](.*?)\[\/code\]/ims', '_system_filter_code_higth', $value);
+            
         }
       } else if ($filter_id) {
         if ($filter = filter_get_filters($filter_id)) {
@@ -592,6 +627,7 @@ function system_filter($op, $delta = NULL, $format = NULL, $value = NULL, $filte
                     foreach ($matches[2] as $key => $matche) {
                       if (!$filter->tags[mb_strtolower($matche)]) {
                         $value = str_replace($matches[0][$key], check_plain($matches[0][$key]), $value);
+                        
                       }
                     }
                   }
@@ -623,30 +659,39 @@ function system_filter($op, $delta = NULL, $format = NULL, $value = NULL, $filte
         }
       }
     return $value;
+    
     case 'list':
       $lists = array(
-          array(
-            'title' => 'HTML 过滤',
-            'description' => '将内容做为纯文本，不解析 HTML 标签',
-          ),
-          array(
-            'title' => '换行符转换',
-            'description' => '将换行符转换为 <br />',
-          ),
-          array(
-            'title' => 'PHP 解析',
-            'description' => '将 <?php ?> 内的代码解析为 PHP',
-          ),
-        );
+        array(
+          'title' => 'HTML 过滤',
+          'description' => '将内容做为纯文本，不解析 HTML 标签',
+        ),
+        array(
+          'title' => '换行符转换',
+          'description' => '将换行符转换为 <br />',
+        ),
+        array(
+          'title' => 'PHP 解析',
+          'description' => '将 <?php ?> 内的代码解析为 PHP',
+        ),
+        array(
+          'title' => '代码高亮',
+          'weight' => 10,
+          'description' => '将 [code={type}][/code]之间的代码做高亮处理，权重应低于换行符转换。若 HTML 过滤器同时启用，且设置为去除标签，代码高亮权重应高于 HTML 过滤器，同时过滤器中允许 pre 标签',
+        ),
+      );
       if ($fetch = db_query('SELECT * FROM {filter_tags}')) {
+        $i = 100;
         foreach ($fetch as $o) {
-          $lists[] = array(
-              'title' => $o->title,
-              'filter_id' => $o->fid,
-              'update' => 1,
-              'delete' => 1,
-              'description' => $o->description
-            );
+          $lists[$i] = array(
+            'title' => $o->title,
+            'filter_id' => $o->fid,
+            'update' => 1,
+            'delete' => 1,
+            'description' => $o->description
+          );
+          
+          ++$i;
         }
       }
     return $lists;
@@ -876,6 +921,7 @@ function dd_get_highlighter() {
   static $i;
   
   if ($i) return;
+  
   $js = 'SyntaxHighlighter.config.strings.viewSource = "'.t('system', '查看代码').'";';
   $js .= 'SyntaxHighlighter.config.strings.copyToClipboard = "'.t('system', '拷贝代码').'";';
   $js .= 'SyntaxHighlighter.config.strings.print = "'.t('system', '打印代码').'";';
@@ -1019,6 +1065,46 @@ function dd_get_editor($dom, $v = array()) {
 	
 	dd_add_js('CKEDITOR.replace(\''.$dom.'\', '.dd_to_js($v).');' . $js, 'inline_nojq', 0, 'footer');
 	$i = 1;
+}
+
+/**
+ * 获取纯文本编辑器
+ * @param (string) $dom
+ *  html dom
+ * @param (string) $type
+ *  输入格式
+ * @param (array) $v
+ *  配置参数
+ */
+function dd_get_editor_text($dom, $type = 'html', $v = array()) {
+  static $i;
+  
+  if (!$i) {
+    dd_add_js('misc/markitup/jquery.markitup.js');
+    dd_add_js('misc/markitup/sets/dida/set.js');
+    dd_add_css('misc/markitup/skins/dida/style.css');
+  }
+  
+  $js = array('dom' => $dom, 'type' => $type);
+  if ($v) {
+    $js['options'] = $v;
+  }
+  
+  dd_add_js(array('markItUp' => array($js)), 'setting');
+  
+  $i = 1;
+}
+
+/**
+ * 文本编辑全部按钮
+ */
+function dd_get_editor_text_toolbar() {
+  return array(
+    'h1' => 'H1', 'h2' => 'H2', 'h3' => 'H3', 'h4' => 'H4', 'h5' => 'H5', 'h6' => 'H6', 
+    'p' => '段落', 'strong' => '粗体', 'u' => '下划线', 'em' => '斜体', 'del' => '删除线',
+    'ul' => '无序列表', 'ol' => '有序列表', 'img' => '图片', 'blockquote' => '引用', 'code' => '插入代码',
+    'a' => '超链接', 'clean' => '清除格式', 'preview' => '预览'
+  );
 }
 
 /**

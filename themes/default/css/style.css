@@ -250,6 +250,10 @@ form{
   padding: 0;
   margin: 5px 0;
 }
+.form_fieldset_description {
+  font-weight: normal;
+  font-size: 1em;
+}
 .form_text{
   border:1px solid #B7BCC9;
   margin-right: 5px;
