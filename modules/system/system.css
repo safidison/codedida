@@ -13,6 +13,9 @@
   margin: 5px 0;
   border: 1px solid #DBEDB9;
 }
+.loading_image {
+	background: url(../../misc/images/loading.gif) no-repeat center center;
+}
 .js_messageShow{
   padding: 20px;
   border: 1px solid #ccc;
@@ -28,6 +31,20 @@
 	word-wrap:break-word;
   width:450px;
   overflow:hidden;
+}
+.ui-icon-dialog-max-min {
+	height:18px;
+	margin:-10px 0 0;
+	padding: 1px;
+	position:absolute;
+	right: 2.3em;
+	top: 55%;
+	cursor: pointer;
+	width: 16px;
+}
+.ui-icon-dialog-max-min:hover {
+  padding: 0;
+  border: 1px solid #fff;
 }
 #dialog_wrapper_loading{
 	font-size: 16px;
@@ -383,27 +400,40 @@ span.ja_loading {
 #print .messages{
   text-align: center;
 }
-#files_view_editor{
+#files_view_editor_image, #files_view_editor_file{
   overflow: hidden;
 }
-#files_view_editor li{
+#files_view_editor_file li{
+  margin: 4px;
+  padding: 4px;
+  border-bottom: 1px solid #eee;
+  color: #7C7676
+}
+#files_view_editor_file li strong{
+  color: #244808;
+  padding: 0 5px;
+}
+#files_view_editor_file span a{
+  padding-left: 8px;
+}
+#files_view_editor_image li{
   float: left;
   width: 110px;
   height: 110px;
   text-align: center;
   margin-right: 3px;
 }
-.files_view_editor_img{
+.files_view_editor_image{
   display: block;
   margin: 3px 0;
   width: 110px;
   height: 90px;
   border: 1px solid #ccc;
 }
-.files_view_editor_img img{
+.files_view_editor_image img{
   padding: 5px 0;
 }
-#files_view_editor li span a{
+#files_view_editor_image li span a{
   padding: 0 2px;
 }
 
