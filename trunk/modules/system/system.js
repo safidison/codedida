@@ -29,6 +29,7 @@ $(function() {
     date.setTime(date.getTime() + 9999999999);
     document.cookie = "admin_menu=" + n + ";path=/;expires=" + date.toGMTString();
   });
+  
   $('.files_view_ckeditorbrowser_insert a').click(function() {
     if (window.opener) {
       var params = Dida.parseQuery(Dida.getUrl());
@@ -39,9 +40,18 @@ $(function() {
     }
     return false;
   });
+  
   $('.files_view_custombrowser_insert a').click(function() {
     if (window.parent) {
       window.parent.ck_insert_img($(this).attr('href'), $(this).attr('title'), $(this).attr('alt'), $(this).attr('link'));
+      $(this).remove();
+    }
+    return false;
+  });
+  
+  $('.files_view_markitupbrowser_insert a').click(function() {
+    if (window.parent) {
+      window.parent.Dida.markitup.tools.filebrowserInsert($(this).attr('href'), $(this).attr('title'), $(this).attr('alt'), $(this).attr('link'));
       $(this).remove();
     }
     return false;

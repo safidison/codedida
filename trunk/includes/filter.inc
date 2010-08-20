@@ -31,7 +31,7 @@ function filter_view($text, $format = NULL, $type = NULL, $id = NULL) {
  */
 function filter_tags_php($text) {
   if (strpos($text, '<?php') !== false) {
-    return preg_replace_callback('/<\?php(.*?)\?>/ims', '_filter_tags_php', $text);
+    return preg_replace_callback('/<\?php(.*?)\?>$/ms', '_filter_tags_php', $text);
   }
 }
 

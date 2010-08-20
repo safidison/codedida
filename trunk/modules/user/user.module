@@ -373,7 +373,6 @@ function _user_perm_array($array) {
  *  需保存的数据
  */
 function user_set_data($uid, $value = array()) {
-  global $user;
   if ($o = db_query('SELECT uid, data FROM {users} WHERE uid = ?', array($uid), array('return' => 'one'))) {
     $data = array();
     if ($o->data) $data = unserialize($o->data);

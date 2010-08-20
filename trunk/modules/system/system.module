@@ -600,6 +600,7 @@ function system_filter($op, $delta = NULL, $format = NULL, $value = NULL, $filte
             $value = preg_replace('/([^>])\n/', "$1<br class=\"system_filter\"/>", str_replace("\r\n", "\n", $value));
           break;
           case 2:
+            // 执行 php 代码
             $value = filter_tags_php($value);
           break;
           case 3: // 代码高亮
@@ -914,27 +915,6 @@ function system_setting_form($form) {
   return $form;
 }
 
-/**
- * 代码高亮
- */
-function dd_get_highlighter() {
-  static $i;
-  
-  if ($i) return;
-  
-  $js = 'SyntaxHighlighter.config.strings.viewSource = "'.t('system', '查看代码').'";';
-  $js .= 'SyntaxHighlighter.config.strings.copyToClipboard = "'.t('system', '拷贝代码').'";';
-  $js .= 'SyntaxHighlighter.config.strings.print = "'.t('system', '打印代码').'";';
-  $js .= 'SyntaxHighlighter.config.strings.copyToClipboardConfirmation = "'.t('system', '代码已成功拷贝到你的剪切板').'";';
-  $js .= 'SyntaxHighlighter.config.strings.alert = "";';
-  $js .= 'SyntaxHighlighter.config.clipboardSwf = "'.$GLOBALS['base_path'].'misc/syntaxhighlighter/scripts/clipboard.swf";SyntaxHighlighter.all();';
-  
-  dd_add_css('misc/syntaxhighlighter/styles/sh.css');
-  dd_add_js('misc/syntaxhighlighter/scripts/sh.js');
-  dd_add_js($js, 'inline_nojq');
-  $i = 1;
-}
-
 function system_setting_form_submit($form, $value) {
   if (is_array($value)) {
     foreach ($value as $key => $val) {
@@ -948,6 +928,20 @@ function system_setting_form_submit($form, $value) {
     var_init(); // 清除配置文件缓存
     dd_set_message(t('system', '保存成功'));
   }
+}
+
+/**
+ * 代码高亮
+ */
+function dd_get_highlighter() {
+  static $i;
+  
+  if ($i) return;
+  
+  dd_add_css('misc/syntaxhighlighter/styles/sh.css');
+  dd_add_js('misc/syntaxhighlighter/scripts/sh.js');
+  dd_add_js(array('Syntax' => array('clipboardSwf' => $GLOBALS['base_path'].'misc/syntaxhighlighter/scripts/clipboard.swf')), 'setting');
+  $i = 1;
 }
 
 /**
@@ -1085,6 +1079,30 @@ function dd_get_editor_text($dom, $type = 'html', $v = array()) {
     dd_add_css('misc/markitup/skins/dida/style.css');
   }
   
+  if ($v['upload_image'] && !$v['filebrowserImageUploadUrl']) {
+    $v['filebrowserImageUploadUrl'] = url('files/editor', array('query' => 'op=markitup&name=upload&type=image'));
+    $v['filebrowserImageBrowseUrl'] = url('files/editor', array('query' => 'op=markitupbrowser&name=upload&type=image'));
+  }
+  
+  if ($v['upload'] && !$v['filebrowserUploadUrl']) {
+    $v['filebrowserUploadUrl'] = url('files/editor', array('query' => 'op=markitup&name=upload'));
+    $v['filebrowserBrowseUrl'] = url('files/editor', array('query' => 'op=markitupbrowser&name=upload'));
+  }
+  
+  if ($v['filebrowserImageUploadUrl'] || $v['filebrowserUploadUrl']) {
+    // 文件上传
+    dd_add_js('misc/jquery.ajaxfileupload.js');
+    dd_jqui();
+  }
+  
+  if ($v['AutoSaveUrl']) {
+    dd_add_js('misc/jquery.form.js');
+  }
+  
+  if ($v['extPreview'] !== false) {
+    dd_jqui();
+  }
+  
   $js = array('dom' => $dom, 'type' => $type);
   if ($v) {
     $js['options'] = $v;
@@ -1138,7 +1156,7 @@ function dd_get_swfobject($flash, $width, $height, $id = 'myContent', $vars = NU
 }
 
 /**
- * hook_alias_reservation
+ * @Implement of hook_alias_reservation()
  */
 function system_alias_reservation() {
 	return array('admin/', 'files/', 'modules/', 'themes/', 'sites/', 'log/', 'tools/', 'misc/', 'includes/');
