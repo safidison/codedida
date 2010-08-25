@@ -180,16 +180,25 @@ Dida.dialog = function(opt) {
 		if (params) {
 			o.params = params;
 			if (params['width']) {
-				width = parseInt(params['width']);
+				o.width = parseInt(params['width']);
 			}
 			if (params['height']) {
-				height =  parseInt(params['height']);
+				o.height =  parseInt(params['height']);
 			}
 			if (params['inlineId']) {
 				o.inlineId = params['inlineId'];
 			}
 			if (params['iframe']) {
 				o.iframe = true;
+			}
+			if (params['closeCall']) {
+				o.closeCall = params['closeCall'];
+			}
+			if (params['reload']) {
+				o.reload = params['reload'];
+			}
+			if (params['modal']) {
+				o.modal = params['modal'];
 			}
 		}
 		
