@@ -563,6 +563,17 @@ function _system_filter_code_higth($mat) {
 }
 
 /**
+ * <br class="system_filter"/> 转为 \n
+ * @param (array) $mat
+ */
+function _system_filter_code_pre_higth($mat) {
+  $output = '<pre class="brush'.$mat[1].'>';
+  $output .= str_replace(array('<br class="system_filter"/>', '<', '>'), array("\n", '&lt;', '&gt;'), $mat[2]);
+  $output .= '</pre>';
+  return $output;
+}
+
+/**
  * hook_filter
  * 过滤器接口
  * @param (string) $op
@@ -606,6 +617,15 @@ function system_filter($op, $delta = NULL, $format = NULL, $value = NULL, $filte
           case 3: // 代码高亮
             
             if (strpos($value, '[code=') === false) {
+              /**
+               * 直接通过 <pre> 标签添加的高亮代码
+               * 将换行符过滤器转换为 \n
+               */
+              if (strpos($value, '<pre class="brush') !== false) {
+                $value = preg_replace_callback('/\<pre class="brush(.*?)>(.*?)<\/pre>/ims', '_system_filter_code_pre_higth', $value);
+                dd_get_highlighter();
+              }
+              
               return $value;
             }
             
