@@ -217,6 +217,7 @@ function module_install_schema($type, $module) {
 function module_set_install($v) {
   $updates = module_get_ver($v['filename']);
   
+  $success = array();
   $success['ver'] = $v['install'];
   
   if ($v['install'] != -1) {
@@ -528,7 +529,9 @@ function module_alter_all($hook, &$data, &$value1 = NULL, &$value2 = NULL, &$val
   if ($GLOBALS['conf']['site_mode'] == 0) {
     if ($functions = module_hook_get_cache($hook)) {
       foreach ($functions as $function) {
-        $function($data, $value1, $value2, $value3);
+        if (function_exists($function)) {
+          $function($data, $value1, $value2, $value3);
+        }
       }
     }
   } else {
@@ -560,6 +563,7 @@ function module_hook_get_cache($hook) {
     }
     var_set('hook_cache', $hooks);
   }
+  
   return $hooks[$hook];
 }
 
@@ -589,11 +593,13 @@ function module_invoke_all() {
      */
     if ($functions = module_hook_get_cache($hook)) {
       foreach ($functions as $function) {
-        $result = call_user_func_array($function, $args);
-        if (is_array($result)) {
-          $return = array_merge_recursive($return, $result);
-        } else if (isset($result)) {
-          $return[] = $result;
+        if (function_exists($function)) {
+          $result = call_user_func_array($function, $args);
+          if (is_array($result)) {
+            $return = array_merge_recursive($return, $result);
+          } else if (isset($result)) {
+            $return[] = $result;
+          }
         }
       }
     }
@@ -626,9 +632,11 @@ function module_invoke_first() {
   if ($GLOBALS['conf']['site_mode'] == 0) {
     if ($functions = module_hook_get_cache($hook)) {
       foreach ($functions as $function) {
-        $result = call_user_func_array($function, $args);
-        if (isset($result)) {
-          return $result;
+        if (function_exists($function)) {
+          $result = call_user_func_array($function, $args);
+          if (isset($result)) {
+            return $result;
+          }
         }
       }
     }
@@ -658,8 +666,10 @@ function _module_invoke_all() {
   if ($GLOBALS['conf']['site_mode'] == 0) {
     if ($functions = module_hook_get_cache($hook)) {
       foreach ($functions as $module => $function) {
-        if ($result = call_user_func_array($function, $args)) {
-          $return[$module] = $result;
+        if (function_exists($function)) {
+          if ($result = call_user_func_array($function, $args)) {
+            $return[$module] = $result;
+          }
         }
       }
     }
@@ -682,7 +692,8 @@ function _module_invoke_all() {
  */
 function module_get_ver($module, $load = NULL) {
   if ($load) module_load_install($module);
-  $updates = array('ver' => 0);
+  $array = array('ver' => 0);
+  $updates = array();
   $functions = get_defined_functions();
   foreach ($functions['user'] as $function) {
     if (strpos($function, $module .'_update_') === 0) {
@@ -693,11 +704,12 @@ function module_get_ver($module, $load = NULL) {
     }
   }
   
-  $updates['install'] = $array['install'] = function_exists($module.'_install');
+  $array['install'] = function_exists($module.'_install');
   
   if (count($updates) == 0) {
-    return $updates;
+    return $array;
   }
+  
   sort($updates, SORT_NUMERIC);
   $array['ver'] = end($updates);
   $array['list'] = $updates;
