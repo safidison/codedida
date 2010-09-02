@@ -1,7 +1,9 @@
 <?php
 // $Id$
 
-//模块管理
+/**
+ * 模块管理
+ */
 function system_modules_page() {
   switch (arg(2)) {
     case 'update':

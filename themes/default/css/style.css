@@ -10,6 +10,12 @@ body{
 select, input{
   font-size: 12px;
 }
+blockquote{
+  background: #DBDBDB;
+  margin: 5px 12px;
+  padding: 5px;
+  border: 1px solid #988E8E;
+}
 a{
   color:#0044DD;
   text-decoration:none;

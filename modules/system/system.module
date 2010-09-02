@@ -574,6 +574,18 @@ function _system_filter_code_pre_higth($mat) {
 }
 
 /**
+ * 换行符转换
+ * @param (array) $mat
+ */
+function _system_filter_code_nl2br($mat) {
+  if ($mat[1] != '>') {
+    return $mat[1] . '<br class="system_filter"/>';
+  } else {
+    return '';
+  }
+}
+
+/**
  * hook_filter
  * 过滤器接口
  * @param (string) $op
@@ -605,10 +617,13 @@ function system_filter($op, $delta = NULL, $format = NULL, $value = NULL, $filte
             
           break;
           case 1:
-            //$value = nl2br($value);
             
             // 换行符前是 html 标签，则不替换
-            $value = preg_replace('/([^>])\n/', "$1<br class=\"system_filter\"/>", str_replace("\r\n", "\n", $value));
+            $value = preg_replace_callback(
+              "/(.*?)\n/",
+              '_system_filter_code_nl2br',
+              str_replace(array("\r\n", ">\n"), array("\n", '>'), $value)
+            );
           break;
           case 2:
             // 执行 php 代码
@@ -622,7 +637,7 @@ function system_filter($op, $delta = NULL, $format = NULL, $value = NULL, $filte
                * 将换行符过滤器转换为 \n
                */
               if (strpos($value, '<pre class="brush') !== false) {
-                $value = preg_replace_callback('/\<pre class="brush(.*?)>(.*?)<\/pre>/ims', '_system_filter_code_pre_higth', $value);
+                $value = preg_replace_callback('/<pre class="brush(.*?)>(.*?)<\/pre>/ims', '_system_filter_code_pre_higth', $value);
                 dd_get_highlighter();
               }
               
@@ -1023,7 +1038,16 @@ function dd_get_editor($dom, $v = array()) {
 		dd_add_js('var toolbar = '.dd_to_js($toolbar).';function updateTextArea(dom){$("#"+dom).val(CKEDITOR.instances[dom].getData());};', 'inline_nojq', 0, 'footer');
 	}
   if (!isset($v['extraPlugins'])) {
-    $v['extraPlugins'] = 'swfupload,autosave,bodybreak,insertcode,smiley';
+    $v['extraPlugins'] = 'insertcode,smiley';
+    if ($v['swfupload']) {
+      $v['extraPlugins'] .= ',swfupload';
+    }
+    if ($v['autosave']) {
+      $v['extraPlugins'] .= ',autosave';
+    }
+    if ($v['bodybreak']) {
+      $v['extraPlugins'] .= ',bodybreak';
+    }
   }
   
 	if (strpos($v['extraPlugins'], 'swfupload') !== false) {
