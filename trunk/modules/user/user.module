@@ -197,7 +197,7 @@ function user_is_edit($ac = NULL) {
   }
   
   if ($ac->uid > 0) {
-    return $ac->uid == $GLOBALS['uid'] && user_access('user change own', $ac) 
+    return ($ac->uid == $GLOBALS['user']->uid && user_access('user change own', $ac)) 
     || user_access('admin user edit all', $ac);
   }
 }
@@ -231,8 +231,9 @@ function user_access($string, $account = NULL, $reset = false) {
         }
       }
     }
-    //$account->roles[var_get_key('user', 'anonymous_role', 1)] = var_get_key('user', 'anonymous', '游客');
+    
   }
+  
   return isset($perm[$account->uid][$string]);
 }
 
@@ -879,7 +880,7 @@ function user_register_validate($form, &$value) {
 function user_register_submit($form, &$value) {
   if ($account = user_insert($value['_dida_values'])) {
     if ($account->status == 1) {
-      if ($user = user_login(user_load($account->uid))) {
+      if ($user = user_login(user_load($account->uid, true))) {
         dd_goto(dd_get_token(var_get_key('user', 'redirect', 'user/' . $user->uid), $user, array('user', 'system')));
       }
     } else if ($GLOBALS['conf']['user']['status'] == 0) {
@@ -949,7 +950,7 @@ function user_insert($value) {
   if (db_write_record('users', $value)) {
     if ($value->uid) {
       user_set_roles($value->uid, $value->rid);
-      $value->roles = user_get_roles($uid);
+      $value->roles = user_get_roles($uid, true);
       
       if (var_get_key('user', 'status', 0) == 0) {
         _user_activation($uid, $value->name, $value->mail, $_SERVER['REQUEST_TIME']);
@@ -1005,18 +1006,22 @@ function _user_newpass($uid, $name, $mail) {
 }
 
 /**
- * 获取角色
+ * 获取用户的角色组
+ * @param (int) $uid
+ *  用户 id
+ * @param (bool) $clear
+ *  是否从数据库直接读取
  */
-function user_get_roles($uid) {
+function user_get_roles($uid, $clear = NULL) {
   static $roles;
-  if (!isset($roles[$uid])) {
+  if (!isset($roles[$uid]) || $clear) {
     if ($uid > 0) {
       if ($fetch = db_query('SELECT r.rid, r.name FROM {role} r INNER JOIN {user_roles} u ON r.rid = u.rid WHERE u.uid = ?', array($uid))) {
         foreach ($fetch as $r) {
           $roles[$uid][$r->rid] = $r->name;
         }
       }
-      if (!$roles) {
+      if (!$roles[$uid]) {
         $default_role = user_data_roles(var_get_key('user', 'default_role', 2));
         $roles[$uid][$default_role->rid] = $default_role->name;
       }
@@ -1259,7 +1264,7 @@ function user_load($uid, $clear = NULL, $field_loads = true, $module_loads = tru
       	$ac[$uid]->language = NULL;
       }
       
-      $ac[$uid]->roles = user_get_roles($ac[$uid]->uid);
+      $ac[$uid]->roles = user_get_roles($uid, $clear);
       
       if ($ac[$uid]->data) {
       	$ac[$uid]->data = unserialize($ac[$uid]->data);
@@ -1289,6 +1294,7 @@ function user_load($uid, $clear = NULL, $field_loads = true, $module_loads = tru
       }
     }
   }
+  
   return $ac[$uid];
 }
 
@@ -1394,6 +1400,7 @@ function user_user_page($ac) {
  */
 function user_login($user) {
   user_session_reg($user);
+  
   /**
    * 登录成功
    * 触发 hook_user_login();
@@ -1401,7 +1408,7 @@ function user_login($user) {
   module_alter_all('user_login', $user);
   
   dd_log('user_login', t('system', '用户登录'), 0, dd_get_referer($_SERVER['HTTP_REFERER']), 0, $user->uid);
-  
+  dd_set_message(implode(',', $user->roles).'ggg');
   return $user;
 }
 
