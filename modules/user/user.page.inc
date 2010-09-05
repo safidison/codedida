@@ -245,8 +245,8 @@ function user_page_register() {
           $rediect = url(dd_get_token(var_get_key('user', 'redirect', 'user/' . $account->uid), $account, array('user', 'system')));
         }
         if ($account->status == 1) {
+          user_login(user_load($account->uid, true));
           dd_set_message(t('user', '恭喜，注册成功了'));
-          user_login(user_load($account->uid));
         } else if ($GLOBALS['conf']['user']['status'] == 0) {
           dd_set_message(t('user', '恭喜，注册成功了，你需要通过邮箱激活帐号'));
           $rediect = url('user/activation');
