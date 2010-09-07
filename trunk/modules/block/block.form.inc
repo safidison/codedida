@@ -39,7 +39,7 @@ function block_add_form($block = NULL) {
 }
 
 function block_add_form_validate($form, $v) {
-  if (dd_strlen($v['title']) > 60) {
+  if (mb_strlen($v['title']) > 60) {
     $t['title']['#error'][] = t('block', '长度不超过 %length 字符', array('%length' => '60'));
     return $t;
   } else if ($v['bid']) {

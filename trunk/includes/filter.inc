@@ -30,6 +30,12 @@ function filter_view($text, $format = NULL, $type = NULL, $id = NULL) {
   if ($cache = !filter_is_php($format)) {
     $cache_id = $format .':'. md5($text);
     if ($cached = cache_get($cache_id, 'cache_filter')) {
+      
+      // 代码高亮，加载 js
+      if (filter_is_filter($format, 'system', 3)) {
+        dd_get_highlighter();
+      }
+      
       return $cached->data;
     }
   }
@@ -173,14 +179,30 @@ function filter_set_cache() {
  * 检查输入法中是否含有 php 过滤器
  */
 function filter_is_php($format) {
+  return filter_is_filter($format, 'system', 2);
+}
+
+/**
+ * 
+ * 检查输入法中是否含有某过滤器
+ * @param (int) $format
+ *  输入法
+ * @param (string) $module
+ *  模块名称
+ * @param (*) $delta
+ *  过滤器 delta
+ */
+function filter_is_filter($format, $module, $delta) {
   global $conf;
   if ($conf['filters'] && $conf['filters'][$format]) {
     foreach ($conf['filters'][$format] as $f) {
-      if ($f['module'] == 'system' && $f['delta'] == 2) {
+      if ($f['module'] == $module && $f['delta'] == $delta) {
         return true;
       }
     }
   }
+  
+  return false;
 }
 
 /**

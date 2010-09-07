@@ -544,7 +544,7 @@ function table_sql($header, $before = '') {
   if ($ts['sql']) {
     $field = preg_replace('/[^A-Za-z0-9_.]+/', '', $ts['sql']);
 
-    $sort = dd_strtoupper($ts['sort']);
+    $sort = mb_strtoupper($ts['sort']);
     $sort = in_array($sort, array('ASC', 'DESC')) ? $sort : '';
 
     return " ORDER BY $before $field $sort";

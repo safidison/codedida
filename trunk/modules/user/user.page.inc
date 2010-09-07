@@ -123,7 +123,7 @@ function user_page_newpass() {
 	      }
       }
     }
-    dd_js_print('$(\'#ajax_description\').html("'.addslashes(implode('<br />', dd_array_multi2single($error))).'").show(300);');
+    dd_js_print('$(\'#ajax_description\').html("'.addslashes(implode('<br />', dd_array2_to('value', $error))).'").show(300);');
     exit();
   }
   
@@ -260,7 +260,7 @@ function user_page_register() {
         dd_js_print('alert(\''.t('user', '抱歉，出现问题，注册失败了').'\')');
       }
     } else {
-      dd_js_print('$(\'#ajax_description\').html("'. addslashes(implode('<br>', dd_array_multi2single($error))).'").show(300);');
+      dd_js_print('$(\'#ajax_description\').html("'. addslashes(implode('<br>', dd_array2_to('value', $error))).'").show(300);');
     }
   }
   $v = dd_get_form('user_register_form');
@@ -288,7 +288,7 @@ function user_page_login() {
         dd_js_print('alert(\''.t('user', '抱歉，登录失败了').'\')');
       }
     } else {
-      dd_js_print('$(\'#ajax_description\').html("'.addslashes(implode('<br>', dd_array_multi2single($error))).'").show(300);');
+      dd_js_print('$(\'#ajax_description\').html("'.addslashes(implode('<br>', dd_array2_to('value', $error))).'").show(300);');
     }
   }
   $v = dd_get_form('user_login_form');
@@ -324,7 +324,7 @@ function user_page_login_ajax() {
         dd_js_print('alert(\''.t('user', '抱歉，登录失败了').'\')');
       }
     } else {
-      dd_js_print('$(\'#ajax_description\').html("'.addslashes(implode('<br>', dd_array_multi2single($error))).'").show(100);');
+      dd_js_print('$(\'#ajax_description\').html("'.addslashes(implode('<br>', dd_array2_to('value', $error))).'").show(100);');
     }
     exit;
   }

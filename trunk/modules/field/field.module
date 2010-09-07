@@ -2029,7 +2029,7 @@ function field_term_form_validate($form, $v) {
  */
 function field_term_save(&$field, $term, $batch = 0) {
   if ($error = module_invoke_all('field_call_term_validate', $field, $term)) {
-    dd_set_message(implode('<br />', dd_array_multi2single($error)), 'error');
+    dd_set_message(implode('<br />', dd_array2_to('value', $error)), 'error');
     return false;
   }
   if (mb_strlen($term->name, 'utf-8') > 64) {

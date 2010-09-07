@@ -979,9 +979,9 @@ function system_admin_lang_form($lang = NULL) {
 function system_admin_lang_form_validate($form, $v) {
 	$v['language'] = trim($v['language']);
 	$v['name'] = trim($v['name']);
-	if (dd_strlen($v['language']) > 16) {
+	if (mb_strlen($v['language']) > 16) {
 		$t['language']['#error'][] = t('system', '长度不超过 16 字符');
-	} else if (dd_strlen($v['name']) > 32) {
+	} else if (mb_strlen($v['name']) > 32) {
 		$t['name']['#error'][] = t('system', '长度不超过 32 字符');
 	} else {
 		if (!$v['update']) {
@@ -1267,9 +1267,9 @@ function system_admin_format_form($module, $delta, $filter = NULL) {
 }
 
 function system_admin_format_form_validate($form, $v) {
-  if (dd_strlen($v['title']) > 60) {
+  if (mb_strlen($v['title']) > 60) {
     $t['title']['#error'][] = t('system', '不超过 %length 字符', array('%length' => 60));
-  } else if (dd_strlen($v['description']) > 255) {
+  } else if (mb_strlen($v['description']) > 255) {
     $t['description']['#error'][] = t('system', '不超过 %length 字符', array('%length' => 255));
   } else if (!$t = call_user_func($v['module'].'_filter', 'validate', $v['delta'], NULL, (object)$v)) {
     if ($v['fid']) {
@@ -1424,9 +1424,9 @@ function system_admin_filter_form($fid = NULL) {
 }
 
 function system_admin_filter_form_validate($form, $v) {
-  if (dd_strlen($v['name']) > 60) {
+  if (mb_strlen($v['name']) > 60) {
     $t['name']['#error'][] = t('system', '不超过 %length 字符', array('%length' => 60));
-  } else if (dd_strlen($v['description']) > 255) {
+  } else if (mb_strlen($v['description']) > 255) {
     $t['description']['#error'][] = t('system', '不超过 %length 字符', array('%length' => 255));
   } else if ($v['fid']) {
     if (!db_query('SELECT name FROM {filter_format} WHERE name = ? AND format != ?', array($v['name'], $v['fid']), array('return' => 'column'))) {
