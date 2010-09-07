@@ -2,8 +2,13 @@
 // $Id$
 
 define('DIDA_VERSION', '1.0 alpha 1');
+
 /**
- * 初始化
+ * 系统初始化
+ * @param (string) $op
+ *  加载类型
+ * @param (array) $inc
+ *  加载文件
  */
 function bootstrap($op, $inc = NULL) {
   static $called;
@@ -312,7 +317,9 @@ function dd_get_history() {
 	}
 }
 
-//注销全局变量
+/**
+ * 注销所有全局变量
+ */
 function dd_unset_globals() {
   if (ini_get('register_globals')) {
     $allowed = array('_ENV' => 1, '_GET' => 1, '_POST' => 1, '_COOKIE' => 1, '_FILES' => 1, '_SERVER' => 1, '_REQUEST' => 1, 'GLOBALS' => 1);
@@ -324,7 +331,19 @@ function dd_unset_globals() {
   }
 }
 
-//页面跳转
+/**
+ * 重定向
+ * @param (string) $path
+ *  系统路径或完整 url
+ * @param (array or string) $query
+ *  query 参数，字符串或数组形式
+ * @param (bool) $file
+ *  是否物理文件
+ * @param (string) $fragment
+ *  锚点
+ * @param (int) $http_response_code
+ *  重定向模式，301 或 302
+ */
 function dd_goto($path = '', $query = NULL, $file = NULL, $fragment = NULL, $http_response_code = 301) {
   $url = url(urldecode($path), array('query' => $query, 'fragment' => $fragment, 'absolute' => true, 'file' => $file));
   session_write_close();
@@ -332,14 +351,32 @@ function dd_goto($path = '', $query = NULL, $file = NULL, $fragment = NULL, $htt
   exit();
 }
 
-// 超链接格式化
+/**
+ * 超链接格式化
+ * @param (string) $text
+ *  链接名称
+ * @param (string) $path
+ *  系统路径或完整 url
+ * @param $options
+ *  详细参数：
+ *  array(
+ *    'attributes' => (array), // a 链接属性，如 'alt' => 'test'
+ *    'strlen' => (int), // 链接名称超过此长度，则截断
+ *    'external' => (bool), // 是否为外部链接。若不传值，也将判断 $path 是否为外部链接
+ *    'fragment' => (string), // 锚点
+ *    'query' => (array or string), // 数组：array('op' => 'insert', 'id' => 1)， 或字符串：op=insert&id=1
+ *    'absolute' => (bool), // 若为 true，则输出完整路径(包含域名)
+ *    'file' => (bool), // 是否为物理文件
+ *  )
+ * @return (string) html a，如：<a href="url">test</a>
+ */
 function l($text, $path, $options = array()) {
   if (!$options['attributes']) $options['attributes'] = array();
   if (!$options['attributes']['title']) {
     $options['attributes']['title'] = $text;
   }
-  if ($options['strlen'] && dd_strlen($text) > $options['strlen']) {
-    $text = dd_substr($text, 0, intval($options['strlen'])) . '...';
+  if ($options['strlen'] && mb_strlen($text) > $options['strlen']) {
+    $text = mb_substr($text, 0, intval($options['strlen'])) . '...';
   }
   if ($_GET['q'] == $path) {
     $options['attributes']['class'] .= $options['attributes']['class'] ? ' active' : 'active';
@@ -350,14 +387,33 @@ function l($text, $path, $options = array()) {
   return '<a href="'. url($path, $options) .'"'. dd_attributes($options['attributes']) .'>'. ($options['html'] ? $text : strip_tags($text)) .'</a>';
 }
 
-// 图片格式化
+/**
+ * 输出图片标签
+ * @param (string) $path
+ *  图片 url，相对或绝对地址皆可
+ * @param (string) $alt
+ *  alt 属性
+ * @param (string) $title
+ *  title 属性
+ * @param (array) $attributes
+ *  其它属性
+ * @return (string) html img，如：<img src="test.jpg" />
+ */
+
 function img($path, $alt = '', $title = '', $attributes = NULL) {
   $url = _l_external($path) ? $path : f($path);
   return '<img src="'. $url .'" alt="'. strip_tags($alt) .'" title="'. strip_tags($title) .'" ' . dd_attributes($attributes) .' />';
 }
 
+/**
+ * 检查是否为绝对路径
+ * @param (string) $path
+ *  待检查路径
+ * @return (bool)
+ */
 function _l_external($path) {
 	
+  // 若以 / 开头，也做为绝对路径处理，如： /user/login
 	if (substr($path, 0, 1) == '/') {
 		return true;
 	}
@@ -367,7 +423,12 @@ function _l_external($path) {
   }
 }
 
-// 输出物理文件地址
+/**
+ * 输出物理文件可访问 url
+ * @param (string) $filepath
+ *  文件路径
+ * @return (string)
+ */
 function f($filepath) {
   return $GLOBALS['base_path'] . $filepath;
 }
@@ -375,14 +436,16 @@ function f($filepath) {
 /**
  * 用于生成 url，不必考虑简洁链接、相对或绝对、站内或站外等因素，均可以正确判断和处理
  * @param (string) $path
- *  可以是相对路径或外部链接
+ *  系统路径或外部链接
  * @param (array) $options
  *  其它参数：
- *  file：是否为物理文件
- *  external：是否为外部链接。若不传值，也将判断 $path 是否为外部链接
- *  fragment：锚点
- *  query：get 参数，数组：array('op' => 'insert', 'id' => 1)， 或字符串：op=insert&id=1
- *  absolute：若为 true，则输出完整路径(包含域名)
+ *  array(
+ *    'external' => (bool), // 是否为外部链接。若不传值，也将判断 $path 是否为外部链接
+ *    'fragment' => (string), // 锚点
+ *    'query' => (array or string), // 数组：array('op' => 'insert', 'id' => 1)， 或字符串：op=insert&id=1
+ *    'absolute' => (bool), // 若为 true，则输出完整路径(包含域名)
+ *    'file' => (bool), // 是否为物理文件
+ *  )
  * @return (string) 返回处理后的 url
  */
 function url($path = NULL, $options = array()) {
@@ -434,7 +497,12 @@ function url($path = NULL, $options = array()) {
   }
 }
 
-// html属性解析
+/**
+ * 将数组解析为字符串，以半角空格分隔，多用于 html 元素属性解析
+ * @param (array) $attributes
+ *  待解析数组，如：array('alt' => 'test', 'title' => 'title')
+ * @return (string) 如：alt="test" title="title"
+ */
 function dd_attributes($attributes) {
   if (is_array($attributes)) {
     $t = '';
@@ -473,6 +541,7 @@ function dd_log($type, $value, $ext_id = NULL, $link = NULL, $status = NULL, $ui
 /**
  * 系统日志状态
  * @param (int) $id
+ * @return (string)
  */
 function dd_logs_get_status($id = NULL){
   $a = array(t('system', '普通'), t('system', '警告'), t('system', '严重'));
@@ -511,23 +580,39 @@ function var_set($name, $value, $clear = 1, $replace = 1) {
   if ($clear) var_init();
 }
 
+/**
+ * 写入自定义数据
+ * @param (string) $name
+ *  名称
+ * @param (*) $value
+ *  数据
+ * @return (bool)
+ */
 function custom_set($name, $value) {
   return db_replace('custom', array('name' => $name, 'value' => serialize($value)));
 }
 
 /**
  * 读取配置
- * @param $name = string
+ * @param (string) $name
  *  配置名称
- * @param $default = *
+ * @param (*) $default 
  *  默认值，若没有请求的配置，则返回此值
- * @return * 或 false;
+ * @return (*);
  */
 function var_get($name, $default = NULL) {
   global $conf;
   return isset($conf[$name]) ? $conf[$name] : $default;
 }
 
+/**
+ * 读取自定义数据
+ * @param (string) $name
+ *  名称
+ * @param (*) $default 
+ *  默认值，若没有请求的配置，则返回此值
+ * @return (*);
+ */
 function custom_get($name, $default = NULL) {
   static $custom;
   if (!isset($custom[$name])) {
@@ -539,10 +624,16 @@ function custom_get($name, $default = NULL) {
   }
   return $custom[$name];
 }
+
 /**
  * 读取子配置，针对数组配置，参数同 var_get()
- * @param $key = string
+ * @param (string) $name
+ *  配置名称
+ * @param (string) $key
  *  子配置名称，即数组键名
+ * @param (*) $default 
+ *  默认值，若没有请求的配置，则返回此值
+ * @return (*);
  */
 function var_get_key($name, $key, $default = false) {
   global $conf;
@@ -551,10 +642,12 @@ function var_get_key($name, $key, $default = false) {
 
 /**
  * 删除配置
- * @param $name = string
+ * @param (string) $name
  *  配置名称
+ * @param (bool) $clear
+ *  是否立即刷新配置缓存
  */
-function var_del($name, $clear = 1) {
+function var_del($name, $clear = true) {
   global $conf;
   db_exec('DELETE FROM {variable} WHERE name = ?', array($name));
   unset($conf[$name]);
@@ -563,6 +656,11 @@ function var_del($name, $clear = 1) {
   }
 }
 
+/**
+ * 删除自定义数据
+ * @param (string) $name
+ *  名称
+ */
 function custom_del($name) {
   db_exec('DELETE FROM {custom} WHERE name = ?', array($name));
 }
@@ -737,11 +835,11 @@ function dd_set_lang($type = 'update', $lists = NULL, $language = array()) {
 
 /**
  * 调用 hook_token_replace 进行遍历替换
- * @param (string)$text
+ * @param (string) $text
  *  要替换字符串
  * @param (*) $value
  *  包含一组替换值
- * @param (array)$module
+ * @param (array) $module
  *  指定模块，若不指定，则调用所有模块的 hook_token_replace
  */
 function dd_get_token($text, $value = NULL, $modules = NULL) {
@@ -762,7 +860,7 @@ function dd_get_token($text, $value = NULL, $modules = NULL) {
 }
 
 /**
- * hook 缓存，将hook函数缓存
+ * hook 缓存，将 hook 函数缓存
  */
 function dd_get_hook($hook, $clear = 0) {
 	static $hooks;
@@ -785,19 +883,15 @@ function dd_get_hook($hook, $clear = 0) {
 }
 
 /**
- * 数组转为对象
+ * 获取随机字符串
  */
-function array_to_object($array) {
-	if (is_array)
-		return (object) $array;
-}
-
-//获取随机字符串
 function dd_rand_str() {
   return md5(mt_rand(). time() . session_id());
 }
 
-// 获取客户端 ip
+/**
+ * 获取客户端 ip
+ */
 function ip_address() {
   static $ip_address = NULL;
   if (!isset($ip_address)) {
@@ -1000,12 +1094,27 @@ function dd_get_microtime() {
   }
 }
 
+/**
+ * 获取指定时间的星期的中文表达
+ * @param (int) $timestamp
+ *  时间戳
+ * @return (string)
+ */
 function format_date_week_cn($timestamp) {
 	$cn = array('日', '一', '二', '三', '四', '五', '六');
 	return $cn[date('w', $timestamp)];
 }
 
-// 格式时间戳
+/**
+ * 格式时间戳
+ * @param (int) $timestamp
+ *  时间戳
+ * @param (string) $type
+ *  处理方式
+ * @param (string) $format
+ *  自定义格式
+ * @return (string) 格式化之后的时间
+ */
 function format_date($timestamp, $type = 'default', $format = '') {
   switch ($type) {
     case 'small':
@@ -1034,6 +1143,7 @@ function format_date($timestamp, $type = 'default', $format = '') {
  *  时间戳
  * @param (int) $granularity
  *  显示层级，默认为 年 周 天 小时 分钟 秒
+ * @return (string)
  */
 function format_interval($timestamp, $granularity = 5) {
   $units = array(31536000 => '年', 604800 => '周', 86400 => '天', 3600 => '小时', 60 => '分钟', 1 => '秒');
@@ -1052,7 +1162,10 @@ function format_interval($timestamp, $granularity = 5) {
 }
 
 /**
- * 日期转时间戳，日期格式：2010-05-25 或 2010/05/25 或 2010-05-25 12:24:32
+ * 将字符串形式的日期转时间戳，日期格式：2010-05-25 或 2010/05/25 或 2010-05-25 12:24:32
+ * @param (string) $text
+ *  待转换日期
+ * @return (int) 时间戳期
  */ 
 function format_date_mktime($text) {
   static $data;
@@ -1085,7 +1198,10 @@ function format_date_mktime($text) {
   return $data[$text];
 }
 
-// 获取当前日期零点时间戳
+/**
+ * 获取当天零点的时间戳
+ * @return (string)
+ */
 function format_get_current() {
   static $time;
   if (!isset($time)) {
@@ -1111,7 +1227,14 @@ function dd_php_error($errno, $message, $filename, $line = NULL, $context = NULL
 }
 
 /**
- * ping services
+ * 以 xmprpc 方式通知服务器内容更新
+ * @param (array) $data
+ *  数据
+ * @param (array) $service
+ *  自定义通知服务器列表
+ * @param (string) $method
+ *  应答方式
+ * @return (array) 接口响应
  */
 function dd_set_ping($data, $service = array(), $method = 'weblogUpdates.extendedPing') {
   
@@ -1390,6 +1513,12 @@ function text_log($filename, $msg) {
   fclose($handle);
 }
 
+/**
+ * 以 <strong> 包裹字符串
+ * @param (string) $text
+ * @param (string) $sufpix
+ * @return (string)
+ */
 function dd_get_strong($text, $sufpix = '：') {
   return '<strong>'.$text.$sufpix.'</strong>';
 }
@@ -1418,6 +1547,7 @@ function dd_get_strong($text, $sufpix = '：') {
  */
 //function dd_set_mail($to = array(), $subject, $message, $att = NULL, $filepath = NULL) {
 function dd_set_mail($mails, $subject, $message, $headers = NULL, $html = 1, $att = NULL) {
+  // @todo 待完善
   if (is_array($mails)) {
     foreach ($mails as $add) {
       if (is_array($add)) {
@@ -1509,7 +1639,14 @@ function dd_set_mail($mails, $subject, $message, $headers = NULL, $html = 1, $at
 }
 
 /**
- * 获取 IP 地理位置，默认使用纯真 ip 库
+ * 获取 IP 地理位置
+ * @param (string) $ip
+ *  ip 地址
+ * @param (bool) $true
+ *  在括号内显示地理信息，如：9.9.9.9.9(中国)。默认为：中国
+ * @param (string) $function
+ *  调用函数，默认使用 纯真 ip 库函数
+ * @return (string) 地理信息，如：9.9.9.9.9(中国)，或：中国
  */
 function dd_get_ip($ip, $true = NULL, $function = 'qqwry_data') {
   static $ips;
@@ -1540,6 +1677,14 @@ function dd_get_ip($ip, $true = NULL, $function = 'qqwry_data') {
   return $ips[$ip];
 }
 
+/**
+ * 使用纯真 ip 库解析地理位置
+ * @param (string) $ip
+ *  ip 地址
+ * @param (string) $file
+ *  纯真 ip 库位置
+ * @return (string)
+ */
 function qqwry_data($ip, $file = './tools/QQWry.Dat') {
   if (!is_file($file)) return false;
   
@@ -1677,8 +1822,9 @@ function qqwry_data($ip, $file = './tools/QQWry.Dat') {
 }
 
 /**
- * 载入ui，
- * $theme：(sring) 载入的主题
+ * 载入 vjquery ui，
+ * @param (string) $theme
+ *  载入的主题
  */
 
 function dd_jqui($theme = 'base') {
@@ -1688,7 +1834,9 @@ function dd_jqui($theme = 'base') {
 }
 
 /**
- * 载入jqedit
+ * 载入 jqedit 插件
+ * @param (array) $v
+ *  自定义参数
  */
 function dd_jqedit($v = array()) {
   $args = array(
@@ -1739,9 +1887,21 @@ function dd_jqedit($v = array()) {
 }
 
 /**
- * 弹出窗口
+ * jquery dialog 弹出层设置
+ * @param (int) $height
+ *  高度
+ * @param (int) $width
+ *  宽度
+ * @param (bool) $iframe
+ *  以 iframe 模式加载
+ * @param (string) $inlineId
+ *  显示页面指定 id 的内容
+ * @param (bool) $reload
+ *  关闭后是否刷新当前页
+ * @return (array) 可用于 url() 的数组
+ *  
  */
-function dd_dialog_att($height = 400, $width = 600, $iframe = 'true', $inlineId = NULL, $reload = NULL) {
+function dd_dialog_att($height = 400, $width = 600, $iframe = true, $inlineId = NULL, $reload = NULL) {
   $str = "width=$width&height=$height";
   if ($iframe) {
     $str .= '&iframe=true&modal=true';
@@ -1758,8 +1918,14 @@ function dd_dialog_att($height = 400, $width = 600, $iframe = 'true', $inlineId 
 
 /**
  * 写入提示信息
+ * @param (string) $message
+ *  信息内容
+ * @param (string) $type
+ *  信息类型，可自定义，常用：status、error
+ * @param (bool) $repeat
+ *  是否替换旧的相同类型的提示信息
  */
-function dd_set_message($message = NULL, $type = 'status', $repeat = TRUE) {
+function dd_set_message($message = NULL, $type = 'status', $repeat = true) {
   if ($message) {
     if ($type == 'sql_bug' && !$GLOBALS['conf']['debug']) {
       text_log('sql_bug', $message);
@@ -1782,6 +1948,7 @@ function dd_set_message($message = NULL, $type = 'status', $repeat = TRUE) {
 
 /**
  * 获取提示信息
+ * @return (string)
  */
 function dd_get_message() {
   if ($_SESSION['messages']) {
@@ -1803,6 +1970,11 @@ function dd_get_message() {
   }
 }
 
+/**
+ * 将数组格式化输出，用于调试
+ * @param (array) $array
+ * @return (string)
+ */
 function dd_array_to_string($array) {
   ob_start();
   var_dump($array);
@@ -1811,6 +1983,11 @@ function dd_array_to_string($array) {
   return $output;
 }
 
+/**
+ * 写入帮助信息
+ * @param (string) $help
+ * @return (string)
+ */
 function dd_set_help($help = NULL) {
   static $data;
   if ($help) {
@@ -1819,12 +1996,20 @@ function dd_set_help($help = NULL) {
   return $data;
 }
 
+/**
+ * 获取帮助信息，在当前页显示
+ * @return (string)
+ */
 function dd_get_help() {
   if ($help = dd_set_help()) {
     return '<div class="help">'.implode('', $help).'</div>';
   }
 }
 
+/**
+ * 写入页脚信息
+ * @param (string) $item
+ */
 function dd_set_footer($item = NULL) {
   static $items;
   if ($item) {
@@ -1834,12 +2019,20 @@ function dd_set_footer($item = NULL) {
   }
 }
 
+/**
+ * 获取页脚信息
+ * @return (string)
+ */
 function dd_get_footer() {
   if ($items = dd_set_footer()) {
     return theme('item_list', $items, NULL, 'ul', array('id' => 'module_invoke_footer'));
   }
 }
 
+/**
+ * 写入 tabs 导航
+ * @param (string or array) $item
+ */
 function dd_set_tabs($tab = NULL) {
   static $tabs;
   if ($tab) {
@@ -1855,12 +2048,20 @@ function dd_set_tabs($tab = NULL) {
   }
 }
 
+/**
+ * 获取 tabs 导航
+ * @return (string)
+ */
 function dd_get_sub_tabs() {
   if ($tabs = dd_set_sub_tabs()) {
     return theme('item_list', $tabs, NULL, 'ul', array('class' => 'sub_tabs'));
   }
 }
 
+/**
+ * 写入 sub tabs 导航
+ * @param (string or array) $item
+ */
 function dd_set_sub_tabs($tab = NULL) {
   static $tabs;
   if ($tab) {
@@ -1876,12 +2077,20 @@ function dd_set_sub_tabs($tab = NULL) {
   }
 }
 
+/**
+ * 获取 sub tabs 导航
+ * @return (string)
+ */
 function dd_get_tabs() {
   if ($tabs = dd_set_tabs()) {
     return theme('item_list', $tabs, NULL, 'ul', array('class' => 'tabs'));
   }
 }
 
+/**
+ * 写入页面标题
+ * @param (string) $title
+ */
 function dd_set_title($title = NULL) {
   static $stored_title;
   if (isset($title)) {
@@ -1891,6 +2100,29 @@ function dd_set_title($title = NULL) {
   }
 }
 
+/**
+ * 获取页面标题
+ * @return (string)
+ */
+function dd_get_title() {
+  if ($title = dd_set_title()) {
+    $head_title = implode(' - ', array_filter($title)) .' - ';
+  }
+  $head_title .= $GLOBALS['conf']['site_global']['name'];
+  if ($GLOBALS['conf']['site_global']['slogan']) {
+    $head_title .= ' - ' . $GLOBALS['conf']['site_global']['slogan'];
+  }
+  return $head_title;
+}
+
+/**
+ * 写入区块
+ * @param (array) $value
+ *  区块数据，见  system_block()
+ * @param (region) $name
+ *  显示区域
+ * @return (array)
+ */
 function dd_set_block($value = NULL, $name = 'left') {
   static $block;
   if ($value) {
@@ -1900,7 +2132,14 @@ function dd_set_block($value = NULL, $name = 'left') {
   }
 }
 
-function dd_set_breadcrumb($breadcrumb = NULL, $front = 1) {
+/**
+ * 写入导航
+ * @param (string or array) $breadcrumb
+ *  导航链接
+ * @param (bool) $front
+ *  是否在前面显示 首页
+ */
+function dd_set_breadcrumb($breadcrumb = NULL, $front = true) {
   static $value;
   if (is_array($breadcrumb)) {
     if ($front) array_unshift($breadcrumb, l(t('system', '首页'), NULL));
@@ -1910,6 +2149,21 @@ function dd_set_breadcrumb($breadcrumb = NULL, $front = 1) {
   }
 }
 
+/**
+ * 获取导航
+ * @return (string)
+ */
+function dd_get_breadcrumb() {
+  if ($breadcrumb = dd_set_breadcrumb()) {
+    return theme('breadcrumb', array_filter($breadcrumb));
+  }
+}
+
+/**
+ * 获取下拉导航，触发 hook_site_menu()
+ * @param (array) $menus
+ * @return (string)
+ */
 function dd_get_menu($menus = NULL) {
   if (!isset($menus)) {
     $menus = array();
@@ -1978,23 +2232,10 @@ function dd_get_menu($menus = NULL) {
   }
 }
 
-function dd_get_title() {
-  if ($title = dd_set_title()) {
-    $head_title = implode(' - ', array_filter($title)) .' - ';
-  }
-  $head_title .= $GLOBALS['conf']['site_global']['name'];
-  if ($GLOBALS['conf']['site_global']['slogan']) {
-    $head_title .= ' - ' . $GLOBALS['conf']['site_global']['slogan'];
-  }
-  return $head_title;
-}
-
-function dd_get_breadcrumb() {
-  if ($breadcrumb = dd_set_breadcrumb()) {
-    return theme('breadcrumb', array_filter($breadcrumb));
-  }
-}
-
+/**
+ * 写入 header
+ * @param (string) $header
+ */
 function dd_set_header($header = NULL) {
   static $stored_headers = array();
   if (strlen($header)) {
@@ -2004,6 +2245,11 @@ function dd_set_header($header = NULL) {
   return implode("\n", $stored_headers);
 }
 
+/**
+ * 写入 head
+ * @param (string) $data
+ * @return (string)
+ */
 function dd_set_html_head($data = NULL) {
   static $stored_head = '';
   if (!is_null($data)) {
@@ -2012,10 +2258,24 @@ function dd_set_html_head($data = NULL) {
   return $stored_head;
 }
 
+/**
+ * 获取 head
+ * @return (string)
+ */
 function dd_get_html_head() {
   return dd_set_html_head();
 }
 
+/**
+ * 添加 css 文件
+ * @param (string) $path
+ *  css 文件路径
+ * @param (string) $type
+ *  添加类型，该类型决定加载顺序：core -> module -> theme
+ * @param (string) $media
+ *  media 类型
+ * @return (array)
+ */
 function dd_add_css($path = NULL, $type = 'module', $media = 'all') {
   static $css = array();
   if (isset($path)) {
@@ -2027,8 +2287,15 @@ function dd_add_css($path = NULL, $type = 'module', $media = 'all') {
   return $css;
 }
 
+/**
+ * 获取所有通过 dd_add_css 添加的 css
+ * @param (string) $css
+ *  css 文件路径
+ * @return (string) css html 标记
+ */
 function dd_get_css($css = NULL) {
   global $base_path;
+  
   if (!isset($css)) {
     $css = dd_add_css();
   }
@@ -2037,19 +2304,31 @@ function dd_get_css($css = NULL) {
     foreach ($types as $type => $files) {
       if (count($files)) {
         foreach ($types[$type] as $file) {
-          if ($GLOBALS['conf']['cache_css_and_js']) {
-            $css_path[$type][] = $file;
-            $filename .= $file;
+          if (strpos($file, 'http://') === false && strpos($file, 'https://') === false) {
+            if ($GLOBALS['conf']['cache_css_and_js']) {
+              // 只缓存内部 css
+              $css_path[$type][] = $file;
+              $filename .= $file;
+              continue;
+            }
+            $file = $base_path .$file;
+          }
+          
+          if (strpos($file, '?') === false) {
+            $file .= '?'.$conf['cache_css_and_js_timestamp'];
           } else {
-            $gets[$type] .= '<link type="text/css" rel="stylesheet" media="'. $media .'" href="'. $base_path . $file.'" />'."\n";
-         }
+            $file .= '&'.$conf['cache_css_and_js_timestamp'];
+          }
+          
+          $gets[$type] .= '<link type="text/css" rel="stylesheet" media="'. $media .'" href="'. $file.'" />'."\n";
+
         }
       }
     }
   }
   
   if ($css_path && $filename) {
-    $filepath = file_directory_path() . '/cache/css_js/' . md5($filename) . '.css';
+    $filepath = file_directory_path() . '/cache/css_js/' . md5($filename.$conf['cache_css_and_js_timestamp']) . '.css';
     if (!is_file($filepath)) {
       require_once './includes/css_js_min.inc';
       foreach (array('core', 'module', 'theme') as $key) {
@@ -2069,7 +2348,13 @@ function dd_get_css($css = NULL) {
   return $gets['core'] . $gets['module'] . $gets['theme'];
 }
 
-//css背景图片路径替换
+/**
+ * css 文件合并缓存，背景图片路径替换
+ * @param (array) $matches
+ *  正则匹配数据
+ * @param (string) $base
+ *  css 文件路径
+ */
 function _dd_build_css_path($matches, $base = NULL) {
   static $_base;
   if (isset($base)) {
@@ -2087,15 +2372,31 @@ function _dd_build_css_path($matches, $base = NULL) {
   return 'url('. $path .')';
 }
 
+/**
+ * 将 js 输出在页面，并中止代码
+ * @param (string) $js
+ *  js 代码
+ */
 function dd_js_print($js) {
   print "$(function() {\n". $js . "\n});";
   exit;
 }
 
+/**
+ * 为 js 代码添加 script 标签
+ * @param (string) $js
+ *  js 代码
+ * @return (string)
+ */
 function _dd_js_print($js) {
   return '<script type="text/javascript">'.$js.'</script>';
 }
 
+/**
+ * js 页面跳转
+ * @param (int) $limit
+ *  页码，或其它标识
+ */
 function dd_js_goto($limit) {
   if ($q = dd_query_string_encode($_REQUEST, array_merge(array('q', 'js_limit'), array_keys($_COOKIE)))) {
     $q = '&' . $q;
@@ -2108,10 +2409,30 @@ function dd_js_goto($limit) {
   exit;
 }
 
+/**
+ * 以指定字符分割数组，并以  span 包裹
+ * @param (array) $v
+ *  待操作数组
+ * @param (string) $str
+ *  分隔符
+ */
 function dd_imp($v = array(), $str = ' | ') {
   if ($v) return '<span class="dd_imp">'.implode($str, $v).'</span>';
 }
 
+/**
+ * 向当前页面添加 js
+ * @param (string) $data
+ *  js 文件路径
+ * @param (string) $type
+ *  类型，决定加载顺序：core -> module -> theme
+ * @param (bool) $cache
+ *  是否合并缓存
+ * @param (string) $scope
+ *  加载位置：header、footer
+ * @param (bool) $defer
+ *  defer 模式
+ */
 function dd_add_js($data = NULL, $type = 'module', $cache = true, $scope = 'header', $defer = false) {
   static $javascript = array();
   if (isset($data)) {
@@ -2143,6 +2464,14 @@ function dd_add_js($data = NULL, $type = 'module', $cache = true, $scope = 'head
   }
 }
 
+/**
+ * 获取当前页面加载的 js
+ * @param (string) $scope
+ *  位置，header 或 footer
+ * @param (array) $javascript
+ *  js 文件
+ * @return (string)
+ */
 function dd_get_js($scope = 'header', $javascript = NULL) {
   global $conf, $base_path;
   static $init;
@@ -2186,28 +2515,31 @@ function dd_get_js($scope = 'header', $javascript = NULL) {
       default:
         foreach ($data as $path => $info) {
           if ($path) {
-            if ($GLOBALS['conf']['cache_css_and_js']) {
-              if ($info['cache']) {
-                $js_path[] = $path;
-                $filename .= $path;
-              } else {
-                if (strpos($path, 'http://') === false && strpos($path, 'https://') === false) {
-                  $path = $base_path .$path;
-                }
-                $preprocess .= '<script type="text/javascript"'. ($info['defer'] ? ' defer="defer"' : '') .' src="'. $path."\"></script>\n";
-              }
-            } else {
-              if (strpos($path, 'http://') === false && strpos($path, 'https://') === false) {
-                $path = $base_path .$path;
-              }
-              $preprocess .= '<script type="text/javascript"'. ($info['defer'] ? ' defer="defer"' : '') .' src="'. $path."\"></script>\n";
+            if ($conf['cache_css_and_js'] && $info['cache']) {
+              $js_path[] = $path;
+              $filename .= $path;
+              continue;
             }
+            
+            if (strpos($path, 'http://') === false && strpos($path, 'https://') === false) {
+              $path = $base_path .$path;
+            }
+            
+            if (strpos($path, '?') === false) {
+              $path .= '?'.$conf['cache_css_and_js_timestamp'];
+            } else {
+              $path .= '&'.$conf['cache_css_and_js_timestamp'];
+            }
+            
+            $preprocess .= '<script type="text/javascript"'. ($info['defer'] ? ' defer="defer"' : '') .' src="'. $path."\"></script>\n";
+              
           }
         }
     }
   }
+  
   if ($js_path && $filename) {
-    $filepath = file_mkdir(file_directory_path() . '/cache/css_js') . '/' . md5($filename) . '.js';
+    $filepath = file_mkdir(file_directory_path() . '/cache/css_js') . '/' . md5($filename.$conf['cache_css_and_js_timestamp']) . '.js';
     if (!is_file($filepath)) {
       require_once './includes/css_js_min.inc';
       foreach ($js_path as $path) {
@@ -2217,18 +2549,23 @@ function dd_get_js($scope = 'header', $javascript = NULL) {
     }
     $preprocess .= '<script type="text/javascript" src="'. $base_path .$filepath .'"></script>'."\n";
   }
+  
   if ($output) {
     $output = "<script type=\"text/javascript\">\n<!--//--><![CDATA[//><!--\n" . $output['inline'] . $output['inline_nojq'] . "\n//--><!]]>\n</script>";
   }
+  
   if ($settings) {
     $settings = "<script type=\"text/javascript\">\n<!--//--><![CDATA[//><!--\n" . $settings . "\n//--><!]]>\n</script>\n";
   }
+  
   return $settings . $preprocess . $output;
 }
 
-/*
-  view end
-*/
+/**
+ * 任意类型转换为 js
+ * @param (*) $var
+ * @return (string)
+ */
 function dd_to_js($var) {
   switch (gettype($var)) {
     case 'boolean':
@@ -2269,92 +2606,6 @@ function dd_to_js($var) {
   }
 }
 
-/*
-  字符串处理
-*/
-function dd_substr($text, $start, $length = NULL) {
-  if (function_exists('mb_strlen')) {
-    return $length === NULL ? mb_substr($text, $start, NULL, 'utf-8') : mb_substr($text, $start, $length, 'utf-8');
-  } else {
-    $strlen = strlen($text);
-    $bytes = 0;
-    if ($start > 0) {
-      $bytes = -1; $chars = -1;
-      while ($bytes < $strlen && $chars < $start) {
-        $bytes++;
-        $c = ord($text[$bytes]);
-        if ($c < 0x80 || $c >= 0xC0) {
-          $chars++;
-        }
-      }
-    } else if ($start < 0) {
-      $start = abs($start);
-      $bytes = $strlen; $chars = 0;
-      while ($bytes > 0 && $chars < $start) {
-        $bytes--;
-        $c = ord($text[$bytes]);
-        if ($c < 0x80 || $c >= 0xC0) {
-          $chars++;
-        }
-      }
-    }
-    $istart = $bytes;
-    if ($length === NULL) {
-      $bytes = $strlen - 1;
-    } else if ($length > 0) {
-      $bytes = $istart; $chars = 0;
-      while ($bytes < $strlen && $chars < $length) {
-        $bytes++;
-        $c = ord($text[$bytes]);
-        if ($c < 0x80 || $c >= 0xC0) {
-          $chars++;
-        }
-      }
-      $bytes--;
-    } else if ($length < 0) {
-      $length = abs($length);
-      $bytes = $strlen - 1; $chars = 0;
-      while ($bytes >= 0 && $chars < $length) {
-        $c = ord($text[$bytes]);
-        if ($c < 0x80 || $c >= 0xC0) {
-          $chars++;
-        }
-        $bytes--;
-      }
-    }
-    $iend = $bytes;
-    return substr($text, $istart, max(0, $iend - $istart + 1));
-  }
-}
-
-function dd_strlen($text) {
-  if (function_exists('mb_strlen')) {
-    return mb_strlen($text, 'utf-8');
-  } else {
-    return strlen(preg_replace("/[\x80-\xBF]/", '', $text));
-  }
-}
-
-function dd_strtoupper($text) {
-  if (function_exists('mb_strlen')) {
-    return mb_strtoupper($text);
-  } else {
-    $text = strtoupper($text);
-    $text = preg_replace_callback('/\xC3[\xA0-\xB6\xB8-\xBE]/', '_unicode_caseflip', $text);
-    return $text;
-  }
-}
-
-function dd_strtolower($text) {
-  if (function_exists('mb_strlen')) {
-    return mb_strtolower($text);
-  } else {
-    $text = strtolower($text);
-    $text = preg_replace_callback('/\xC3[\x80-\x96\x98-\x9E]/', '_unicode_caseflip', $text);
-    return $text;
-  }
-}
-
 /**
  * 将字符串转换为数组，以换行符分割
  * @param (string) $string
@@ -2382,7 +2633,17 @@ function dd_line_to_array($string, $repeat = NULL) {
   return false;
 }
 
-function dd_query_string_encode($query, $exclude = array(), $parent = '') {
+/**
+ * 将数组转换为 GET 字符串
+ * @param (array) $query
+ *  待转换的数组，如：array('op' => 'update', 'id' => 100)
+ * @param (array) $exclude
+ *  不转换的单元
+ * @param (string) $parent
+ *  父级名称，如：list，则上面的数组转换为：list[op]=update&list[id]=100
+ * @return (string) 如：op=update&id=100
+ */
+function dd_query_string_encode($query = array(), $exclude = array(), $parent = '') {
   $params = array();
   foreach ($query as $key => $value) {
     $key = dd_urlencode($key);
@@ -2394,14 +2655,18 @@ function dd_query_string_encode($query, $exclude = array(), $parent = '') {
     }
     if (is_array($value)) {
       $params[] = dd_query_string_encode($value, $exclude, $key);
-    }
-    else {
+    } else {
       $params[] = $key .'='. dd_urlencode($value);
     }
   }
   return implode('&', $params);
 }
 
+/**
+ * 字符串编码
+ * @param (string) $text
+ * @param (array) $exclude
+ */
 function decode_entities($text, $exclude = array()) {
   static $table;
   if (!isset($table)) {
@@ -2413,6 +2678,9 @@ function decode_entities($text, $exclude = array()) {
   return preg_replace('/&(#x?)?([A-Za-z0-9]+);/e', '_decode_entities("$1", "$2", "$0", $newtable, $exclude)', $text);
 }
 
+/**
+ * 处理字符串
+ */
 function _decode_entities($prefix, $codepoint, $original, &$table, &$exclude) {
   if (!$prefix) {
     if (isset($table[$original])) {
@@ -2450,7 +2718,10 @@ function _decode_entities($prefix, $codepoint, $original, &$table, &$exclude) {
 }
 
 /**
- * 字符串检查，去除html标签
+ * 字符串检查，去除 html 标签
+ * @param (string) $text
+ *  待检查的字符串
+ * @return (string)
  */
 function check_plain($text) {
   static $php525;
@@ -2458,44 +2729,69 @@ function check_plain($text) {
   if (!isset($php525)) {
     $php525 = version_compare(PHP_VERSION, '5.2.5', '>=');
   }
+  
   if ($php525) {
     return htmlspecialchars($text, ENT_QUOTES, 'UTF-8');
   }
+  
   return (preg_match('/^./us', $text) == 1) ? htmlspecialchars($text, ENT_QUOTES, 'UTF-8') : '';
 }
 
-// 是否utf8编码
+/**
+ * 检查字符串是否为 utf8 编码
+ * @param (string) $text
+ *  待检查的字符串
+ * @return (bool)
+ */
 function dd_validate_utf8($text) {
   if (strlen($text) == 0) {
-    return TRUE;
+    return true;
   }
   return (preg_match('/^./us', $text) == 1);
 }
 
-// url编码
+/**
+ * 字符串 url 编码
+ * @param (string) $text
+ *  待编码的字符串
+ * @return (string) 编码后的字符串
+ */
 function dd_urlencode($text) {
-  global $conf;
-  if ($conf['clean_url']) {
+  if ($GLOBALS['conf']['clean_url']) {
     return str_replace(array('%2F', '%26', '%23', '//'), array('/', '%2526', '%2523', '/%252F'), rawurlencode($text));
   } else {
     return str_replace('%2F', '/', rawurlencode($text));
   }
 }
 
-// 检查url
+/**
+ * 检查 uri 是否合法
+ * @param (string) $uri
+ *  待检查的 uri
+ * @return (bool)
+ */
 function check_url($uri) {
-  return filter_xss_bad_protocol($uri, FALSE);
+  return filter_xss_bad_protocol($uri, false);
 }
 
-function filter_xss_bad_protocol($string, $decode = TRUE) {
+/**
+ * 检查 uri 协议是否合法
+ * @param (string) $string
+ *  待检查的 uri
+ * @param (bool) $decode
+ *  是否需要解码
+ * @return (bool)
+ */
+function filter_xss_bad_protocol($string, $decode = true) {
   static $allowed_protocols;
+  
   if (!isset($allowed_protocols)) {
     $allowed_protocols = array_flip(var_get('filter_allowed_protocols', array('http', 'https', 'ftp', 'news', 'nntp', 'telnet', 'mailto', 'irc', 'ssh', 'sftp', 'webcal', 'rtsp')));
   }
 
   if ($decode) {
     $string = decode_entities($string);
-  }do {
+  } do {
     $before = $string;
     $colonpos = strpos($string, ':');
     if ($colonpos > 0) {
@@ -2508,12 +2804,16 @@ function filter_xss_bad_protocol($string, $decode = TRUE) {
       }
     }
   } while ($before != $string);
+  
   return check_plain($string);
 }
 
 
 
-//字母数字混合模式的随机数
+/**
+ * 字母数字混合模式的随机数
+ * @return (string)
+ */
 function dd_range_str() {
   $a = range(a, z);
   $b = range(A, Z);
@@ -2534,6 +2834,7 @@ function dd_page_header() {
  * 缓存页面 header
  * @param (int) $timestamp
  *  上次缓存时间
+ * @return (bool) true
  */
 function dd_page_cache_header($timestamp) {
   
@@ -2571,7 +2872,9 @@ function dd_page_cache_header($timestamp) {
 }
 
 /**
- * meta 参数
+ * 设置 meta 参数
+ * @param (array) $v
+ *  meta 值对
  */
 function dd_set_meta(array $v = array()) {
   if (isset($v)) {
@@ -2587,6 +2890,14 @@ function dd_set_meta(array $v = array()) {
   }
 }
 
+/**
+ * 获取分享网站代码，触发 hook_share_fav
+ * @param (string) $url
+ *  待分享的链接
+ * @param (string) $title
+ *  待分享的标题
+ * @return (string) 所有分享网站链接列表
+ */
 function dd_get_share_fav($url, $title) {
   
   if ($lists = module_invoke_all('share_fav')) {
@@ -2611,7 +2922,11 @@ function dd_get_share_fav($url, $title) {
 }
 
 /**
- * 获取$_GET['q']
+ * 将路径解析为数组，以 / 分割，从 0 开始
+ * @param (int) $index
+ *  索引，从 0 开始
+ * @param (string) $path
+ *  路径，默认为 $_GET['q']
  */
 function arg($index = NULL, $path = NULL) {
   static $arguments;
@@ -2630,23 +2945,14 @@ function arg($index = NULL, $path = NULL) {
 }
 
 /**
- * 递归合并数组
- */
-function dd_array_multi2single($multi, &$array = array()) {
-  if (is_array($multi)) {
-    foreach ($multi as $value) {
-      if (is_array($value)) {
-        dd_array_multi2single($value, $array);
-      } else if ($value != '') {
-        $array[] = $value;
-      }
-    }
-  }
-  return $array;
-}
-
-/**
- * 多维转一维
+ * 将多维数组转为一维
+ * @param (string) $op
+ *  是保留索引，还是值，默认保留值
+ * @param (array) $multi
+ *  待转换多维数组
+ * @param (array) &$array
+ *  转换后的一维数组
+ * @return (array)
  */
 function dd_array2_to($op = 'value', $array, &$arr = array()) {
   foreach ($array as $key => $val) {
@@ -2661,6 +2967,7 @@ function dd_array2_to($op = 'value', $array, &$arr = array()) {
 
 /**
  * 判断当前页是否为首页
+ * @return (bool)
  */
 function dd_is_front() {
   return !isset($_GET['q']) || $_GET['q'] == $GLOBALS['conf']['front'];
@@ -2668,6 +2975,8 @@ function dd_is_front() {
 
 /**
  * 获取跳转地址
+ * @param (string) $url
+ * @return (string)
  */
 function dd_redirect($url = NULL) {
   return array('query' => 'redirect='. ($url ? $url : url($_GET['q'])));
@@ -2675,6 +2984,7 @@ function dd_redirect($url = NULL) {
 
 /**
  * 跳转至 redirect 或 指定路径
+ * @param (string) $url
  */
 function dd_goto_redirect($url = NULL) {
   if (!$url) $url = $_GET['q'];
@@ -2683,6 +2993,11 @@ function dd_goto_redirect($url = NULL) {
 
 /**
  * utf-8 字符转 ascii 编码
+ * @param (string) $str
+ *  待转换字符串
+ * @param (string) $imp
+ *  分隔符
+ * @return (string)
  */
 function dd_encode_ascii($str, $imp = '.') {
   if (!$str) return false;
@@ -2706,7 +3021,12 @@ function dd_encode_ascii($str, $imp = '.') {
 }
 
 /**
- * ascii 编码转 utf-8 字符
+ * ascii 编码的字符串转 utf-8 字符串
+ * @param (string) $str
+ *  待转换字符串
+ * @param (string) $imp
+ *  分隔符
+ * @return (string)
  */
 function dd_decode_ascii($str, $imp = '.') {
   if (!$str) return false;
@@ -2724,6 +3044,18 @@ function dd_decode_ascii($str, $imp = '.') {
   return $cache[$str];
 }
 
+/**
+ * 写入 php 文件 
+ * @param (string) $filename
+ *  文件名
+ * @param (string) $var_name
+ *  变量名
+ * @param (*) $value
+ *  待保存的数据
+ * @param (string) $path
+ *  保存路径，默认保存在缓存目录
+ * @return (bool)
+ */
 function cache_system_set_file($filename, $var_name, $value, $path = 1) {
   $info = '//$Id$' . "\n\n";
   
@@ -2734,54 +3066,90 @@ function cache_system_set_file($filename, $var_name, $value, $path = 1) {
   	}
     $value .= ';';
   }
+  
   if ($path == 1) {
     $filepath = $GLOBALS['conf_dir'] . '/cache/' . $filename;
   } else {
     $filepath = $path . '/' . $filename;
   }
+  
   if ($var_name) {
     $value = '$'. $var_name .' = '. $value;
   }
+  
   return file_put_contents($filepath, "<?php \n $info" . $value . "\n\n?>");
 }
 
-function cache_array_to_object($value) {
-  return (object) $value;
-}
-
-function dd_get_required($required) {
-  if ($required) return t('system', '是');
-}
-
+/**
+ * 从缓存目录获取 php 文件
+ * @param (string) $filename
+ *  文件名
+ * @param (string) $var_name
+ *  变量名
+ */
 function cache_system_get_file($filename, $var_name) {
   if (is_file($GLOBALS['conf_dir'] . '/cache/' . $filename)) {
     include_once $GLOBALS['conf_dir'] . '/cache/' . $filename;
     return ${$var_name};
-	}
+  }
 }
 
 /**
- * 删除缓存文件
+ * 删除缓存目录的文件
+ * @param (string) $filename
+ *  文件名称
+ * @return (bool)
  */
 function cache_del_file($filename) {
-	if (strpos($filename, '/') === false) {
-		$filename = $GLOBALS['conf_dir'] . '/cache/' . $filename;
-	}
-	return @unlink($filename);
+  if (strpos($filename, '/') === false) {
+    $filename = $GLOBALS['conf_dir'] . '/cache/' . $filename;
+  }
+  
+  return @unlink($filename);
 }
 
+/**
+ * 必需项转为文字
+ * @param (bool) $required
+ * @return (string or null)
+ */
+function dd_get_required($required) {
+  if ($required) return t('system', '是');
+}
+
+/**
+ * 获取临时一条记录
+ * @param (string) $tid
+ *  记录 id
+ * @return (object)
+ */
 function temp_get($tid) {
-  $temp = db_query('SELECT data, type, timestamp, uid, serialized FROM {temp} WHERE tid = ?', array($tid), array('return' => 'one'));
+  $temp = db_query('SELECT data, type, timestamp, uid, serialized FROM {temp} WHERE tid = ?',
+  array($tid), array('return' => 'one'));
+  
   if (isset($temp->data)) {
     if ($temp->serialized) {
       $temp->data = unserialize($temp->data);
     }
     return $temp;
   }
+  
   return 0;
 }
 
-function temp_set($tid, $data, $type, $uid = NULL) {
+/**
+ * 写入一条临时记录
+ * @param (string) $tid
+ *  记录 id
+ * @param (*) $data
+ *  待写入数据
+ * @param (string) $type
+ *  自定义类型
+ * @param (int) $uid
+ *  用户 id，默认为当前用户
+ * @return (bool)
+ */
+function temp_set($tid, $data, $type = '', $uid = NULL) {
   $v = array(
     'serialized' => 0,
     'data' => $data,
@@ -2799,6 +3167,11 @@ function temp_set($tid, $data, $type, $uid = NULL) {
   return db_replace('temp', $v);
 }
 
+/**
+ * 删除一条或多条临时记录
+ * @param (string) $tid
+ * @return (int) 删除的列数
+ */
 function temp_del($tid) {
   return db_exec('DELETE FROM {temp} WHERE tid = ?', array($tid));
 }
@@ -2976,6 +3349,16 @@ function dd_get_summary($body, $size, $format = NULL) {
   return $summary_string;
 }
 
+/**
+ * 获取 rss 格式的数据
+ * @param (string) $items
+ *  通常为通过 dd_rss_item 获取的 rss 元素
+ * @param (array) $channel
+ *  rss 属性
+ * @param $args
+ *  $items 之前自定义参数
+ * @return (string)
+ */
 function dd_rss_feed($items, $channel = array(), $args = array()) {
   global $conf, $base_url;
   
@@ -2999,6 +3382,7 @@ function dd_rss_feed($items, $channel = array(), $args = array()) {
   $output = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n";
   $output .= "<rss version=\"". $channel["version"] ."\" ". dd_attributes($namespaces) .">\n";
   $output .= "<$channel[root]>\n";
+  
   if ($args) {
   	$output .= dd_xml_elements($args);
   }
@@ -3010,6 +3394,16 @@ function dd_rss_feed($items, $channel = array(), $args = array()) {
   return $output;
 }
 
+/**
+ * 数据转换为 xml 元素
+ * @param (array or string) $fields
+ *  待转换数据
+ * @param (string) $item
+ *  xml 标签
+ * @param (array) $args
+ *  自定义属性
+ * @return (string)
+ */
 function dd_rss_item($fields, $item = 'item', $args = array()) {
   $output = "<$item>\n";
   if (is_array($fields)) {
@@ -3034,6 +3428,12 @@ function dd_rss_item($fields, $item = 'item', $args = array()) {
   return $output;
 }
 
+/**
+ * 解析 xml 自定义属性
+ * @param (array) $array
+ *  待解析数组
+ * @return (string)
+ */
 function dd_xml_elements($array) {
   $output = '';
   foreach ($array as $key => $value) {

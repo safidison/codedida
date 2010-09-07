@@ -378,7 +378,7 @@ function user_admin_roles_form() {
 }
 
 function user_admin_roles_form_validate($form, $v) {
-  if (dd_strlen($v['name']) > 16) {
+  if (mb_strlen($v['name']) > 16) {
     $t['name']['#error'][] = t('user', '名称过长');
   } else if (db_exec('INSERT INTO {role} (name) VALUES (?)', array(trim($v['name'])))) {
     dd_set_message(t('user', '角色 %string 添加成功', array('%string' => $v['name'])));

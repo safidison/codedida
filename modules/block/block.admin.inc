@@ -164,7 +164,7 @@ function block_settings_form($theme, $block) {
 function block_settings_form_validate($form, $v) {
 	$block = $form['settings']['#data'];
 	$theme = arg(3);
-	if (dd_strlen($v['title']) > 60) {
+	if (mb_strlen($v['title']) > 60) {
 		$t['title']['#error'][] = t('block', '标题长度不超过 %length 字符', array('%length' => 60));
 	} else {
     $function = $block->module.'_block_save';
