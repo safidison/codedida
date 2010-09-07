@@ -646,6 +646,10 @@ function system_filter($op, $delta = NULL, $format = NULL, $value = NULL, $filte
             
             dd_get_highlighter();
             $value = preg_replace_callback('/\[code=([^\/]*?)\](.*?)\[\/code\]/ims', '_system_filter_code_higth', $value);
+          break;
+          case 4: // 表情转换
+            $dir = $GLOBALS['base_path'] . 'misc/markitup/sets/dida/face/';
+            $value = preg_replace('/\[smiley\](.*?)\[\/smiley\]/ims', "<img src='$dir\${1}' />", $value);
             
         }
       } else if ($filter_id) {
@@ -713,7 +717,11 @@ function system_filter($op, $delta = NULL, $format = NULL, $value = NULL, $filte
         array(
           'title' => '代码高亮',
           'weight' => 10,
-          'description' => '将 [code={type}][/code]之间的代码做高亮处理，权重应低于换行符转换。若 HTML 过滤器同时启用，且设置为去除标签，代码高亮权重应高于 HTML 过滤器，同时过滤器中允许 pre 标签',
+          'description' => '将 [code={type}][/code] 之间的代码做高亮处理，权重应低于换行符转换。若 HTML 过滤器同时启用，且设置为去除标签，代码高亮权重应高于 HTML 过滤器，同时过滤器中允许 pre 标签',
+        ),
+        array(
+          'title' => '表情解析',
+          'description' => '将 [smiley][/smiley] 转换为表情图片，与文本编辑器配合',
         ),
       );
       if ($fetch = db_query('SELECT * FROM {filter_tags}')) {
@@ -1146,6 +1154,8 @@ function dd_get_editor_text($dom, $type = 'html', $v = array()) {
   if ($v['extPreview'] !== false) {
     dd_jqui();
   }
+  
+  $v['root'] = f('misc/markitup/');
   
   $js = array('dom' => $dom, 'type' => $type);
   if ($v) {

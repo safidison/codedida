@@ -17,10 +17,11 @@
 }
 .markItUpEditor {
 	font:12px 'Courier New', Courier, monospace;
-	padding:5px;
+	padding:5px 0;
 	width:690px;
 	height:320px;
-	clear:both; display:block;
+	clear:both;
+	display:block;
 	line-height:18px;
 	overflow:auto;
 }
@@ -162,6 +163,9 @@
 .markItUpButton_img{
   background-position:0 -576px;
 }
+.markItUpButton_smiley {
+  background-position:0 -640px;
+}
 .markItUpButton_code{
   background-position:0 -832px;
 }
@@ -214,4 +218,49 @@
 }
 .markitup_file_button {
   text-align: right;
+}
+
+/*表情*/
+#markitup_smiley_wrapper {
+  text-align:left;
+  background: #fff;
+  position: absolute;
+  border: 1px solid #D8E3F7;
+  border-top: none;
+  padding:0;
+  width: 400px;
+  font-size: 12px;
+}
+
+#markitup_smiley_wrapper .contents{
+  overflow-y: auto;
+  padding: 5px;
+  height: 120px;
+}
+
+#markitup_smiley_wrapper .contents img{
+  padding: 3px;
+  cursor:pointer;
+}
+
+#markitup_smiley_wrapper .menu{
+	background:#A7B2ED;
+	clear:both;
+	height:24px;
+	line-height:24px;
+	padding:0;
+}
+
+#markitup_smiley_wrapper .menu a{
+  padding: 0 12px;
+  float: left;
+  height:24px;
+  line-height:24px;
+}
+#markitup_smiley_wrapper .menu a#markitup_smiley_close {
+	float: right;
+}
+#markitup_smiley_wrapper .menu a.active{
+  background: #fff;
+  color:#215A08;
 }

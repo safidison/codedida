@@ -749,7 +749,8 @@ function system_system_cache_clear($op = 'list', $v = NULL) {
       'admin_menus' => t('system', '清除管理菜单缓存表，当有新的管理菜单注册时应选择此项'),
       'cache_css_and_js' => t('system', '清除js和css缓存'),
       'front_cache' => t('system', '清除首页缓存，仅当开启了页面缓存才需要此操作'),
-    	'cache_hook' => t('system', '清除 hook 缓存，当有模块变动时应选择此项')
+    	'cache_hook' => t('system', '清除 hook 缓存，当有模块变动时应选择此项'),
+      'cache_filter' => t('system', '清除 filter 缓存，当有输入法或过滤器有变动时应选择此项'),
     );
     // case 'submit':
   }
@@ -846,6 +847,10 @@ function system_cache_clear_submit($form, $value) {
     module_hook_set_cache();
     theme_get_cache();
     dd_set_message(t('system', 'hook 缓存清除成功'));
+  }
+  if ($value['value']['cache_filter']) {
+    filter_set_cache();
+    dd_set_message(t('system', 'filter 缓存清除成功'));
   }
   if ($value['value']['cache_menu']) {
     cache_del('empty', NULL, 'cache_menu');

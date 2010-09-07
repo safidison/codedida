@@ -1,6 +1,6 @@
 // $Id$
 
-Dida.markitup = {html: {}, tools: {}};
+Dida.markitup = {html: {}, tools: {}, cache: {}};
 
 /*******html******/
 
@@ -60,6 +60,7 @@ Dida.markitup.html = function(obj) {
 		ol: {name:'有序列表', replaceWith: function(h) { return extSet.ul(h, 'ol'); }},
 		img: {name:'加图片', beforeInsert: function(h) { return Dida.markitup.tools.upload(h, o, 'image') } 	},
 		a: {name:'超链接', beforeInsert: function(h) { return Dida.markitup.tools.upload(h, o, 'file') } },
+		smiley: {name: '表情', beforeInsert: function(h) { return Dida.markitup.tools.smiley(h, o) }},
 		blockquote: {name: '引用', key: 'Q', openWith: '<blockquote>', closeWith: '</blockquote>'},
 		code: {name: '插入代码', dropMenu: 
 			[
@@ -89,12 +90,6 @@ Dida.markitup.html = function(obj) {
 		clean: {name:'清除格式', replaceWith:function(h) { return h.selection.replace(/<(.*?)>/g, "") }}
 	}
 	
-	if (o.extPreview) {
-		sets.preview = {name:'预览', closeWith: function(h) {Dida.markitup.tools.preview(h, o);}};
-	} else {
-		sets.preview = {name:'预览', call: 'preview'};
-	}
-	
 	if (o.AutoSaveUrl) {
 		sets.save = {name: o.AutoSaveName || '保存草稿', openWith: function(h) { Dida.markitup.tools.autoSave(h, o)}};
     window.setInterval(function() {
@@ -102,11 +97,24 @@ Dida.markitup.html = function(obj) {
     }, obj.AutoSaveTime || 60000);
 	}
 	
+	if (!$.isEmptyObject(settings.markitupHtmlSets)) {
+		// 添加全局按钮
+		for (var attr in settings.markitupHtmlSets) {
+			sets[attr] = settings.markitupHtmlSets[attr];
+		}
+	}
+	
 	if (o.sets) {
 		// 添加自定义按钮
 		for (var attr in o.sets) {
 			sets[attr] = o.sets[attr];
 		}
+	}
+	
+	if (o.extPreview) {
+		sets.preview = {name:'预览', closeWith: function(h) {Dida.markitup.tools.preview(h, o);}};
+	} else {
+		sets.preview = {name:'预览', call: 'preview'};
 	}
 	
 	// 获取按钮
@@ -377,6 +385,7 @@ Dida.markitup.tools.upload = function(edit, obj, op) {
 				Dida.dialog({
 					url: obj.filebrowserImageBrowseUrl,
 					iframe: true,
+					modal: true,
 					title: '图片库'
 				});
 				return false;
@@ -427,6 +436,92 @@ Dida.markitup.tools.upload = function(edit, obj, op) {
 		Dida.markitup.tools.insertFilepath(obj, edit, op);
 		return false;
 	});
+}
+
+/**
+ * 插入表情
+ */
+Dida.markitup.tools.smiley = function(edit, obj) {
+	if (!$('#markitup_smiley_wrapper').size()) {
+		$('body').append('<div id="markitup_smiley_wrapper"><div class="contents"></div><div class="menu"></div></div>');
+		
+		$('#markitup_smiley_wrapper a.markitup_smiley_menu').live('click', function(){
+			$('#markitup_smiley_wrapper .contents').html('<div class="loading_image loading_size"></div>');
+			smiley($(this).attr('alt'));
+			$(this).siblings('a.markitup_smiley_menu').removeClass('active');
+			$(this).addClass('active');
+			return false;
+		});
+		
+		$('#markitup_smiley_wrapper .contents img').live('click', function(){
+			Dida.markitup.tools.insert('[smiley]'+$(this).attr('alt')+'[/smiley]', edit);
+			return false;
+		});
+		
+		$('#markitup_smiley_close').live('click', function(){
+			$('#markitup_smiley_wrapper').hide();
+			return false;
+		});
+	}
+	
+	this.offset = $(edit.textarea).prev('.markItUpHeader').offset();
+	$('#markitup_smiley_wrapper').css({'top': this.offset.top+22, 'left': this.offset.left+100}).show();
+	
+	var path = obj.root + 'sets/dida/face/';
+	
+	if (!$.isPlainObject(Dida.markitup.cache.smiley)) {
+		Dida.markitup.cache.smiley = {};
+	}
+	
+	function smiley(attr) {
+		var items = Dida.markitup.cache.smiley[attr].items;
+		if (!$.isEmptyObject(items)) {
+			
+			var html = '';
+			$(items).each(function(){
+				html += '<img src="'+path + this+'" alt="'+this+'"/>';
+			});
+			
+			$('#markitup_smiley_wrapper .contents').html(html);
+		}
+		
+	}
+	
+	if ($.isEmptyObject(Dida.markitup.cache.smiley)) {
+		
+		$('#markitup_smiley_wrapper .contents').html('<div class="loading_image loading_size"></div>');
+		
+		$.getJSON(path + 'face.php', function(json) {
+			if (!json.error && json.contents) {
+				Dida.markitup.cache.smiley = json.contents;
+				
+				var menu = '', i = 0;
+				for (var attr in json.contents) {
+					if (i == 0) {
+						menu += '<a href="#" class="markitup_smiley_menu active" alt="'+attr+'">'+json.contents[attr].name+'</a>';
+						smiley(attr);
+					} else {
+						menu += '<a href="#" class="markitup_smiley_menu" alt="'+attr+'">'+json.contents[attr].name+'</a>';
+					}
+					
+					i++;
+				}
+				
+				if (i < 2) {
+					menu = '';
+				}
+				
+				menu += '<a href="#" id="markitup_smiley_close">关闭</a>';
+				$('#markitup_smiley_wrapper .menu').html(menu);
+				
+			} else {
+				$('#markitup_smiley_wrapper').hide();
+				alert('没有定义任何表情');
+			}
+		});
+		
+	}
+	
 }
 
 /**

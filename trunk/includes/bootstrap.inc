@@ -286,15 +286,16 @@ function dd_get_access() {
   if ($user->uid > 0) {
     header('HTTP/1.1 403 Forbidden');
     if ($GLOBALS['conf']['page_access_history']) {
-      dd_set_message(t('system', '抱歉，没有权限访问该地址 %string', array('%string' => dd_get_absolute_url())), 'error');
+      dd_set_message(t('system', '抱歉，没有权限访问 %string', array('%string' => dd_get_absolute_url())), 'error');
       dd_goto(dd_get_history());
     } else {
       dd_set_title(array(t('system', '没有权限访问该页面')));
       echo theme('print', custom_get('page_access_html'));
     }
   } else {
-    dd_set_title(array(t('system', '登录以确认访问权限')));
-  	dd_set_message(t('system', '请登录确认权限'), 'error');
+    $title = t('system', '登录以确认访问权限');
+    dd_set_title(array($title));
+  	dd_set_message($title, 'error');
     echo theme('print', dd_get_form('user_login_form'));
   }
   exit;
