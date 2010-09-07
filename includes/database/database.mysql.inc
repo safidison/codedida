@@ -104,8 +104,12 @@ function db_mysql_replace($table, $args, array $opt = array()) {
   $tables = module_get_schema($table);
   
   if (!is_array($tables['fields'])) {
-    dd_set_message(t('system', '无效的数据表 !string', array('!string' => $table)), 'error');
-    return false;
+    if (db_is_table($table)) {
+      $tables = module_get_schema($table, 1);
+    } else {
+      dd_set_message(t('system', '无效的数据表 !string', array('!string' => $table)), 'error');
+      return false;
+    }
   }
   
   if (is_object($args)) {

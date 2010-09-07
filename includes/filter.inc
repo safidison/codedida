@@ -18,11 +18,32 @@ function filter_view($text, $format = NULL, $type = NULL, $id = NULL) {
     $format = $conf['default_format'];
   }
   
+  $options = filter_user_format();
+  
+  if (!$options[$format]) {
+    // 没有权限使用当前输入法
+    return check_plain($text);
+  }
+  
+  // 含有 php 过滤器，则不缓存
+  
+  if ($cache = !filter_is_php($format)) {
+    $cache_id = $format .':'. md5($text);
+    if ($cached = cache_get($cache_id, 'cache_filter')) {
+      return $cached->data;
+    }
+  }
+  
   if ($conf['filters'][$format] && is_array($conf['filters'][$format])) {
     foreach ($conf['filters'][$format] as $filter) {
       $text = call_user_func($filter['module'] . '_filter', 'view', $filter['delta'], $filter['format'], $text, $filter['filter'], $type, $id);
     }
   }
+  
+  if ($cache) {
+    cache_set($cache_id, $text, 'cache_filter');
+  }
+  
   return $text;
 }
 
@@ -143,6 +164,7 @@ function filter_set_cache() {
   var_set('formats', $formats, 0);
   var_set('filters', $filters, 0);
   var_set('format_roles', $roles, 0);
+  cache_del('empty', NULL, 'cache_filter');
   
   var_init();
 }

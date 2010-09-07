@@ -1408,7 +1408,7 @@ function user_login($user) {
   module_alter_all('user_login', $user);
   
   dd_log('user_login', t('system', '用户登录'), 0, dd_get_referer($_SERVER['HTTP_REFERER']), 0, $user->uid);
-  dd_set_message(implode(',', $user->roles).'ggg');
+  
   return $user;
 }
 

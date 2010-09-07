@@ -12,6 +12,7 @@ function theme_init() {
   if (is_file($conf['themes'][$template]['path'] . '/template.php')) {
     require_once $conf['themes'][$template]['path'] . '/template.php';
   }
+  
   if (!$conf['themes'][$template]['styles']) {
     dd_add_css($conf['themes'][$template]['path'].'/css/style.css', 'theme');
   } else {

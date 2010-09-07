@@ -804,9 +804,7 @@ function module_get_schema($table, $clear = NULL) {
   static $tables;
   
   if (!isset($tables) || $clear) {
-    
     if ($clear || !$cache = cache_get('schema')) {
-      
       $tables = false;
       
       $_tables = db_show_tables();

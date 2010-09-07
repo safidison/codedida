@@ -16,6 +16,10 @@
 .loading_image {
 	background: url(../../misc/images/loading.gif) no-repeat center center;
 }
+.loading_size {
+	height: 100%;
+	width: 100%;
+}
 .js_messageShow{
   padding: 20px;
   border: 1px solid #ccc;
