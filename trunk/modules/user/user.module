@@ -7,7 +7,7 @@
  * 用户注册验证：hook_user_register_validate($form, $v)
  * 用户写入成功：hook_user_insert(&$ac)
  * 用户登录表单：hook_user_login_form(&$form)
- * 用户登录验证：hook_user_login_validate($form, $v)
+ * 用户登录验证：hook_user_login_validate(&$ac, $v)
  * 载入用户信息：hook_user_load(&$ac)
  * 用户信息编辑表单：hook_user_edit_form($ac, $op, &$form)
  * 用户信息编辑验证：hook_user_validate($v, $ac)
@@ -1219,7 +1219,14 @@ function user_login_validate(&$form, &$value) {
   return $error;
 }
 
-function _user_login_validate($ac, &$value) {
+/**
+ * 用户登录验证
+ * @param (object) $ac
+ *  用户对象
+ * @param (object) $value
+ *  如果是通过表单提交，表单值
+ */
+function _user_login_validate($ac, &$value = NULL) {
   if ($ac->uid) {
     switch ($ac->status) {
       case 0:
@@ -1378,7 +1385,7 @@ function user_view($account) {
 function user_user_page($ac) {
   $item[] = dd_get_strong(t('user', '注册时间')) . format_date($ac->created);
   if ($ac->login) {
-    $item[] = dd_get_strong(t('user', '上次登录')) . format_date($ac->login);
+    $item[] = dd_get_strong(t('user', '最近登录')) . format_date($ac->login);
   }
   if ($ac->field_view) {
     foreach ($ac->field_view as $key => $data) {
