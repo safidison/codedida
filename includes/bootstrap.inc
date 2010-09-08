@@ -2970,7 +2970,8 @@ function dd_array2_to($op = 'value', $array, &$arr = array()) {
  * @return (bool)
  */
 function dd_is_front() {
-  return !isset($_GET['q']) || $_GET['q'] == $GLOBALS['conf']['front'];
+  return strpos($_SERVER['PHP_SELF'], 'index.php') !== false 
+  && (!isset($_GET['q']) || $_GET['q'] == $GLOBALS['conf']['front']);
 }
 
 /**

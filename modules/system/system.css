@@ -395,6 +395,7 @@ span.ja_loading {
 #print{
   padding:5px 12px;
   text-align: left;
+  background: #fff
 }
 
 #print .user_login_form{
