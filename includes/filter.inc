@@ -25,19 +25,26 @@ function filter_view($text, $format = NULL, $type = NULL, $id = NULL) {
     return check_plain($text);
   }
   
-  // 含有 php 过滤器，则不缓存
+  // 是否缓存内容，当内容不发生变更，下次请求将直接从数据库读取缓存。这将减少 PHP 开销，却会增加数据库查询
+  if ($conf['filter_cache']) {
   
-  if ($cache = !filter_is_php($format)) {
-    $cache_id = $format .':'. md5($text);
-    if ($cached = cache_get($cache_id, 'cache_filter')) {
-      
-      // 代码高亮，加载 js
-      if (filter_is_filter($format, 'system', 3)) {
-        dd_get_highlighter();
+    // 含有 php 过滤器，则不缓存
+    
+    if ($cache = !filter_is_php($format)) {
+      $cache_id = $format .':'. md5($text);
+      if ($cached = cache_get($cache_id, 'cache_filter')) {
+        
+        // 代码高亮，加载 js
+        if (filter_is_filter($format, 'system', 3)) {
+          dd_get_highlighter();
+        }
+        
+        return $cached->data;
       }
-      
-      return $cached->data;
     }
+    
+  } else {
+    $cache = false;
   }
   
   if ($conf['filters'][$format] && is_array($conf['filters'][$format])) {

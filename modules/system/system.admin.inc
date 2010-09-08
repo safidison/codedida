@@ -398,6 +398,14 @@ function system_site_settings() {
     '#default_value' => var_get('cache_css_and_js', 0),
     '#options' => array(t('system', '不合并'), t('system', '合并')),
   );
+  $form['fields']['filter_cache'] = array(
+    '#type' => 'radio',
+    '#title' => t('system', '缓存输入法'),
+    '#required' => true,
+    '#default_value' => var_get('filter_cache', 0),
+    '#options' => array(t('system', '不缓存'), t('system', '缓存')),
+    '#description' => t('system', '可以将通过输入法过滤的内容缓存到数据库，减少 PHP 开销，但将数据库将增多'),
+  );
   $form['fields']['alias'] = array(
     '#type' => 'radio',
     '#title' => t('system', '别名优先'),
