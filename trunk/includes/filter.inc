@@ -20,11 +20,6 @@ function filter_view($text, $format = NULL, $type = NULL, $id = NULL) {
   
   $options = filter_user_format();
   
-  if (!$options[$format]) {
-    // 没有权限使用当前输入法
-    return check_plain($text);
-  }
-  
   // 是否缓存内容，当内容不发生变更，下次请求将直接从数据库读取缓存。这将减少 PHP 开销，却会增加数据库查询
   if ($conf['filter_cache']) {
   
