@@ -907,13 +907,14 @@ function ip_address() {
  *  用户验证
  */
 function dd_user_validate() {
-  global $user, $cookie_domain;
+  global $user;
   
   if ($_COOKIE[session_name()] && $_SESSION['user'] && $_SESSION['user']->session == $_COOKIE[session_name()]) {
     $user = $_SESSION['user'];
-    $active = $_COOKIE['time'];
+    $active = dd_get_cookie('time');
     $time = time();
-    setcookie('time', $time, $time + 31536000, '/', $cookie_domain);
+    dd_set_cookie('time', $time);
+    
     if ($active > ($time - 1800)) { 
       // 两次活动时间间隔 30 分钟内
       if (($active > ($user->active + 300)) && ($active < ($user->active + 600))) {
@@ -960,6 +961,85 @@ function dd_user_validate() {
       $user = user_anonymous();
     }
   }
+}
+
+/**
+ * 将字符串简单加密，并不能保证安全性，仅比明文好一点
+ * @param (string) $text
+ *  待加密的字符串
+ * @param (string) $key
+ *  密钥，解密时，必须指定密钥，才可正确获取数据
+ * @return (string) 加密后的字符串
+ * 
+ * @demo：
+ *  加密：dd_encrypt($text, 'key');
+ *  解密：dd_decrypt($text, 'key');
+ */
+function dd_encrypt($text, $key = NULL) {
+  $new = array();
+  $key = dd_encrypt_key($key);
+  $text = substr($key['md5'], 16, 8) . $text;
+  
+  for ($i=0; $i <= strlen($text); $i++ ) {
+    $new[$i] = ord($text[$i]) * $key['ascii'];
+  }
+  
+  $new = implode ('.', $new);
+  return base64_encode($new);
+}
+
+/**
+ * 字符串解密
+ * @param (string) $text
+ *  待解密的字符串
+ * @param (string) $key
+ *  密钥，与加密时的一致
+ * @return (string) 解密后的字符串
+ */
+function dd_decrypt($text, $key = NULL) {
+  $new = array();
+  
+  $text = base64_decode($text);
+  $array = explode('.', $text);
+  $key = dd_encrypt_key($key);
+  $count = count($array);
+  
+  for ($i = 0; $i < $count; $i++) {
+    if ($array[$i]) {
+      $new[$i] = chr($array[$i] / $key['ascii']);
+    }
+  }
+  
+  $new = implode('', $new);
+  
+  if (substr($key['md5'], 16, 8) == substr($new, 0, 8)) {
+    return substr($new, 8);
+  } else {
+    return false;
+  }
+}
+
+/**
+ * 获取密钥的 ASCII 值
+ * @param (string) $key
+ *  若不指定，则使用默认密钥
+ * @return (array) 密钥的 ASCII值和md5值，如：array('md5' => '', 'ascii' => '');
+ */
+function dd_encrypt_key($key = NULL) {
+  if (!isset($key)) {
+    $key = var_get('crypt_default_key', $GLOBALS['cookie_domain']);
+  }
+  
+  static $datas;
+  if (!isset($datas[$key])) {
+    $datas[$key]['md5'] = md5($key);
+    $datas[$key]['ascii'] = 0;
+    
+    for ($i = 0; $i <= strlen($datas[$key]['md5']); $i++ ) {
+      $datas[$key]['ascii'] += ord($datas[$key]['md5'][$i]);
+    }
+  }
+  return $datas[$key];
 }
 
 /**
@@ -1070,6 +1150,42 @@ function conf_init() {
   session_name('DIDA'. md5($session_name));
   
   session_start();
+}
+
+/**
+ * 写入 cookie，同时加密待写入的数据
+ * @param (string) $name
+ *  cookie 名称
+ * @param (string) $value
+ *  待写入的值
+ * @param (int) $expires
+ *  过期时间
+ * @param (string) $path
+ *  作用路径
+ * @param (string) $domain
+ *  作用域
+ */
+function dd_set_cookie($name, $value, $expires = NULL, $path = '/', $domain = NULL) {
+  if (!isset($expires)) {
+    $expires = $_SERVER['REQUEST_TIME'] + 31536000;
+  }
+  if (!isset($domain)) {
+    $domain = $GLOBALS['cookie_domain'];
+  }
+  
+  setcookie($name, dd_encrypt($value), $expires, $path, $domain);
+}
+
+/**
+ * 获取通过 dd_set_cookie 加密写入的 cookie
+ * @param (string) $name
+ *  cookie 名称
+ * @return (string)
+ */
+function dd_get_cookie($name) {
+  if (isset($_COOKIE[$name])) {
+    return dd_decrypt($_COOKIE[$name]);
+  }
 }
 
 /**

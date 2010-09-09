@@ -427,7 +427,12 @@ function system_site_settings() {
     '#default_value' => var_get('cron_pass'),
     '#description' => t('system', '不设置请留空'),
   );
-  
+  $form['fields']['crypt_default_key'] = array(
+    '#type' => 'textfield',
+    '#title' => t('system', '默认密钥'),
+    '#default_value' => var_get('crypt_default_key', $GLOBALS['cookie_domain']),
+    '#description' => t('system', '用于特定内容简单加密，如：cookie'),
+  );
   $form['fields']['custom_view'] = array(
     '#type' => 'select',
     '#title' => t('user', '网站首页'),
