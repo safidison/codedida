@@ -570,7 +570,7 @@ function table_header($cell, $header, $ts) {
       }
       $class = 'header_ac';
     } else {
-      $ts['sort'] = 'asc';
+      $ts['sort'] = 'desc';
       $image = '';
     }
     

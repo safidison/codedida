@@ -320,24 +320,6 @@ function dida_setup() {
             $clean_url = 0;
             $goto = '?q=user/login';
             
-            $fp = fsockopen($_SERVER['HTTP_HOST'], 80, $errno, $errstr, 10);
-            if ($fp) {
-              $out = "GET ".$base_path."user/login HTTP/1.1\r\n";
-              $out .= "Host: $_SERVER[HTTP_HOST]\r\n";
-              $out .= "Connection: Close\r\n\r\n";
-              
-              fwrite($fp, $out);
-              $contents = '';
-              while (!feof($fp) && strlen($contents) < 100) {
-                $contents .= fgets($fp, 128);
-              }
-              if (strpos($contents, '200 OK') !== false) {
-                $clean_url = 1;
-                $goto = 'user/login';
-              }
-              fclose($fp);
-            }
-            
             block_cache_lists('default'); // 导入区块
             
             $modules = array(
@@ -354,8 +336,8 @@ function dida_setup() {
             $var_args = array(
               'status', serialize($_POST['status']),
               'site_global', serialize(array(
-                'logo' => '/misc/images/logo.png',
-                'favicon' => '/misc/images/favicon.ico',
+                'logo' => $base_path.'misc/images/logo.png',
+                'favicon' => $base_path.'misc/images/favicon.ico',
                 'name' => trim($_POST['site_name']),
                 'mail' => $_POST['site_mail']
               )),
@@ -387,6 +369,7 @@ function dida_setup() {
               call_user_func('install_custom');
             }
             
+            user_login(user_load(1));
             dd_goto('user/login');
           }
         }
