@@ -103,6 +103,8 @@ function menu_get_item($path = NULL) {
       return MENU_NOT_FOUND;
     }
     
+    $page_args = $title_args = array();
+    
     if ($item['load_functions']) {
       $load = menu_match(unserialize($item['load_functions']), $item['systemUrl']);
       if ($load === false) return MENU_NOT_FOUND;

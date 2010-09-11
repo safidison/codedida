@@ -249,7 +249,7 @@ function system_themes_page() {
       $form['fields']['themes'][$theme['filename']]['check'] = array(
         '#type' => 'checkbox',
         '#default_value' => $theme['status'],
-        '#description' => '<a href="?op=default&name='.$theme['filename'].'">'.t('system', '设为默认').'</a>',
+        '#description' => l(t('system', '设为默认'), $_GET['q'], array('query' => 'op=default&name='.$theme['filename'])),
         '#attributes' => array(
           'title' => t('system', '禁用'),
         ),

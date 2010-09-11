@@ -19,7 +19,7 @@ function bootstrap($op, $inc = NULL) {
   
   if (is_file('sites/config.php')) {
     require_once 'sites/config.php';
-    if ($config && $config[$_SERVER['HTTP_HOST']]) {
+    if (isset($config) && !empty($config[$_SERVER['HTTP_HOST']])) {
       $conf_dir = $config[$_SERVER['HTTP_HOST']];
     }
   }
@@ -2410,7 +2410,7 @@ function dd_add_css($path = NULL, $type = 'module', $media = 'all') {
  * @return (string) css html 标记
  */
 function dd_get_css($css = NULL) {
-  global $base_path;
+  global $base_path, $conf;
   
   if (!isset($css)) {
     $css = dd_add_css();
@@ -3571,4 +3571,36 @@ function dd_xml_elements($array) {
     }
   }
   return $output;
+}
+
+/**
+ * 默认 feed 输出
+ * @param (string) $items
+ *  通常为使用 dd_rss_item() 获取的 xml 元素
+ * @param (string) $title
+ *  标题
+ * @param (string) $link
+ *  链接
+ * @param (string) $des
+ *  描述
+ */
+function og_feed_wrapper($items, $title, $link = NULL, $des = NULL) {
+  global $conf, $base_url;
+  
+  if (strpos($conf['site_global']['logo'], 'http') === false) {
+    $logo = $base_url . $conf['site_global']['logo'];
+  } else {
+    $logo = $conf['site_global']['logo'];
+  }
+  
+  return dd_rss_feed($items, NULL, array(
+    'title' => $title .'_'. $conf['site_global']['name'],
+    'description' => ($des ? $des :$conf['site_global']['description']),
+    'link' => ($link ? $link : $base_url),
+    'image' => array(
+      'url' => $logo,
+      'title' => $conf['site_global']['name'],
+      'link' => $base_url,
+    ),
+  ));
 }

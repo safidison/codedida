@@ -157,6 +157,7 @@ function module_set_list($type = 'module') {
       }
       
       $install_file = './'.$path.'/'. $key .'.install';
+      
       $info['uninstall'] = false;
       if (is_file($install_file)) {
         require_once $install_file;
@@ -288,6 +289,11 @@ function module_set_uninstall($module) {
   $lists = module_list('module', 'enabled');
   if (!$dependencies = module_is_dependencies($module, $lists)) {
     $install_file = $lists[$module]['path'] .'/'. $lists[$module]['filename'] .'.install';
+    $install_module = $lists[$module]['path'] .'/'. $lists[$module]['filename'] .'.module';
+    if (is_file($install_module)) {
+      require_once $install_module;
+    }
+    
     if (is_file($install_file)) {
       require_once $install_file;
       $function = $lists[$module]['filename'] . '_uninstall';
