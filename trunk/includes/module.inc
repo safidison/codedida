@@ -635,6 +635,7 @@ function module_invoke_first() {
   $args = func_get_args();
   $hook = $args[0];
   unset($args[0]);
+  
   if ($GLOBALS['conf']['site_mode'] == 0) {
     if ($functions = module_hook_get_cache($hook)) {
       foreach ($functions as $function) {
