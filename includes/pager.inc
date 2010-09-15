@@ -86,11 +86,13 @@ function pager_get_querystring() {
  * @param (int) $element
  *  分页标识，对应 pager_query 或 pager_lists
  * @param (array) $parameters
- *  过滤的 $_REQUEST 参数，一般默认即可
+ *  过滤 $_REQUEST 参数，一般默认即可
  * @param (int) quantity
  *  显示页码链接的数量
+ * @param (array) $att
+ *  链接属性，如：alt、title 等
  */
-function pager_view(array $tags = array(), $limit = 10, $element = 0, $parameters = array(), $quantity = 7) {
+function pager_view(array $tags = array(), $limit = 10, $element = 0, $parameters = array(), $quantity = 7, $att = array()) {
   global $pager_page_array, $pager_total, $pager_total_items;
   $pager_middle = ceil($quantity / 2);
   $pager_current = $pager_page_array[$element] + 1;
@@ -121,10 +123,10 @@ function pager_view(array $tags = array(), $limit = 10, $element = 0, $parameter
   
   $tags = array_merge($default_tags, $tags);
   
-  $li_first = pager_view_first($tags['first'], $limit, $element, $parameters);
-  $li_previous = pager_view_previous($tags['prev'], $limit, $element, 1, $parameters);
-  $li_next = pager_view_next($tags['next'], $limit, $element, 1, $parameters);
-  $li_last = pager_view_last($tags['last'], $limit, $element, $parameters);
+  $li_first = pager_view_first($tags['first'], $limit, $element, $parameters, $att);
+  $li_previous = pager_view_previous($tags['prev'], $limit, $element, 1, $parameters, $att);
+  $li_next = pager_view_next($tags['next'], $limit, $element, 1, $parameters, $att);
+  $li_last = pager_view_last($tags['last'], $limit, $element, $parameters, $att);
   if ($pager_total[$element] > 1) {
     if (!$tags['no_sum']) {
       $items[] = array(
@@ -162,7 +164,7 @@ function pager_view(array $tags = array(), $limit = 10, $element = 0, $parameter
         if ($i < $pager_current) {
           $items[] = array(
             'class' => 'pager_item',
-            'data' => pager_view_previous($i, $limit, $element, ($pager_current - $i), $parameters),
+            'data' => pager_view_previous($i, $limit, $element, ($pager_current - $i), $parameters, $att),
           );
         }
         if ($i == $pager_current) {
@@ -174,7 +176,7 @@ function pager_view(array $tags = array(), $limit = 10, $element = 0, $parameter
         if ($i > $pager_current) {
           $items[] = array(
             'class' => 'pager_item',
-            'data' => pager_view_next($i, $limit, $element, ($i - $pager_current), $parameters),
+            'data' => pager_view_next($i, $limit, $element, ($i - $pager_current), $parameters, $att),
           );
         }
       }
@@ -270,10 +272,13 @@ function pager_view_link($text, $page_new, $element, $parameters = array(), $att
   }
 
   $query = array();
+  
   if (count($parameters)) {
     $query[] = dd_query_string_encode($parameters, array());
   }
+  
   $querystring = pager_get_querystring();
+  
   if ($querystring != '') {
     $query[] = $querystring;
   }
@@ -295,7 +300,19 @@ function pager_view_link($text, $page_new, $element, $parameters = array(), $att
     }
   }
   
-  return l($text, $_GET['q'], array('attributes' => $attributes, 'query' => count($query) ? implode('&', $query) : NULL));
+  if (isset($attributes['fragment'])) {
+    $fragment = $attributes['fragment'];
+    unset($attributes['fragment']);
+  } else {
+    $fragment = NULL;
+  }
+  
+  return l($text, $_GET['q'], array(
+    'fragment' => $fragment,
+    'attributes' => $attributes,
+    'query' => count($query) ? implode('&', $query) : NULL)
+  );
+  
 }
 
 function pager_load_array($value, $element, $old_array) {
