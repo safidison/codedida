@@ -20,11 +20,11 @@ function module_load_install($module = NULL) {
   global $conf;
   if ($module) {
     $info = $conf['modules'][$module];
-    $filepath = './'.$info['path'] .'/'. $module. '.install';
+    $filepath = DIDA_ROOT .'/'. $info['path'] .'/'. $module. '.install';
     if (is_file($filepath)) include_once $filepath;
   } else {
     foreach ($conf['modules'] as $module => $info) {
-      $filepath = './'.$info['path'] .'/'. $module. '.install';
+      $filepath = DIDA_ROOT .'/'. $info['path'] .'/'. $module. '.install';
       if (is_file($filepath)) include_once $filepath;
     }
   }
@@ -125,7 +125,7 @@ function module_set_list($type = 'module') {
           continue;
         }
         
-        $install_file = './'.$path.'/'. $key .'.install';
+        $install_file = DIDA_ROOT . '/'. $path.'/'. $key .'.install';
         $info['uninstall'] = false;
         
         if (is_file($install_file)) {
@@ -288,8 +288,8 @@ function module_core_module() {
 function module_set_uninstall($module) {
   $lists = module_list('module', 'enabled');
   if (!$dependencies = module_is_dependencies($module, $lists)) {
-    $install_file = $lists[$module]['path'] .'/'. $lists[$module]['filename'] .'.install';
-    $install_module = $lists[$module]['path'] .'/'. $lists[$module]['filename'] .'.module';
+    $install_file = DIDA_ROOT .'/'. $lists[$module]['path'] .'/'. $lists[$module]['filename'] .'.install';
+    $install_module = DIDA_ROOT .'/'. $lists[$module]['path'] .'/'. $lists[$module]['filename'] .'.module';
     if (is_file($install_module)) {
       require_once $install_module;
     }
@@ -339,7 +339,7 @@ function module_set_disabled($modules = array()) {
       if (!in_array($module, module_core_module())) {
         if (!$dependencies = module_is_dependencies($module, $lists)) {
           db_exec('UPDATE {system} SET status = 0 WHERE filename = ?', array($module));
-          $install_file = $lists[$module]['path'] .'/'. $lists[$module]['filename'] .'.install';
+          $install_file = DIDA_ROOT .'/'. $lists[$module]['path'] .'/'. $lists[$module]['filename'] .'.install';
           if (is_file($install_file)) {
             require_once $install_file;
             $function = $lists[$module]['filename'] . '_disabled';
@@ -407,8 +407,8 @@ function module_set_enabled($list, $type, $modules = array()) {
         }
       }
       
-      require_once $v['path'] .'/'. $v['filename'] .'.module';
-      $install_file = $v['path'] .'/'. $v['filename'] .'.install';
+      require_once DIDA_ROOT .'/'. $v['path'] .'/'. $v['filename'] .'.module';
+      $install_file =DIDA_ROOT .'/'.  $v['path'] .'/'. $v['filename'] .'.install';
       
       if (is_file($install_file)) {
         require_once $install_file;
@@ -787,7 +787,7 @@ function _module_tree_list($type, $dir, &$modules = NULL) {
  * 载入文件
  */
 function module_load($filename, $path) {
-  $filepath = './'.$path .'/'. $filename;
+  $filepath = DIDA_ROOT .'/'. $path .'/'. $filename;
   if (is_file($filepath)) {
     include_once $filepath;
     return false;
@@ -820,7 +820,7 @@ function module_get_schema($table, $clear = NULL) {
         
         foreach ($modules as $module => $info) {
           
-          $install_filepath = './'.$info['path'] .'/'. $module. '.install';
+          $install_filepath = DIDA_ROOT .'/'. $info['path'] .'/'. $module. '.install';
           if (is_file($install_filepath)) include_once $install_filepath;
           
           $function = $module .'_alter_schema';

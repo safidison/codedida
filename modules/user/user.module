@@ -1318,6 +1318,10 @@ function user_load($uid, $clear = NULL, $field_loads = true, $module_loads = tru
  *  用户对象
  */
 function user_view($account) {
+  if (!$account->uid) {
+    dd_get_access();
+  }
+  
   /**
    * 将用户页面完全交给某个模块来处理
    */

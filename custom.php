@@ -2,7 +2,10 @@
 // $Id$
 
 if (!$_GET['module']) die('byebye');
-require_once './includes/bootstrap.inc';
+
+define('DIDA_ROOT', getcwd());
+
+require_once DIDA_ROOT . '/includes/bootstrap.inc';
 
 header('Content-Type: text/html; charset=utf-8');
 

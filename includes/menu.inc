@@ -140,7 +140,7 @@ function menu_get_item($path = NULL) {
     }
     
     if ($item['file']) {
-      require_once $item['file'];
+      require_once DIDA_ROOT .'/'. $item['file'];
     }
     
     if ($item['page_arguments']) {

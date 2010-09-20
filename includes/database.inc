@@ -10,7 +10,7 @@ function db_info() {
   while (false !== ($name = $hd->read())) {
     if (strpos($name, 'database') !== false) {
       if ($a = explode('.', $name)) {
-        require_once './includes/database/database.'.$a[1].'.inc';
+        require_once DIDA_ROOT . '/includes/database/database.'.$a[1].'.inc';
         $function = $a[1].'_db_info';
         if (function_exists($function)) {
           $types += $function();
@@ -33,7 +33,7 @@ function db_connect($target = 'default') {
   global $database, $dbc, $db;
   if (!isset($db[$target]) && $dbc[$target]  = $database[$target]) {
     $function = 'db_'.$dbc[$target]['driver'].'_connect';
-    require_once './includes/database/database.'.$dbc[$target]['driver'].'.inc';
+    require_once DIDA_ROOT . '/includes/database/database.'.$dbc[$target]['driver'].'.inc';
     if (function_exists($function)) {
       if ($db[$target] = $function($dbc[$target], $error)) {
       	return true;
