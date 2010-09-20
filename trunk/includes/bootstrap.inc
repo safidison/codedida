@@ -17,31 +17,31 @@ function bootstrap($op, $inc = NULL) {
   
   global $user, $database, $dbc, $db, $conf, $conf_dir, $installed;
   
-  if (is_file('sites/config.php')) {
-    require_once 'sites/config.php';
+  if (is_file(DIDA_ROOT . '/sites/config.php')) {
+    require_once DIDA_ROOT . '/sites/config.php';
     if (isset($config) && !empty($config[$_SERVER['HTTP_HOST']])) {
       $conf_dir = $config[$_SERVER['HTTP_HOST']];
     }
   }
   
   if (!$conf_dir) {
-    if (is_dir('sites/'.$_SERVER['HTTP_HOST'])) {
-      $conf_dir = 'sites/'.$_SERVER['HTTP_HOST'];
+    if (is_dir(DIDA_ROOT . '/sites/'.$_SERVER['HTTP_HOST'])) {
+      $conf_dir = DIDA_ROOT . '/sites/'.$_SERVER['HTTP_HOST'];
     } else {
-      $conf_dir = 'sites';
+      $conf_dir = DIDA_ROOT . '/sites';
     }
   }
   
-  if (!is_file('./'.$conf_dir .'/setting.php')) {
+  if (!is_file($conf_dir .'/setting.php')) {
     dd_to_install();
   }
   
-  require_once './'.$conf_dir.'/setting.php';
+  require_once $conf_dir.'/setting.php';
   
   if (!$installed) dd_to_install();
   
   if (is_file($conf_dir .'/cache/conf.php')) {
-    require_once './'. $conf_dir .'/cache/conf.php';
+    require_once $conf_dir .'/cache/conf.php';
   } else {
     dd_to_install();
   }
@@ -77,22 +77,22 @@ function bootstrap($op, $inc = NULL) {
   
   switch ($op) {
     case 'full':
-      require_once './includes/database.inc';
+      require_once DIDA_ROOT . '/includes/database.inc';
       //初始化默认数据库连接
       db_connect('default');
       
       // session 及配置
       conf_init();
       
-      require_once './includes/filter.inc';
-      require_once './includes/theme.inc';
-      require_once './includes/image.inc';
-      require_once './includes/form.inc';
-      require_once './includes/file.inc';
-      require_once var_get('dd_cache_file', './includes/cache.inc');
-      require_once './includes/module.inc';
-      require_once './includes/menu.inc';
-      require_once './includes/pager.inc';
+      require_once DIDA_ROOT . '/includes/filter.inc';
+      require_once DIDA_ROOT . '/includes/theme.inc';
+      require_once DIDA_ROOT . '/includes/image.inc';
+      require_once DIDA_ROOT . '/includes/form.inc';
+      require_once DIDA_ROOT . '/includes/file.inc';
+      require_once var_get('dd_cache_file', DIDA_ROOT . '/includes/cache.inc');
+      require_once DIDA_ROOT . '/includes/module.inc';
+      require_once DIDA_ROOT . '/includes/menu.inc';
+      require_once DIDA_ROOT . '/includes/pager.inc';
       
       //用户验证
       dd_user_validate();
@@ -163,7 +163,7 @@ function bootstrap($op, $inc = NULL) {
       /**
        * 仅载入数据库连接
        */
-      require_once './includes/database.inc';
+      require_once DIDA_ROOT . '/includes/database.inc';
       //初始化默认数据库连接
       db_connect('default');
       
@@ -174,18 +174,18 @@ function bootstrap($op, $inc = NULL) {
        * 提供数据库连接，用户验证，全局配置
        * 可自定义载入其它核心文件
        */
-      require_once './includes/database.inc';
+      require_once DIDA_ROOT . '/includes/database.inc';
       //初始化默认数据库连接
       db_connect('default');
       
       // session 及配置
       conf_init();
       
-      require_once var_get('dd_cache_file', './includes/cache.inc');
+      require_once var_get('dd_cache_file', DIDA_ROOT . '/includes/cache.inc');
       
       if (is_array($inc)) {
         foreach ($inc as $filename) {
-          $filepath = './includes/'.$filename.'.inc';
+          $filepath = DIDA_ROOT . '/includes/'.$filename.'.inc';
           if (is_file($filepath)) require_once $filepath;
         }
       }
@@ -277,8 +277,10 @@ function dd_get_not() {
     dd_set_message(t('system', '抱歉，%string 不存在', array('%string' => dd_get_absolute_url())), 'error');
     dd_goto(dd_get_history());
   } else {
-    dd_set_title(array(t('system', '访问的页面不存在')));
-    echo theme('print', custom_get('page_not_html'));
+    $text = t('system', '访问的页面不存在');
+    dd_set_title(array($text));
+    $default = '<h2 align="right">'.l($text, NULL).'</h2>';
+    echo theme('print', custom_get('page_not_html', $default));
   }
   exit;
 }
@@ -294,8 +296,10 @@ function dd_get_access() {
       dd_set_message(t('system', '抱歉，没有权限访问 %string', array('%string' => dd_get_absolute_url())), 'error');
       dd_goto(dd_get_history());
     } else {
-      dd_set_title(array(t('system', '没有权限访问该页面')));
-      echo theme('print', custom_get('page_access_html'));
+      $text = t('system', '没有权限访问该页');
+      dd_set_title(array($text));
+      $default = '<h2 align="center">'.l($text, NULL).'</h2>';
+      echo theme('print', custom_get('page_access_html', $default));
     }
   } else {
     $title = t('system', '登录以确认访问权限');
@@ -679,17 +683,17 @@ function var_init() {
 
 /**
  * 多语言
- * @param $index = string
+ * @param (string) $index
  *  语言字符串键名，若无对应值，则返回键名
- * @param $module = string
+ * @param (string) $module
  *  默认系统名称，赋值则优先使用该模块定义的值
- * @param $args = array()
+ * @param (array) $args
  *  要转换的字符串参数
- * @param $language = string
+ * @param (string) $language
  *  指定语言
  * 所有模块的语言文件缓存在 ./sties/cache/lang_{$language}.lang
  */
-function t($module, $index, $args = array()) {
+function t($module, $index, $args = array(), $language = NULL) {
 	static $lang;
 	if (!$language) {
 		$language = !$GLOBALS['user']->language ? $GLOBALS['conf']['default_language'] : $GLOBALS['user']->language;
@@ -738,11 +742,11 @@ function t($module, $index, $args = array()) {
 
 /**
  * 合并模块语言文件
- * @param $type = string
+ * @param (string) $type
  *  合并方式：update - 保存现有字符串，insert - 全新导入
- * @param $lists = array()
+ * @param (array) $lists
  *  模块列表，默认为所有模块文件夹下的语言文件，modules/test/lang/*
- * @param $language = array()
+ * @param (array) $language
  *  需导入的语言，默认为所有设定的语言
  * 语言文件缓存在 ./sties/cache/lang_{$language}.lang，合并规则：
  *  若有相同键名，取第一个保存为默认字符串，其它保存为特殊翻译串。
@@ -2446,7 +2450,7 @@ function dd_get_css($css = NULL) {
   if ($css_path && $filename) {
     $filepath = file_directory_path() . '/cache/css_js/' . md5($filename.$conf['cache_css_and_js_timestamp']) . '.css';
     if (!is_file($filepath)) {
-      require_once './includes/css_js_min.inc';
+      require_once DIDA_ROOT . '/includes/css_js_min.inc';
       foreach (array('core', 'module', 'theme') as $key) {
         if ($css_path[$key]) {
           foreach ($css_path[$key] as $path) {
@@ -2657,7 +2661,7 @@ function dd_get_js($scope = 'header', $javascript = NULL) {
   if ($js_path && $filename) {
     $filepath = file_mkdir(file_directory_path() . '/cache/css_js') . '/' . md5($filename.$conf['cache_css_and_js_timestamp']) . '.js';
     if (!is_file($filepath)) {
-      require_once './includes/css_js_min.inc';
+      require_once DIDA_ROOT . '/includes/css_js_min.inc';
       foreach ($js_path as $path) {
         $contents .= file_get_contents($path).';';
       }

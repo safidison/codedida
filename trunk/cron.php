@@ -18,8 +18,8 @@
  *    db_query('DELETE FROM {temp} ....'); // 定期清除临时表
  *  }
  */
-
-require_once './includes/bootstrap.inc';
+define('DIDA_ROOT', getcwd());
+require_once DIDA_ROOT . '/includes/bootstrap.inc';
 bootstrap('full');
 
 /**

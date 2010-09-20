@@ -2,7 +2,7 @@
 .help{
   padding: 5px 12px;
   margin: 5px 0;
-  background: #FFBF79;
+  background: #FAFAC6;
 }
 .clear{
   display: block;
@@ -84,6 +84,12 @@ h2.system_no_content{
 }
 .center_table, .center{
 	text-align: center;
+}
+.left_table, .left {
+  text-align: left;
+}
+.right_table, .left {
+  text-align: right;
 }
 /*system print.tpl.php*/
 #print_dialog{

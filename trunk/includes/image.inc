@@ -10,7 +10,7 @@
  * @param (string) $size
  *  缩略图大小，如：100x100
  * @param (string) $style
- *  缩略图风格，scale、scale_resize、scale_and_crop、crop、resize 几种可选
+ *  缩略图风格，scale、scale_resize、scale_and_crop、crop、resize 可选
  */
 function image_get_thumb($fid, $filepath, $size, $style = 'scale') {
   static $files;

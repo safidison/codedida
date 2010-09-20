@@ -1,6 +1,7 @@
 <?php
 // $Id$
 error_reporting(E_ERROR|E_PARSE|E_CORE_ERROR|E_CORE_WARNING);
+define('DIDA_ROOT', getcwd());
 
 if (is_file('sites/config.php')) {
   require_once 'sites/config.php';
@@ -354,9 +355,6 @@ function dida_setup() {
              */
             filter_get_filters();
             filter_set_cache();
-            
-            custom_set('page_access_html', '没有权限访问当前页面');
-            custom_set('page_not_html', '当前页面不存在');
             
             var_init();
             

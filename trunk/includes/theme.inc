@@ -9,8 +9,8 @@ function theme_init() {
   $conf['base_logo'] = $base_path . ($conf['themes'][$template]['logo'] ? $conf['themes'][$template]['logo'] : 'misc/images/logo.png');
   $conf['base_favicon'] = $base_path . ($conf['themes'][$template]['favicon'] ? $conf['themes'][$template]['favicon'] : 'misc/images/favicon.ico');
   
-  if (is_file($conf['themes'][$template]['path'] . '/template.php')) {
-    require_once $conf['themes'][$template]['path'] . '/template.php';
+  if (is_file(DIDA_ROOT .'/'. $conf['themes'][$template]['path'] . '/template.php')) {
+    require_once DIDA_ROOT .'/'. $conf['themes'][$template]['path'] . '/template.php';
   }
   
   if (!$conf['themes'][$template]['styles']) {
@@ -74,7 +74,7 @@ function theme() {
    * file：加载文件，相对于模块目录
    */
   if ($theme['file']) {
-    $filepath = './'.$module_path . '/' . $theme['file'];
+    $filepath = DIDA_ROOT .'/'. $module_path . '/' . $theme['file'];
     if (is_file($filepath)) include_once $filepath;
   }
   
@@ -394,7 +394,7 @@ function theme_render_tpl($tpl, $var, $hook = NULL) {
   }
   
   ob_start();
-  include "./$tpl";
+  include $tpl;
   $contents = ob_get_contents();
   ob_end_clean();
   
