@@ -1445,6 +1445,7 @@ function user_session_reg(&$ac) {
   } else {
     $_SESSION['user']->__SETVALIDATE = $_SERVER['REQUEST_TIME'];
   }
+  
   $ac->session = session_id();
 }
 

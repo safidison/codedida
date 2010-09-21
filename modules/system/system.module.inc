@@ -390,7 +390,7 @@ function system_themes_setting_validate($form, $v) {
         array('image' => true, 'savepath' => 'cache/themes', 'no_insert' => 1, 'filename' => $v['theme'].'_logo'), 0)) {
         
         if ($theme->info['logo'] && $theme->info['logo'] != $file->filepath) {
-          unlink($theme->info['logo']);
+          @unlink($theme->info['logo']);
         }
         $theme->info['logo'] = $file->filepath;
       }
@@ -400,7 +400,7 @@ function system_themes_setting_validate($form, $v) {
       if ($file = file_save_upload($_FILES['favicon'],
         array('image' => true, 'savepath' => 'cache/themes', 'no_insert' => 1, 'filename' => $v['theme'].'_favicon'), 0)) {
         if ($theme->info['favicon'] != $file->filepath) {
-          unlink($theme->info['favicon']);
+          @unlink($theme->info['favicon']);
         }
         $theme->info['favicon'] = $file->filepath;
       }

@@ -3406,7 +3406,7 @@ function field_get_node_save($module, $type, $value, $node = NULL, $form = NULL)
           break;
           case 'checkbox': case 'selects':
             $field_ids[$data->field_id] = $data->field_id;
-            if ($value->fields[$data->field_key]) $cids = array_merge($cids, $value->fields[$data->field_key]);
+            if (is_array($value->fields[$data->field_key])) $cids = array_merge($cids, $value->fields[$data->field_key]);
           break;
           case 'tags':
             $field_ids[$data->field_id] = $data->field_id;
