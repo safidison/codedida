@@ -118,14 +118,15 @@ function module_set_list($type = 'module') {
     }
     
     foreach ($array1 as $key => $path) {
+      
       if ($array2[$key]) {
         unset($array1[$key]);
         
-        if (!$info = module_get_info($key, './'.$path.'/'. $key .'.info')) {
+        if (!$info = module_get_info($key, $path.'/'. $key .'.info')) {
           continue;
         }
         
-        $install_file = DIDA_ROOT . '/'. $path.'/'. $key .'.install';
+        $install_file = $path.'/'. $key .'.install';
         $info['uninstall'] = false;
         
         if (is_file($install_file)) {
@@ -135,7 +136,7 @@ function module_set_list($type = 'module') {
           }
         }
         
-        $info = array_merge($info, $array2[$key]['info']);
+        $info = array_merge($array2[$key]['info'], $info);
         
         db_exec('UPDATE {system} SET weight = :weight, info = :info, type = :type, path = :path WHERE filename = :name',
         array(
@@ -150,13 +151,13 @@ function module_set_list($type = 'module') {
   }
   if (count($array1) > 0) {
     foreach ($array1 as $key => $path) {
-      $info = module_get_info($key, './'.$path .'/'. $key .'.info');
+      $info = module_get_info($key, $path .'/'. $key .'.info');
       if (!$info['ver']) {
-        dd_set_message($key . ' 的info文件信息不完整，至少需要包含版本号及发布时间戳');
+        dd_set_message($key . ' 的info文件信息不完整，至少需要包含版本号'.$path .'/'. $key .'.info');
         return false;
       }
       
-      $install_file = './'.$path.'/'. $key .'.install';
+      $install_file = $path.'/'. $key .'.install';
       
       $info['uninstall'] = false;
       if (is_file($install_file)) {
@@ -179,9 +180,7 @@ function module_set_list($type = 'module') {
  * 检查模块是否已启用
  */
 function module_exists($module) {
-  $list = array();
-  $list = module_list('enabled');
-  return array_key_exists($module, $list);
+  return isset($GLOBALS['conf']['modules'][$module]);
 }
 
 /**
@@ -388,7 +387,7 @@ function module_set_enabled($list, $type, $modules = array()) {
     $query = array();
     foreach ($module as $v) {
       
-      if (!$info = module_get_info($v['filename'], './'.$v['path'] .'/'. $v['filename'] .'.info')) {
+      if (!$info = module_get_info($v['filename'], DIDA_ROOT . '/'. $v['path'] .'/'. $v['filename'] .'.info')) {
         dd_set_message($type. ' ' .$v['filename'] .'缺少 info 文件。', 'error');
         return false;
       }
@@ -744,9 +743,11 @@ function module_tree_list($type) {
     }
   }
   $modules = array();
+  
   foreach ($dirs as $dir) {
     _module_tree_list($type, $dir, $modules);
   }
+  
   return $modules;
 }
 

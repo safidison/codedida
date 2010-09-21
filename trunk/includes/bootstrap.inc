@@ -25,23 +25,23 @@ function bootstrap($op, $inc = NULL) {
   }
   
   if (!$conf_dir) {
-    if (is_dir(DIDA_ROOT . '/sites/'.$_SERVER['HTTP_HOST'])) {
-      $conf_dir = DIDA_ROOT . '/sites/'.$_SERVER['HTTP_HOST'];
+    if (is_dir('sites/'.$_SERVER['HTTP_HOST'])) {
+      $conf_dir = 'sites/'.$_SERVER['HTTP_HOST'];
     } else {
-      $conf_dir = DIDA_ROOT . '/sites';
+      $conf_dir = 'sites';
     }
   }
   
-  if (!is_file($conf_dir .'/setting.php')) {
+  if (!is_file(DIDA_ROOT . '/' . $conf_dir .'/setting.php')) {
     dd_to_install();
   }
   
-  require_once $conf_dir.'/setting.php';
+  require_once DIDA_ROOT . '/' . $conf_dir.'/setting.php';
   
   if (!$installed) dd_to_install();
   
   if (is_file($conf_dir .'/cache/conf.php')) {
-    require_once $conf_dir .'/cache/conf.php';
+    require_once DIDA_ROOT . '/' . $conf_dir .'/cache/conf.php';
   } else {
     dd_to_install();
   }
@@ -695,14 +695,14 @@ function var_init() {
  */
 function t($module, $index, $args = array(), $language = NULL) {
 	static $lang;
-	if (!$language) {
+	if (!$language && is_string($language)) {
 		$language = !$GLOBALS['user']->language ? $GLOBALS['conf']['default_language'] : $GLOBALS['user']->language;
 	}
   
 	if (!$module || $language != $GLOBALS['conf']['modules'][$module]['language']) {
   	if (!isset($lang[$language])) {
-  	  if (is_file($GLOBALS['conf_dir'] . '/cache/languages/' .$language . '.php')) {
-  	    include $GLOBALS['conf_dir'] . '/cache/languages/' .$language . '.php';
+  	  if (is_file(DIDA_ROOT . '/' . $GLOBALS['conf_dir'] . '/cache/languages/' .$language . '.php')) {
+  	    include DIDA_ROOT . '/' . $GLOBALS['conf_dir'] . '/cache/languages/' .$language . '.php';
   	    $lang[$language] = $l;
   		} else {
   			$lang[$language] = false;
@@ -788,7 +788,7 @@ function dd_set_lang($type = 'update', $lists = NULL, $language = array()) {
 			$l = array();
 			
 			if ($type == 'update') {
-				$cache = $GLOBALS['conf_dir'] . '/cache/languages/'.$code.'.php';
+				$cache = DIDA_ROOT . '/' . $GLOBALS['conf_dir'] . '/cache/languages/'.$code.'.php';
 				if (is_file($cache)) {
 					include $cache;
 				}
@@ -796,7 +796,7 @@ function dd_set_lang($type = 'update', $lists = NULL, $language = array()) {
 			
 			foreach ($lists as $module => $path) {
 				$lang = array();
-				$path = './' . $path . '/languages/' . $code . '.php';
+				$path = DIDA_ROOT . '/' .  $path . '/languages/' . $code . '.php';
 				
 				if (is_file($path)) {
 					include $path;
@@ -830,7 +830,7 @@ function dd_set_lang($type = 'update', $lists = NULL, $language = array()) {
 			
 			if ($l) {
 				// 合并为缓存文件
-				cache_system_set_file($code.'.php', 'l', $l, $GLOBALS['conf_dir'].'/cache/languages');
+				cache_system_set_file($code.'.php', 'l', $l, DIDA_ROOT . '/' . $GLOBALS['conf_dir'].'/cache/languages');
 				dd_set_message($code . ' 导入成功');
 			}
 		}
@@ -945,7 +945,7 @@ function dd_user_validate() {
   }
   
   if (!$user->timezone) {
-  	$user->timezone = 'Asia/Taipei';
+  	$user->timezone = 'Asia/Chongqing';
   }
   if (!$user->uid) {
     $user = user_anonymous();  // 游客
@@ -1612,7 +1612,7 @@ function dd_error_msg($msg) {
   $error = array(
     '错误信息：'.$msg,
     '发生时间：'. format_date(time()),
-    '当前用户：'.$GLOBALS['user']->mail,
+    '当前用户：'.$GLOBALS['user']->name,
     '用户主机：'. ip_address(),
     '当前页面：'.$_SERVER['REQUEST_URI']
   );
@@ -3189,9 +3189,9 @@ function cache_system_set_file($filename, $var_name, $value, $path = 1) {
   }
   
   if ($path == 1) {
-    $filepath = $GLOBALS['conf_dir'] . '/cache/' . $filename;
+    $filepath = DIDA_ROOT . '/' . $GLOBALS['conf_dir'] . '/cache/' . $filename;
   } else {
-    $filepath = $path . '/' . $filename;
+    $filepath = DIDA_ROOT . '/' . $path . '/' . $filename;
   }
   
   if ($var_name) {
@@ -3209,8 +3209,8 @@ function cache_system_set_file($filename, $var_name, $value, $path = 1) {
  *  变量名
  */
 function cache_system_get_file($filename, $var_name) {
-  if (is_file($GLOBALS['conf_dir'] . '/cache/' . $filename)) {
-    include_once $GLOBALS['conf_dir'] . '/cache/' . $filename;
+  if (is_file(DIDA_ROOT . '/' . $GLOBALS['conf_dir'] . '/cache/' . $filename)) {
+    include_once DIDA_ROOT . '/' . $GLOBALS['conf_dir'] . '/cache/' . $filename;
     return ${$var_name};
   }
 }
@@ -3223,7 +3223,7 @@ function cache_system_get_file($filename, $var_name) {
  */
 function cache_del_file($filename) {
   if (strpos($filename, '/') === false) {
-    $filename = $GLOBALS['conf_dir'] . '/cache/' . $filename;
+    $filename = DIDA_ROOT . '/' . $GLOBALS['conf_dir'] . '/cache/' . $filename;
   }
   
   return @unlink($filename);
