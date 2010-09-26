@@ -510,15 +510,22 @@ function module_alter($modules, $hook, &$data, &$value1 = NULL, &$value2 = NULL,
   if (is_string($modules)) {
     $function = $modules .'_'. $hook;
     if (function_exists($function)) {
-      $function($data, $value1, $value2, $value3);
+      return $function($data, $value1, $value2, $value3);
     }
   } else if (is_array($modules)) {
+    $return = array();
     foreach ($modules as $module) {
       $function = $module .'_'. $hook;
       if (function_exists($function)) {
-        $function($data, $value1, $value2, $value3);
+        $result = $function($data, $value1, $value2, $value3);
+        if (is_array($result)) {
+          $return = array_merge_recursive($return, $result);
+        } else if (isset($result)) {
+          $return[] = $result;
+        }
       }
     }
+    return $return;
   }
 }
 
@@ -528,14 +535,22 @@ function module_alter($modules, $hook, &$data, &$value1 = NULL, &$value2 = NULL,
  *  hook 名称
  * @param (*) &$data, &$value1, &$value2, &$value3
  *  最多传递 4 个参数
+ * @return
+ *  返回值递归合并
  */
 function module_alter_all($hook, &$data, &$value1 = NULL, &$value2 = NULL, &$value3 = NULL) {
   global $conf;
+  $return = array();
   if ($GLOBALS['conf']['site_mode'] == 0) {
     if ($functions = module_hook_get_cache($hook)) {
       foreach ($functions as $function) {
         if (function_exists($function)) {
-          $function($data, $value1, $value2, $value3);
+          $result = $function($data, $value1, $value2, $value3);
+          if (is_array($result)) {
+            $return = array_merge_recursive($return, $result);
+          } else if (isset($result)) {
+            $return[] = $result;
+          }
         }
       }
     }
@@ -544,10 +559,17 @@ function module_alter_all($hook, &$data, &$value1 = NULL, &$value2 = NULL, &$val
     foreach ($GLOBALS['conf']['modules'] as $module => $info) {
       $function = $module .'_'. $hook;
       if (function_exists($function)) {
-        $function($data, $value1, $value2, $value3);
+       $result = $function($data, $value1, $value2, $value3);
+        if (is_array($result)) {
+          $return = array_merge_recursive($return, $result);
+        } else if (isset($result)) {
+          $return[] = $result;
+        }
       }
     }
   }
+  
+  return $return;
 }
 
 /**

@@ -267,15 +267,15 @@ function field_validate_date($v, $format, $time = NULL) {
 }
 
 /**
- * * @Implement of hook_field_type_textfield()
+ * @Implement of hook_field_type_textfield()
  * 单行文本字段接口
- * @param $op
+ * @param (string)$op
  *  操作类型
- * @param $type
+ * @param (string) $type
  *  字段输入类型
- * @param $field
+ * @param (object) $field
  *  字段所有数据
- * @param $v
+ * @param (string) $v
  *  节点中的字段输入数据
  */
 function field_field_type_textfield($op, $type = NULL, $field = NULL, $v = NULL) {
@@ -339,61 +339,51 @@ function field_field_type_textfield($op, $type = NULL, $field = NULL, $v = NULL)
       if (!isset($v)) break;
       
       $showtime = 0;
-      
+      $error = '';
       switch ($type) {
         case 'figure':
           if (preg_match('/[^0-9]/', $v)) {
-            dd_set_message(t('field', '!string 只能是数字', array('!string' => $field->name)), 'error');
-            return true;
+            $error = t('field', '!string 只能是数字', array('!string' => $field->name));
           }
         break;
         case 'letter':
           if (preg_match('/[^a-z]/i', $v)) {
-            dd_set_message(t('field', '!string 只能是字母', array('!string' => $field->name)), 'error');
-            return true;
+            $error = t('field', '!string 只能是字母', array('!string' => $field->name));
           }
         break;
         case 'figure_letter':
           if (preg_match('/[^a-z0-9]/i', $v)) {
-            dd_set_message(t('field', '!string 只能是字母和数字', array('!string' => $field->name)), 'error');
-            return true;
+            $error = t('field', '!string 只能是字母和数字', array('!string' => $field->name));
           }
         break;
         case 'mail':
-          if ($msg = form_vali_mail($v)) {
-            dd_set_message($msg, 'error');
-            return true;
-          }
+          $error = form_vali_mail($v);
         break;
         case 'date_time':
           $showtime = 1;
         case 'date':
           static $start_or_end;
-          if ($msg = field_validate_date($v, $set['value_type'], $showtime)) {
-            dd_set_message($msg, 'error');
-            return true;
-          } else if ($set['start_or_end'] && $set['field_key']) {
-            if (!isset($start_or_end[$set['field_key']])) {
-              $start_or_end[$field->field_key] = (float)preg_replace(array('/\s/', '/[^\w]/'), array('.', ''), $v);
-            } else if ($set['start_or_end'] == 'start') {
-              // 开始字段
-              if (intval($v) >= $start_or_end[$set['field_key']]) {
-                dd_set_message(t('field', '开始日期不能大于结束日期'), 'error');
-                return true;
-              }
-            } else {
-              // 结束字段
-              if ((float)preg_replace(array('/\s/', '/[^\w]/'), array('.', ''), $v) <= $start_or_end[$set['field_key']]) {
-                dd_set_message(t('field', '开始日期不能大于结束日期'), 'error');
-                return true;
+          if (!$error = field_validate_date($v, $set['value_type'], $showtime)) {
+            if ($set['start_or_end'] && $set['field_key']) {
+              if (!isset($start_or_end[$set['field_key']])) {
+                $start_or_end[$field->field_key] = (float)preg_replace(array('/\s/', '/[^\w]/'), array('.', ''), $v);
+              } else if ($set['start_or_end'] == 'start') {
+                // 开始字段
+                if (intval($v) >= $start_or_end[$set['field_key']]) {
+                  $error = t('field', '开始日期不能大于结束日期');
+                }
+              } else {
+                // 结束字段
+                if ((float)preg_replace(array('/\s/', '/[^\w]/'), array('.', ''), $v) <= $start_or_end[$set['field_key']]) {
+                  $error = t('field', '开始日期不能大于结束日期');
+                }
               }
             }
           }
         break;
         case 'chinese':
           if (preg_match("/[^\x{4e00}-\x{9fa5}]+$/u", $v)) {
-            dd_set_message(t('field', '!string 只能是中文', array('!string' => $field->name)), 'error');
-            return true;
+            $error = t('field', '!string 只能是中文', array('!string' => $field->name));
           }
         break;
         case 'custom_ok':
@@ -421,10 +411,13 @@ function field_field_type_textfield($op, $type = NULL, $field = NULL, $v = NULL)
           }
           if ($e) {
             $error = t('field', '!string 的值不被允许', array('!string' => $field->name));
-            dd_set_message($error, 'error');
-            return array($error);
           }
         break;
+        case 'url':
+          if (!preg_match('/https?:\/\/([a-z0-9]*?)\.(.*)/i', $v)) {
+            $error = t('field', '请输入正确的网址，如：http://www.didaah.org/');
+          }
+        break;  
         case 'custom_not':
           switch ($set['value_type']) {
             case 1: // 普通模式
@@ -449,9 +442,12 @@ function field_field_type_textfield($op, $type = NULL, $field = NULL, $v = NULL)
           }
           if ($e) {
             $error = t('field', '!string 的值不被允许', array('!string' => $field->name));
-            dd_set_message($error, 'error');
-            return array($error);
           }
+      }
+      
+      if ($error) {
+        dd_set_message($error, 'error');
+        return $error;
       }
     break;
     case 'validate':
@@ -462,8 +458,6 @@ function field_field_type_textfield($op, $type = NULL, $field = NULL, $v = NULL)
           return true;
         }
       }
-      //dd_set_message('错误', 'error');
-      //return true;
     break;
     case 'save':
       // 字段保存
@@ -582,6 +576,9 @@ function field_field_type_textfield($op, $type = NULL, $field = NULL, $v = NULL)
       ),
       'chinese' => array(
         'title' => t('field', '只允许中文'),
+      ),
+      'url' => array(
+        'title' => t('field', '只允许网址'),
       ),
       'custom_ok' => array(
         'title' => t('field', '自定义(允许特定值)'),
@@ -1119,13 +1116,19 @@ function field_form($field) {
     '#fieldset_suffix' => 1,
   );
   */
-  $form['fields']['data']['description'] = array(
+  $form['fields']['data']['input_description'] = array(
     '#type' => 'textfield',
-    '#title' => t('field', '描述'),
+    '#title' => t('field', '输入描述'),
     '#attributes' => array('size' => 50),
+    '#description' => t('field', '显示在表单字段旁，辅助用户输入'),
+    '#default_value' => $field->data['input_description'],
+  );
+  $form['fields']['data']['description'] = array(
+    '#type' => 'textarea',
+    '#title' => t('field', '输出描述'),
+    '#description' => t('field', '大多数时候显示在输出页面中，由模块自行设置'),
     '#default_value' => $field->data['description'],
   );
-  
   /**
    * 触发 hook_field_call_form()
    * 模块可以在表单显示、验证、提交各环节自定义操作
@@ -1259,7 +1262,7 @@ function field_save(&$field) {
       if (!$field->field_func) $field->field_func = '';
       
       // 触发 hook_field_call_validate()
-      if (!$error = module_invoke_all('field_call_validate', $field)) {
+      if (!$error = module_alter_all('field_call_validate', $field)) {
         // 保存字段数据
         
         if ($field->field_id) {
@@ -2682,7 +2685,7 @@ function field_get_node_form($module, $type, $node = NULL, &$form = NULL, $field
               '#default_value' => $node->fields[$data->field_key] ? $node->fields[$data->field_key]->tid : '',
               '#required' => $required,
               '#options' => field_get_term_options($options[$field_id], $required),
-              '#description' => $data->data['description']
+              '#description' => $data->data['input_description']
             );
           break;
           case 'checkbox':
@@ -2697,7 +2700,7 @@ function field_get_node_form($module, $type, $node = NULL, &$form = NULL, $field
               '#default_value' => $field_value,
               '#required' => $required,
               '#options' => field_get_term_options($options[$field_id], 1),
-              '#description' => $data->data['description']
+              '#description' => $data->data['input_description']
             );
           break;
           case 'select':
@@ -2716,7 +2719,7 @@ function field_get_node_form($module, $type, $node = NULL, &$form = NULL, $field
                   'alt' => $data->field_key
                 ),
                 '#options' => field_get_term_options($options[$field_id]),
-                '#description' => $data->data['description']
+                '#description' => $data->data['input_description']
               );
               $default_value = NULL;
               if ($_POST['fields'][$data->field_key]) {
@@ -2745,7 +2748,7 @@ function field_get_node_form($module, $type, $node = NULL, &$form = NULL, $field
                   );
                 }
                 $form['fields']['fields']['_field_root_'.$data->field_key.$ajaxId]['#suffix'] = '</div>';
-                $form['fields']['fields']['_field_root_'.$data->field_key.$ajaxId]['#description'] = $data->data['description'];
+                $form['fields']['fields']['_field_root_'.$data->field_key.$ajaxId]['#description'] = $data->data['input_description'];
               }
               $form['fields']['fields'][$data->field_key] = array(
                 '#type' => 'hidden',
@@ -2763,7 +2766,7 @@ function field_get_node_form($module, $type, $node = NULL, &$form = NULL, $field
                 '#default_value' => $node->fields[$data->field_key] ? $node->fields[$data->field_key]->tid : '',
                 '#required' => $required,
                 '#options' => field_get_term_options($options[$field_id], $required),
-                '#description' => $data->data['description']
+                '#description' => $data->data['input_description']
               );
             }
           break;
@@ -2785,7 +2788,7 @@ function field_get_node_form($module, $type, $node = NULL, &$form = NULL, $field
                 '#prefix' => '<div class="form_item form_item_select form_item_selects" id="user_edit_form_field_field_root_'.$data->field_key.'">',
                 '#field_suffix' => '<input type="button" value="'.t('field', '增加').'" class="form_select_multiple_button" alt="'.$data->field_key.'" />',
                 '#options' => field_get_term_options($options[$data->field_id]),
-                '#description' => $data->data['description']
+                '#description' => $data->data['input_description']
               );
               
               $defaults = NULL;
@@ -2813,7 +2816,7 @@ function field_get_node_form($module, $type, $node = NULL, &$form = NULL, $field
                 }
               }
               
-              $form['fields']['fields']['field_root_'.$data->field_key]['#description'] = $data->data['description'] . '<div class="field_form_selects_view">'.$description.'</div>';
+              $form['fields']['fields']['field_root_'.$data->field_key]['#description'] = $data->data['input_description'] . '<div class="field_form_selects_view">'.$description.'</div>';
               $form['fields']['fields']['_multiple_'.$data->field_key] = array(
                 '#type' => 'hidden',
                 '#default_value' => $node->fields[$data->field_key] ? 0 : "",
@@ -2837,7 +2840,7 @@ function field_get_node_form($module, $type, $node = NULL, &$form = NULL, $field
                 '#default_value' => $defaults,
                 '#required' => $required,
                 '#options' => field_get_term_options($options[$field_id], 1),
-                '#description' => $data->data['description']
+                '#description' => $data->data['input_description']
               );
             }
           break;
@@ -2854,7 +2857,7 @@ function field_get_node_form($module, $type, $node = NULL, &$form = NULL, $field
               '#default_value' => $field_value ? rtrim($field_value, ',') : '',
               '#required' => $required,
               '#attributes' => array('size' => 50),
-              '#description' => $data->data['description']
+              '#description' => $data->data['input_description']
             );
             if ($data->data['validate']['type']) {
               if ($textfield_opt = module_invoke_all('field_type_tags', 'node_form', $data->data['validate']['type'], $data)) {
@@ -2870,7 +2873,7 @@ function field_get_node_form($module, $type, $node = NULL, &$form = NULL, $field
               '#default_value' => $node->fields[$data->field_key]->text,
               '#required' => $required,
               '#attributes' => array('size' => 50),
-              '#description' => $data->data['description']
+              '#description' => $data->data['input_description']
             );
             if ($data->data['validate']['type']) {
               if ($textfield_opt = module_invoke_all('field_type_textfield', 'node_form', $data->data['validate']['type'], $data)) {
@@ -2885,7 +2888,7 @@ function field_get_node_form($module, $type, $node = NULL, &$form = NULL, $field
               '#type' => $data->field_type,
               '#default_value' => $node->fields[$data->field_key]->text,
               '#required' => $required,
-              '#description' => $data->data['description']
+              '#description' => $data->data['input_description']
             );
           break;
           case 'file': // 文件
@@ -2938,7 +2941,7 @@ function field_get_node_form($module, $type, $node = NULL, &$form = NULL, $field
               }
               $description .= '</span><span class="clear"></span>';
             }
-            $form['fields']['fields'][$data->field_key]['#description'] = $data->data['description']. $description;
+            $form['fields']['fields'][$data->field_key]['#description'] = $data->data['input_description']. $description;
         }
       } else {
         /**
@@ -3189,7 +3192,7 @@ function field_get_node_validate($module, $type, $value, $node = NULL, $form = N
                 $t['fields'][$data->field_key]['#error'][] = t('field', '%string 的长度不小于 %length 字符', array('%string' => $data->name, '%length' => $data->data['validate']['minsize']));
           		} else if ($data->data['validate']['type'] && 
           		$msg = module_invoke_all('field_type_textfield', 'node_validate', $data->data['validate']['type'], $data, $value->fields[$data->field_key])) {
-                $t['fields'][$data->field_key]['#error'][] = $msg;
+          		  $t['fields'][$data->field_key]['#error'] = $msg;
               } else if ($data->data['validate']['unique']) {
                 if ($value->nid) {
                   if (db_query('SELECT field_id FROM {fields_small} WHERE nid != ? AND field_id = ? AND text = ?',
@@ -3308,7 +3311,7 @@ function field_get_node_view($module, $type, &$node, $view_type = 0) {
            $textfield = check_plain($node->fields[$data->field_key]->text);
            if ($data->data['validate']['type']) {
               if ($textfield_value = module_invoke_all('field_type_textfield', 'node_view', $data->data['validate']['type'], $data, $node->fields[$data->field_key]->text)) {
-                $textfield = $textfield_value;
+                $textfield = $textfield_value[0];
               }
             }
             if ($view_type) {
