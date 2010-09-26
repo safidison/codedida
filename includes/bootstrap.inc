@@ -1400,13 +1400,15 @@ function dd_set_ping($data, $service = array(), $method = 'weblogUpdates.extende
  *  写入的数据，字符串或数组、对象
  * @param (int) $retry
  *  重定向次数
+ * @param (int) $timeout
+ *  超时时间，默认 15 秒
  * @return
  *  返回一个包含执行结果的对象
  *  $result->error：错误提示
  *  $result->code：HTTP 响应代码，小于 0 则为请求失败
  *  $result->data：返回内容
  */
-function dd_http_request($url, $data = NULL, $method = 'POST', $headers = array(), $retry = 3) {
+function dd_http_request($url, $data = NULL, $method = 'POST', $headers = array(), $retry = 3, $timeout = 15) {
   $result = new stdClass();
   
   $uri = parse_url($url);
@@ -1427,13 +1429,13 @@ function dd_http_request($url, $data = NULL, $method = 'POST', $headers = array(
     case 'http':
       $port = isset($uri['port']) ? $uri['port'] : 80;
       $host = $uri['host'] . ($port != 80 ? ':'. $port : '');
-      $fp = @fsockopen($uri['host'], $port, $errno, $errstr, 15);
+      $fp = @fsockopen($uri['host'], $port, $errno, $errstr, $timeout);
       break;
     case 'https':
       // 须编译 openssl
       $port = isset($uri['port']) ? $uri['port'] : 443;
       $host = $uri['host'] . ($port != 443 ? ':'. $port : '');
-      $fp = @fsockopen('ssl://'. $uri['host'], $port, $errno, $errstr, 20);
+      $fp = @fsockopen('ssl://'. $uri['host'], $port, $errno, $errstr, $timeout);
       break;
     default:
       $result->error = t('system','%string 协议不存在', array('%string' => $uri['scheme']));
@@ -1491,7 +1493,7 @@ function dd_http_request($url, $data = NULL, $method = 'POST', $headers = array(
     $defaults['Authorization'] = 'Authorization: Basic '. base64_encode($uri['user'] . (!empty($uri['pass']) ? ":". $uri['pass'] : ''));
   }
   
-  if ($method == 'POST' && !$headers['Content-Type']) {
+  if ($method == 'POST' && empty($headers['Content-Type'])) {
     $defaults['Content-Type'] = 'Content-Type: application/x-www-form-urlencoded; charset=utf-8';
   }
   
