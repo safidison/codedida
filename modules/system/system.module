@@ -1563,7 +1563,7 @@ function dd_storage_admin($ext_type, $ext_type2 = NULL, $ext_id = NULL, $fetch =
           }
         exit;
         case 'weight':
-          db_exec('UPDATE {storage} SET weight = ? WHERE id = ? AND ext_type = ?', array($_GET['storage_id'], $ext_type));
+          db_exec('UPDATE {storage} SET weight = ? WHERE id = ? AND ext_type = ?', array($_POST['value'], $_GET['storage_id'], $ext_type));
         exit;
       }
     } else if ($_GET['storage_op'] == 'cache') {

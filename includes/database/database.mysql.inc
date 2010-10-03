@@ -211,6 +211,9 @@ function db_mysql_exec($sql, $args = array(), $opt = array()) {
     } else {
       foreach ($args['values'] as $values) {
         if (!$args['placeholder']) {
+          if (!is_array($values)) {
+            $values = array($values);
+          }
           $smt->execute($values);
         } else {
           $smt->execute(array_combine($args['placeholder'], $values));

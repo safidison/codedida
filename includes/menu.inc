@@ -386,7 +386,14 @@ function menu_match($load, $path = NULL) {
   return $return;
 }
 
-//menu参数匹配
+/**
+ * menu 占位符
+ * @param (string) $str
+ *  arg(x)
+ * @param (string) $match
+ *  占位符
+ * @return (*) 替换后的数据 
+ */
 function menu_menu_match($str, $match) {
   switch ($match) {
     case '%':

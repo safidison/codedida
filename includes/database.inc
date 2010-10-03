@@ -102,7 +102,7 @@ function db_exec($sql, $args = array(), array $opt = array()) {
  * 插入或替换记录，对应 mysql REPLACE INTO 用法，其它数据库类型，根据自身特性实现
  * @param (string)$table
  *  数据表名
- * @param (object or array) &$o
+ * @param (object or array) $args
  *  待写入的数据，可以是 object 或 array。其单元对应字段名称
  * @param (array) $opt
  *   数据库属性设置

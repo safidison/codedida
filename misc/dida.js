@@ -162,13 +162,17 @@ Dida.dialog = function(opt) {
 		closeText: '关闭',
 		autoOpen: true,
 		modal: false,
-		bgiframe: true,
+		//bgiframe: true,
 		reload: false,
 		closeCall: false,
 		iframe: false
 	}
 	
 	$.extend(o, opt);
+	
+	if ($.isPlainObject(settings.dialogOptions)) {
+		$.extend(o, settings.dialogOptions);
+	}
 	
 	$('#dialog_wrapper').remove();
 	$('body').append('<div id="dialog_wrapper" style="display: none;"></div>');
@@ -207,7 +211,7 @@ Dida.dialog = function(opt) {
 	if (!$.isFunction(o.close)) {
 		o.close = function(event, ui) {
 	    $('#dialog_wrapper').remove();
-			$(this).dialog('destroy');
+	    $('#dialog_wrapper').dialog('destroy');
 	    
 	    if (o.closeCall) {
 	      Dida.callFunc(o.closeCall, o, event, ui);
@@ -262,6 +266,7 @@ Dida.dialog = function(opt) {
 		    });
 			}
   	}
+  	
 		$('#dialog_wrapper').dialog(o);
 		
   } else {
@@ -306,7 +311,7 @@ Dida.dialog = function(opt) {
 		
 		return false;
 	});
-
+	
 	return false;
 }
 
@@ -393,7 +398,6 @@ Dida.ajaxSuccess = function(obj, data, type) {
 }
 
 $(function() {
-	
   $('#keywords').one('click', function() {
     $(this).val('');
   });

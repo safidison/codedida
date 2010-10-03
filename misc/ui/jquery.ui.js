@@ -991,13 +991,14 @@ Timepicker.prototype = {
         this._colonPos  = -1;
         this._visible   = false;
         this.tpDiv      = $('<div id="' + this._mainDivId + '" class="ui-datepicker ui-widget ui-widget-content ui-helper-clearfix ui-corner-all ui-helper-hidden-accessible" style="width: 100px; display: none; position: absolute;"></div>');
-        this._generateHtml();
+        //this._generateHtml();
     },
 
     show: function (input)
     {
         // Get instance to datepicker
-        
+    		this._generateHtml();
+    		
         var inst = $.datepicker._getInst(input);
 
         this._showSecond = $.datepicker._get(inst, 'showSecond');

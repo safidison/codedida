@@ -44,17 +44,17 @@ function cache_set($cid, $data, $table = 'cache', $expire = NULL) {
   global $mem;
   
   if (!$expire) {
-    $expire = 259200;
+    $expire = 2592000;
   }
   
   $key = $table.'_'.$cid;
   if ($keys = $mem->get('__table_'.$table.'_keys')) {
     if (!$keys[$key]) {
       $keys[$key] = 1;
-      $mem->set('__table_'.$table.'_keys', $keys, MEMCACHE_COMPRESSED, 259200);
+      $mem->set('__table_'.$table.'_keys', $keys, MEMCACHE_COMPRESSED, 2592000);
     }
   } else {
-    $mem->set('__table_'.$table.'_keys', array($key => 1), MEMCACHE_COMPRESSED, 259200);
+    $mem->set('__table_'.$table.'_keys', array($key => 1), MEMCACHE_COMPRESSED, 2592000);
   }
   
   $mem->set($key, $data, MEMCACHE_COMPRESSED, $expire);
@@ -197,7 +197,9 @@ function cache_get_page($path) {
       $timestamp = fread($handle, 10);
       
       // 发送 header，检查客户端版本
-      dd_page_cache_header($timestamp);
+      //dd_page_cache_header($timestamp);
+      
+      dd_page_header();
       
       return fread($handle, filesize($filepath));
     }

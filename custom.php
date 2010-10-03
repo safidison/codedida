@@ -1,7 +1,7 @@
 <?php
 // $Id$
 
-if (!$_GET['module']) die('byebye');
+if (!isset($_GET['module'])) die('byebye');
 
 define('DIDA_ROOT', getcwd());
 
@@ -9,10 +9,10 @@ require_once DIDA_ROOT . '/includes/bootstrap.inc';
 
 header('Content-Type: text/html; charset=utf-8');
 
-if ($_GET['bootstrap'] != 'full') {
+if (!isset($_GET['bootstrap']) || $_GET['bootstrap'] != 'full') {
   $includes = NULL;
   
-  if ($_GET['includes']) {
+  if (!empty($_GET['includes'])) {
     if (strpos($_GET['includes'], '|') !== false) {
       $includes = explode('|', $_GET['includes']);
     } else {
