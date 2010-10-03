@@ -50,31 +50,6 @@ function bootstrap($op, $inc = NULL) {
   
   set_error_handler('dd_php_error');
   
-  if ($_GET['_didaCssOrJsCache']) {
-    
-    dd_page_cache_header($conf['cache_css_and_js_timestamp']);
-    
-    $filepath = $_SERVER['DOCUMENT_ROOT'] . $_SERVER['REDIRECT_URL'];
-    
-    // filepath：物理文件，或动态文件
-    
-    if (!is_file($filepath)) {
-      if (strpos($filepath, '?') !== false) {
-        $filepath = current(explode('?', $filepath));
-      }
-    }
-    
-    if ($_GET['type'] == 'js') {
-      header('Content-Type:text/javascript');
-    } else {
-      header('Content-Type:text/css');
-    }
-    
-    echo @file_get_contents($filepath);
-    
-    exit;
-  }
-  
   switch ($op) {
     case 'full':
       require_once DIDA_ROOT . '/includes/database.inc';
@@ -279,7 +254,7 @@ function dd_get_not() {
   } else {
     $text = t('system', '访问的页面不存在');
     dd_set_title(array($text));
-    $default = '<h2 align="right">'.l($text, NULL).'</h2>';
+    $default = '<h2 align="center">'.l($text, NULL).'</h2>';
     echo theme('print', custom_get('page_not_html', $default));
   }
   exit;
@@ -2396,15 +2371,17 @@ function dd_get_html_head() {
  *  添加类型，该类型决定加载顺序：core -> module -> theme
  * @param (string) $media
  *  media 类型
+ * @param (bool) $cached
+ *  是否缓存
  * @return (array)
  */
-function dd_add_css($path = NULL, $type = 'module', $media = 'all') {
+function dd_add_css($path = NULL, $type = 'module', $media = 'all', $cached = true) {
   static $css = array();
   if (isset($path)) {
     if (!isset($css[$media])) {
       $css[$media] = array('core' => array(), 'module' => array(), 'theme' => array());
     }
-    $css[$media][$type][$path] = $path;
+    $css[$media][$type][$path] = array('path' => $path, 'cached' => $cached);
   }
   return $css;
 }
@@ -2422,27 +2399,33 @@ function dd_get_css($css = NULL) {
     $css = dd_add_css();
   }
   
+  $gets = array('core', 'module', 'theme');
+  $css_path = array();
+  
   foreach ($css as $media => $types) {
     foreach ($types as $type => $files) {
       if (count($files)) {
         foreach ($types[$type] as $file) {
-          if (strpos($file, 'http://') === false && strpos($file, 'https://') === false) {
-            if ($GLOBALS['conf']['cache_css_and_js']) {
+          if (strpos($file['path'], 'http://') === false && strpos($file['path'], 'https://') === false) {
+            
+            if ($GLOBALS['conf']['cache_css_and_js'] && $file['cached']) {
               // 只缓存内部 css
-              $css_path[$type][] = $file;
-              $filename .= $file;
+              $css_path[$type][] = $file['path'];
+              $filename .= $file['path'];
               continue;
             }
-            $file = $base_path .$file;
+            
+            $file['path'] = $base_path . $file['path'];
+            
           }
           
-          if (strpos($file, '?') === false) {
-            $file .= '?'.$conf['cache_css_and_js_timestamp'];
+          if (strpos($file['path'], '?') === false) {
+            $file['path'] .= '?'.$conf['cache_css_and_js_timestamp'];
           } else {
-            $file .= '&'.$conf['cache_css_and_js_timestamp'];
+            $file['path'] .= '&'.$conf['cache_css_and_js_timestamp'];
           }
           
-          $gets[$type] .= '<link type="text/css" rel="stylesheet" media="'. $media .'" href="'. $file.'" />'."\n";
+          $gets[$type] .= '<link type="text/css" rel="stylesheet" media="'. $media .'" href="'. $file['path'].'" />'."\n";
 
         }
       }
@@ -2450,6 +2433,7 @@ function dd_get_css($css = NULL) {
   }
   
   if ($css_path && $filename) {
+    
     $filepath = file_directory_path() . '/cache/css_js/' . md5($filename.$conf['cache_css_and_js_timestamp']) . '.css';
     if (!is_file($filepath)) {
       require_once DIDA_ROOT . '/includes/css_js_min.inc';
@@ -2465,7 +2449,8 @@ function dd_get_css($css = NULL) {
       }
       _file_save_data(cssmin::minify($contents), $filepath);
     }
-    return '<link type="text/css" rel="stylesheet" media="all" href="'. $base_path . $filepath.'" />'."\n";
+    
+    $gets['module'] .= '<link type="text/css" rel="stylesheet" media="all" href="'. $base_path . $filepath.'" />'."\n";
   }
   return $gets['core'] . $gets['module'] . $gets['theme'];
 }
