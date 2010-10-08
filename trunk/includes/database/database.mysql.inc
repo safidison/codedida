@@ -121,17 +121,19 @@ function db_mysql_replace($table, $args, array $opt = array()) {
     return false;
   }
   
-  foreach ($args as $field => $value) {
-    if (!isset($tables['fields'][$field])) {
-      unset($args[$field]);
-    }
-  }
-  
   foreach ($args as $field_name => $value) {
-    $placeholder = ':'.$field_name;
-    $fields[] = $field_name;
-    $placeholders[] = $placeholder;
-    $sql_args[$placeholder] = $value;
+    if (!isset($tables['fields'][$field_name])) {
+      unset($args[$field_name]);
+    } else {
+      $placeholder = ':'.$field_name;
+      $fields[] = $field_name;
+      $placeholders[] = $placeholder;
+      if (empty($tables['fields'][$field_name]['serialize'])) {
+        $sql_args[$placeholder] = $value;
+      } else {
+        $sql_args[$placeholder] = serialize($value);
+      }
+    }
   }
   
   $sql = 'REPLACE INTO {'.$table.'} ';

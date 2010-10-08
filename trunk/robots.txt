@@ -8,10 +8,12 @@ Crawl-delay: 10
 Disallow: /includes/
 Disallow: /misc/
 Disallow: /modules/
-Disallow: /sites/
+Disallow: /sites/all/
+Disallow: /sites/cache/
+Disallow: /sites/themes/
+Disallow: /sites/modules/
 Disallow: /themes/
 Disallow: /install/
-Disallow: /files/
 Disallow: /tools/
 
 Disallow: /rpc.php
