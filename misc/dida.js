@@ -398,6 +398,7 @@ Dida.ajaxSuccess = function(obj, data, type) {
 }
 
 $(function() {
+	
   $('#keywords').one('click', function() {
     $(this).val('');
   });
@@ -416,11 +417,13 @@ $(function() {
   });
   
   $('.favorites_button').click(function() {
-    Dida.favorite($(this).attr('title'), $(this).attr('href'));
-    return false;
+  	if (!$.browser.mozilla) {
+	    Dida.favorite($(this).attr('title'), $(this).attr('href'));
+	    return false;
+  	}
   });
   
-  $('.confirm').click(function() {
+  $('.confirm').live('click', function() {
     msg = $(this).attr('alt');
     if (!confirm((msg ? msg : '确认此操作吗？'))) {
       return false;
@@ -429,7 +432,7 @@ $(function() {
     }
   });
   
-  $('.confirmajax').click(function() {
+  $('.confirmajax').live('click', function() {
     msg = $(this).attr('alt');
     if (confirm((msg ? msg : '确认此操作吗？'))) {
     	$(this).addClass('ja_loading');

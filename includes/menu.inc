@@ -397,9 +397,9 @@ function menu_match($load, $path = NULL) {
 function menu_menu_match($str, $match) {
   switch ($match) {
     case '%':
-    return $str;
+    return (string) $str;
     case '%0-9':
-      if (!preg_match('/[^0-9]/', $str)) return (int)$str;
+      if (!preg_match('/[^0-9]/', $str)) return (int) $str;
     break;
     case '%a-z':
       if (!preg_match('/[^a-z]/i', $str)) return $str;
@@ -408,7 +408,7 @@ function menu_menu_match($str, $match) {
       if (strpos($str, '.') !== false) {
         $h = explode('.', $str, 2);
         if ($h[1] == 'html' && !preg_match('/[^0-9]/', $h[0])) {
-          return (int)$h[0];
+          return (int) $h[0];
         }
       }
     break;
@@ -416,7 +416,7 @@ function menu_menu_match($str, $match) {
       if (strpos($str, '.') !== false) {
         $h = explode('.', $str, 2);
         if ($h[0] && $h[1] == 'html') {
-          return $h[0];
+          return (string) $h[0];
         }
       }
     break;
@@ -424,7 +424,7 @@ function menu_menu_match($str, $match) {
       if (strpos($str, '.') !== false) {
         $h = explode('.', $str, 2);
         if ($h[1] == 'shtml' && !preg_match('/[^0-9]/', $h[0])) {
-          return (int)$h[0];
+          return (int) $h[0];
         }
       }
     break;
@@ -432,7 +432,7 @@ function menu_menu_match($str, $match) {
       if (strpos($str, '.') !== false) {
         $h = explode('.', $str, 2);
         if ($h[0] && $h[1] == 'shtml') {
-          return $h[0];
+          return (string) $h[0];
         }
       }
     break;

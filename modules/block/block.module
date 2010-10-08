@@ -288,6 +288,7 @@ function dd_get_block($theme = NULL, $region = NULL) {
   if ($blocks = block_get_cache_theme($theme, $region)) {
     foreach ($blocks as $reg => $v) {
       foreach ($v as $module => $c) {
+        
         if (!function_exists($module.'_block_view')) {
           continue;
         }
@@ -327,7 +328,41 @@ function dd_get_block($theme = NULL, $region = NULL) {
       }
     }
   }
+  
+  if ($blocks = dd_set_block()) {
+    foreach ($blocks as $regin => $lists) {
+      foreach ($lists as $block) {
+        if (isset($block->module) && isset($block->delta)) {
+          $block->regin = $regin;
+          $output[$block->regin] .= theme('block', $block)."\n";   
+        } 
+      }
+    }
+  }
+  
   return $output;
+}
+
+/**
+ * 在代码中写入区块，由代码控制，不显示在区块管理中
+ * @param (object) $value
+ *  区块数据，(object) array(
+ *    'module' => (string),
+ *    'region' => (string),
+ *    'content' => (string),
+ *    'title' => (string), 
+ *  )
+ * @param (region) $name
+ *  显示区域
+ * @return (array)
+ */
+function dd_set_block($value = NULL, $regin = 'left') {
+  static $block;
+  if ($value) {
+    $block[$regin][] = $value;
+  } else {
+    return $block;
+  }
 }
 
 /**

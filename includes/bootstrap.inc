@@ -12,18 +12,18 @@ define('DIDA_VERSION', '1.0 alpha 1');
  */
 function bootstrap($op, $inc = NULL) {
   static $called;
-  
+
   if ($called) return;
-  
+
   global $user, $database, $dbc, $db, $conf, $conf_dir, $installed;
-  
+
   if (is_file(DIDA_ROOT . '/sites/config.php')) {
     require_once DIDA_ROOT . '/sites/config.php';
     if (isset($config) && !empty($config[$_SERVER['HTTP_HOST']])) {
       $conf_dir = $config[$_SERVER['HTTP_HOST']];
     }
   }
-  
+
   if (!$conf_dir) {
     if (is_dir('sites/'.$_SERVER['HTTP_HOST'])) {
       $conf_dir = 'sites/'.$_SERVER['HTTP_HOST'];
@@ -31,34 +31,34 @@ function bootstrap($op, $inc = NULL) {
       $conf_dir = 'sites';
     }
   }
-  
+
   if (!is_file(DIDA_ROOT . '/' . $conf_dir .'/setting.php')) {
     dd_to_install();
   }
-  
+
   require_once DIDA_ROOT . '/' . $conf_dir.'/setting.php';
-  
+
   if (!$installed) dd_to_install();
-  
+
   if (is_file($conf_dir .'/cache/conf.php')) {
     require_once DIDA_ROOT . '/' . $conf_dir .'/cache/conf.php';
   } else {
     dd_to_install();
   }
-  
+
   if (!$conf['status']) dd_get_online();
-  
+
   set_error_handler('dd_php_error');
-  
+
   switch ($op) {
     case 'full':
       require_once DIDA_ROOT . '/includes/database.inc';
       //初始化默认数据库连接
       db_connect('default');
-      
+
       // session 及配置
       conf_init();
-      
+
       require_once DIDA_ROOT . '/includes/filter.inc';
       require_once DIDA_ROOT . '/includes/theme.inc';
       require_once DIDA_ROOT . '/includes/image.inc';
@@ -68,14 +68,14 @@ function bootstrap($op, $inc = NULL) {
       require_once DIDA_ROOT . '/includes/module.inc';
       require_once DIDA_ROOT . '/includes/menu.inc';
       require_once DIDA_ROOT . '/includes/pager.inc';
-      
+
       //用户验证
       dd_user_validate();
-      
+
       // 读取缓存
       if (!$_POST && ($conf['dd_cache_page'] == 2
       || ($conf['dd_cache_page'] == 1 && $user->uid == 0))) {
-        
+
         $__getall = false;
         foreach ($_GET as $__key => $_v) {
           if ($__key != 'q') {
@@ -83,31 +83,31 @@ function bootstrap($op, $inc = NULL) {
             break;
           }
         }
-        
+
         if ($__getall === false) {
           if ($_GET['q'] && $cache = cache_get($_GET['q'], 'cache_menu')) {
-            
+
             global $current_menu_data;
             $current_menu_data = $cache->data;
             unset($cache);
-            
+
           }
-          
+
           if ($page_cache = cache_get_page((dd_is_front() ? '[front]' : $current_menu_data['systemUrl']))) {
             echo $page_cache;
             exit;
           }
         }
       }
-      
+
       dd_page_header();
-      
+
       //载入模块
       module_init();
-      
+
       //载入主题
       theme_init();
-      
+
       if ($_POST['__SETPHPSESSID'] && $_POST['__SETUID']) {
         if (!$user->uid && db_query('SELECT name FROM {users} WHERE session = ? AND uid = ? AND host = ?', array($_POST['__SETPHPSESSID'], $_POST['__SETUID'], ip_address()))) {
           if (!$user = user_login(user_load($_POST['__SETUID']))) {
@@ -117,23 +117,23 @@ function bootstrap($op, $inc = NULL) {
       } else {
         $user->__SETVALIDATE = NULL;
       }
-      
+
       switch ($conf['status']) {
         case 2: //登录后可浏览
           if (!$user->uid && $_GET['q'] != 'user/login') dd_get_online();
-        break;
+          break;
         case 3: //超级管理员可浏览
           if ($user->uid != 1 && $_GET['q'] != 'user/login') dd_get_online();
       }
-      
+
       // 浏览记录，记录每个用户的每次访问
       if (var_get('history_enabled', 0)) {
-        db_exec('INSERT INTO {history} (uid, session, host, timestamp, referer, path) VALUES 
+        db_exec('INSERT INTO {history} (uid, session, host, timestamp, referer, path) VALUES
           (?, ?, ?, ?, ?, ?)', array($user->uid, session_id(), ip_address(), $_SERVER['REQUEST_TIME'],
-          dd_get_referer($_SERVER['HTTP_REFERER']), dd_get_referer($_SERVER['REQUEST_URI'])));
+        dd_get_referer($_SERVER['HTTP_REFERER']), dd_get_referer($_SERVER['REQUEST_URI'])));
       }
-      
-    break;
+
+      break;
     case 'data':
       /**
        * 仅载入数据库连接
@@ -141,8 +141,8 @@ function bootstrap($op, $inc = NULL) {
       require_once DIDA_ROOT . '/includes/database.inc';
       //初始化默认数据库连接
       db_connect('default');
-      
-    break;
+
+      break;
     case 'custom':
       /**
        * 跳过所有模块，默认仅加载数据库及缓存接口文件
@@ -152,29 +152,29 @@ function bootstrap($op, $inc = NULL) {
       require_once DIDA_ROOT . '/includes/database.inc';
       //初始化默认数据库连接
       db_connect('default');
-      
+
       // session 及配置
       conf_init();
-      
+
       require_once var_get('dd_cache_file', DIDA_ROOT . '/includes/cache.inc');
-      
+
       if (is_array($inc)) {
         foreach ($inc as $filename) {
           $filepath = DIDA_ROOT . '/includes/'.$filename.'.inc';
           if (is_file($filepath)) require_once $filepath;
         }
       }
-      
+
       //用户验证
       dd_user_validate();
-      
+
       switch ($conf['status']) {
         case 2: //登录后可浏览
           if (!$user->uid && $_GET['q'] != 'user/login') dd_get_online();
-        break;
+          break;
         case 3: //超级管理员可浏览
-         if ($user->uid != 1 && $_GET['q'] != 'user/login') dd_get_online();
-      } 
+          if ($user->uid != 1 && $_GET['q'] != 'user/login') dd_get_online();
+      }
   }
   $called = 1;
 }
@@ -191,7 +191,7 @@ function dd_get_path($type, $name) {
   switch ($type) {
     case 'module':
       $lists = $conf['modules'];
-    break;
+      break;
     case 'theme':
       $lists = $conf['themes'];
   }
@@ -199,7 +199,7 @@ function dd_get_path($type, $name) {
 }
 
 /**
- * 写入一个任务到cron表，在调度 cron 时，优先执行该
+ * 写入一个任务到cron表，在调度 cron 时，优先执行
  * @param (string) $module
  *  模块系统名称，错误的名称将无法写入
  * @param (string) $type
@@ -279,7 +279,7 @@ function dd_get_access() {
   } else {
     $title = t('system', '登录以确认访问权限');
     dd_set_title(array($title));
-  	dd_set_message($title, 'error');
+    dd_set_message($title, 'error');
     echo theme('print', dd_get_form('user_login_form'));
   }
   exit;
@@ -289,11 +289,11 @@ function dd_get_access() {
  * 上一页地址，若上一页非当前网站，则返回首页
  */
 function dd_get_history() {
-	if ($_SERVER['HTTP_REFERER'] && strpos($_SERVER['HTTP_REFERER'], $GLOBALS['base_url']) !== false) {
-		return urlencode($_SERVER['HTTP_REFERER']);
-	} else {
-		return $GLOBALS['base_url'];
-	}
+  if ($_SERVER['HTTP_REFERER'] && strpos($_SERVER['HTTP_REFERER'], $GLOBALS['base_url']) !== false) {
+    return urlencode($_SERVER['HTTP_REFERER']);
+  } else {
+    return $GLOBALS['base_url'];
+  }
 }
 
 /**
@@ -339,7 +339,7 @@ function dd_goto($path = '', $query = NULL, $file = NULL, $fragment = NULL, $htt
  * @param $options
  *  详细参数：
  *  array(
- *    'attributes' => (array), // a 链接属性，如 'alt' => 'test'
+ *    'attributes' => (array), // a 链接属性，如 'alt' => 'test
  *    'strlen' => (int), // 链接名称超过此长度，则截断
  *    'external' => (bool), // 是否为外部链接。若不传值，也将判断 $path 是否为外部链接
  *    'fragment' => (string), // 锚点
@@ -391,14 +391,14 @@ function img($path, $alt = '', $title = '', $attributes = NULL) {
  * @return (bool)
  */
 function _l_external($path) {
-	
+
   // 若以 / 开头，也做为绝对路径处理，如： /user/login
-	if (substr($path, 0, 1) == '/') {
-		return true;
-	}
-	
+  if (substr($path, 0, 1) == '/') {
+    return true;
+  }
+
   if (strpos($path, ':') !== false) {
-  	return in_array(current(explode(':', $path, 2)), array('http', 'https', 'ftp', 'news', 'nntp', 'telnet', 'mailto', 'irc', 'ssh', 'sftp', 'webcal', 'rtsp'));
+    return in_array(current(explode(':', $path, 2)), array('http', 'https', 'ftp', 'news', 'nntp', 'telnet', 'mailto', 'irc', 'ssh', 'sftp', 'webcal', 'rtsp'));
   }
 }
 
@@ -440,14 +440,14 @@ function url($path = NULL, $options = array()) {
   if ($options['fragment']) {
     $options['fragment'] = '#'. $options['fragment'];
   }
-  
+
   global $conf, $base_url, $base_path;
   if (is_array($options['query'])) {
     $options['query'] = dd_query_string_encode($options['query']);
   } else if (strpos($options['query'], '=') === false) {
     $options['query'] = '';
   }
-  
+
   if ($conf['clean_url']) {
     $url = $base_path . $path;
     if ($options['query']) {
@@ -465,10 +465,10 @@ function url($path = NULL, $options = array()) {
     if ($options['query']) {
       $path = $path .'&'. $options['query'];
     }
-    
+
     $url = $base_path . $path .$options['fragment'];
   }
-  
+
   if (!$options['absolute']) {
     return $url;
   } else {
@@ -479,7 +479,7 @@ function url($path = NULL, $options = array()) {
 /**
  * 将数组解析为字符串，以半角空格分隔，多用于 html 元素属性解析
  * @param (array) $attributes
- *  待解析数组，如：array('alt' => 'test', 'title' => 'title')
+ *  待解析数组，如：array('alt' => 'test', 'title' => 'title'
  * @return (string) 如：alt="test" title="title"
  */
 function dd_attributes($attributes) {
@@ -510,8 +510,8 @@ function dd_log($type, $value, $ext_id = NULL, $link = NULL, $status = NULL, $ui
     if (!isset($uid)) $uid = $GLOBALS['user']->uid;
     if (!$status) $status = 0;
     if (!isset($ext_id)) $ext_id = 0;
-    
-    db_exec('INSERT INTO {logs} (uid, ext_id, type, status, value, url, timestamp, host) 
+
+    db_exec('INSERT INTO {logs} (uid, ext_id, type, status, value, url, timestamp, host)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)', array($uid, $ext_id, $type, $status, $value, 
     ($link ? $link : dd_get_referer($_SERVER['REQUEST_URI'])), $_SERVER['REQUEST_TIME'], ip_address()));
   }
@@ -537,24 +537,24 @@ function dd_logs_get_status($id = NULL){
  * @param $clear = 1;
  *  清除配置文件缓存
  * @param (bool) $replace
- *  是否使用 db_replace 写入数据
+ *  是否使用 db_replace 写入数
  */
 function var_set($name, $value, $clear = 1, $replace = 1) {
   global $conf;
-  $v = array(
-    'value' => serialize($value),
-    'name' => $name
-  );
-  
+
+  $v = array('name' => $name);
+
   if ($replace) {
+    $v['value'] = $value;
     if (!db_replace('variable', $v)) {
       return;
     }
   } else {
+    $v['value'] = serialize($value);
     db_exec('DELETE FROM {variable} WHERE name = ?', array($name));
     db_exec('INSERT INTO {variable} (name, value) VALUES (?, ?)', array($name, serialize($value)));
   }
-  
+
   $conf[$name] = $value;
   if ($clear) var_init();
 }
@@ -568,14 +568,14 @@ function var_set($name, $value, $clear = 1, $replace = 1) {
  * @return (bool)
  */
 function custom_set($name, $value) {
-  return db_replace('custom', array('name' => $name, 'value' => serialize($value)));
+  return db_replace('custom', array('name' => $name, 'value' => $value));
 }
 
 /**
  * 读取配置
  * @param (string) $name
  *  配置名称
- * @param (*) $default 
+ * @param (*) $default
  *  默认值，若没有请求的配置，则返回此值
  * @return (*);
  */
@@ -588,7 +588,7 @@ function var_get($name, $default = NULL) {
  * 读取自定义数据
  * @param (string) $name
  *  名称
- * @param (*) $default 
+ * @param (*) $default
  *  默认值，若没有请求的配置，则返回此值
  * @return (*);
  */
@@ -610,7 +610,7 @@ function custom_get($name, $default = NULL) {
  *  配置名称
  * @param (string) $key
  *  子配置名称，即数组键名
- * @param (*) $default 
+ * @param (*) $default
  *  默认值，若没有请求的配置，则返回此值
  * @return (*);
  */
@@ -645,8 +645,8 @@ function custom_del($name) {
 }
 
 /**
-	* 更新配置缓存，无参数，无返回值
-	*/
+ * 更新配置缓存，无参数，无返回值
+ */
 function var_init() {
   if ($fetch = db_query('SELECT * FROM {variable}')) {
     foreach ($fetch as $variable) {
@@ -669,45 +669,45 @@ function var_init() {
  * 所有模块的语言文件缓存在 ./sties/cache/lang_{$language}.lang
  */
 function t($module, $index, $args = array(), $language = NULL) {
-	static $lang;
-	if (!$language && is_string($language)) {
-		$language = !$GLOBALS['user']->language ? $GLOBALS['conf']['default_language'] : $GLOBALS['user']->language;
-	}
-  
-	if (!$module || $language != $GLOBALS['conf']['modules'][$module]['language']) {
-  	if (!isset($lang[$language])) {
-  	  if (is_file(DIDA_ROOT . '/' . $GLOBALS['conf_dir'] . '/cache/languages/' .$language . '.php')) {
-  	    include DIDA_ROOT . '/' . $GLOBALS['conf_dir'] . '/cache/languages/' .$language . '.php';
-  	    $lang[$language] = $l;
-  		} else {
-  			$lang[$language] = false;
-  		}
-  	}
-    
-  	if ($module && $lang[$language] && $lang[$language][$index]) {
-  		if (!is_array($lang[$language]['__'.$module]) || $lang[$language]['__'.$module][$index]) {
+  static $lang;
+  if (!$language && is_string($language)) {
+    $language = !$GLOBALS['user']->language ? $GLOBALS['conf']['default_language'] : $GLOBALS['user']->language;
+  }
+
+  if (!$module || $language != $GLOBALS['conf']['modules'][$module]['language']) {
+    if (!isset($lang[$language])) {
+      if (is_file(DIDA_ROOT . '/' . $GLOBALS['conf_dir'] . '/cache/languages/' .$language . '.php')) {
+        include DIDA_ROOT . '/' . $GLOBALS['conf_dir'] . '/cache/languages/' .$language . '.php';
+        $lang[$language] = $l;
+      } else {
+        $lang[$language] = false;
+      }
+    }
+
+    if ($module && $lang[$language] && $lang[$language][$index]) {
+      if (!is_array($lang[$language]['__'.$module]) || $lang[$language]['__'.$module][$index]) {
         $index = $lang[$language][$index];
-  		} else {
+      } else {
         $index = $lang[$language]['__'.$module][$index];
       }
-  	}
-    
-	}
-	
+    }
+
+  }
+
   if (empty($args)) {
     return $index;
   } else {
     foreach ($args as $key => $value) {
       switch ($key[0]) {
         case '@':
-        	// 格式化
+          // 格式化
           $args[$key] = check_plain($value);
-        break;
-        case '%': 
-          // 替换占位符 <em> </em>
+          break;
+        case '%':
+          // 替换占位符 <em> </em
           $args[$key] = '<em>'. $value . '</em>';
-        break;
-        //case '!': default:
+          break;
+          //case '!': default:
           // 其它不做处理
       }
     }
@@ -734,55 +734,55 @@ function t($module, $index, $args = array(), $language = NULL) {
  *  在导入合并时，'缓存' 将作为 'cache' 的默认翻译，而 '区块缓存' 作为特殊翻译
  * 最终的语言文件如：
  *  $lang = array(
- 			'cache' => '缓存',
- 			'__block' => array(
- 				'cache' => '区块缓存',
- 			)
- 		)
+ 'cache' => '缓存',
+ '__block' => array(
+ 'cache' => '区块缓存',
+ )
+ )
  */
 function dd_set_lang($type = 'update', $lists = NULL, $language = array()) {
-	global $conf;
-	if (empty($lists)) {
-		if ($conf['modules']) {
-	    foreach ($conf['modules'] as $module => $info) {
-	    	$lists[$module] = $info['path'];
-	    }
+  global $conf;
+  if (empty($lists)) {
+    if ($conf['modules']) {
+      foreach ($conf['modules'] as $module => $info) {
+        $lists[$module] = $info['path'];
+      }
     }
-	}
-	if (empty($language)) {
-		if ($conf['languages']) {
-			foreach ($conf['languages'] as $key => $name) {
-				$language[] = $key;
-			}
-		} else {
-			$language[] = 'zh-hans';
-		}
-	}
-	if ($lists) {
-		foreach ($language as $code) {
-			$l = array();
-			
-			if ($type == 'update') {
-				$cache = DIDA_ROOT . '/' . $GLOBALS['conf_dir'] . '/cache/languages/'.$code.'.php';
-				if (is_file($cache)) {
-					include $cache;
-				}
-			}
-			
-			foreach ($lists as $module => $path) {
-				$lang = array();
-				$path = DIDA_ROOT . '/' .  $path . '/languages/' . $code . '.php';
-				
-				if (is_file($path)) {
-					include $path;
-					if ($lang) {
-						$newLang = array_diff_key($lang, $l);
-						$reLang = array_intersect_key($lang, $l);
-						
-						if ($newLang) {
-							$l = array_merge($l, $newLang);
-						}
-						if ($reLang) {
+  }
+  if (empty($language)) {
+    if ($conf['languages']) {
+      foreach ($conf['languages'] as $key => $name) {
+        $language[] = $key;
+      }
+    } else {
+      $language[] = 'zh-hans';
+    }
+  }
+  if ($lists) {
+    foreach ($language as $code) {
+      $l = array();
+      	
+      if ($type == 'update') {
+        $cache = DIDA_ROOT . '/' . $GLOBALS['conf_dir'] . '/cache/languages/'.$code.'.php';
+        if (is_file($cache)) {
+          include $cache;
+        }
+      }
+      	
+      foreach ($lists as $module => $path) {
+        $lang = array();
+        $path = DIDA_ROOT . '/' .  $path . '/languages/' . $code . '.php';
+
+        if (is_file($path)) {
+          include $path;
+          if ($lang) {
+            $newLang = array_diff_key($lang, $l);
+            $reLang = array_intersect_key($lang, $l);
+
+            if ($newLang) {
+              $l = array_merge($l, $newLang);
+            }
+            if ($reLang) {
               foreach ($reLang as $rekey => $resub) {
                 if ($l[$rekey] == $resub) {
                   unset($reLang[$rekey]);
@@ -790,26 +790,26 @@ function dd_set_lang($type = 'update', $lists = NULL, $language = array()) {
               }
               if ($reLang) {
                 $moduleKey = '__'.$module;
-  							if (!$l[$moduleKey]) {
-  								$l[$moduleKey] = $reLang;
-  							} else {
-  								$l[$moduleKey] = array_merge($reLang, $l[$moduleKey]);
-  							}
+                if (!$l[$moduleKey]) {
+                  $l[$moduleKey] = $reLang;
+                } else {
+                  $l[$moduleKey] = array_merge($reLang, $l[$moduleKey]);
+                }
               }
-						}
-					}
-				} else {
-					continue;
-				}
-			}
-			
-			if ($l) {
-				// 合并为缓存文件
-				cache_system_set_file($code.'.php', 'l', $l, DIDA_ROOT . '/' . $GLOBALS['conf_dir'].'/cache/languages');
-				dd_set_message($code . ' 导入成功');
-			}
-		}
-	}
+            }
+          }
+        } else {
+          continue;
+        }
+      }
+      	
+      if ($l) {
+        // 合并为缓存文件
+        cache_system_set_file($code.'.php', 'l', $l, DIDA_ROOT . '/' . $GLOBALS['conf_dir'].'/cache/languages');
+        dd_set_message($code . ' 导入成功');
+      }
+    }
+  }
 }
 
 /**
@@ -819,46 +819,46 @@ function dd_set_lang($type = 'update', $lists = NULL, $language = array()) {
  * @param (*) $value
  *  包含一组替换值
  * @param (array) $module
- *  指定模块，若不指定，则调用所有模块的 hook_token_replace
+ *  指定模块，若不指定，则调用所有模块的 hook_token_replac
  */
 function dd_get_token($text, $value = NULL, $modules = NULL) {
-	if (!is_array($modules)) {
-		$hooks = dd_get_hook('token_replace');
-	} else {
-		foreach ($modules as $module) {
-			$hooks[$module] = $module . '_token_replace'; 
-		}
-	}
-	
-	if ($hooks) {
-		foreach ($hooks as $function) {
-			$text = $function($text, $value);
-		}
-	}
-	return $text;
+  if (!is_array($modules)) {
+    $hooks = dd_get_hook('token_replace');
+  } else {
+    foreach ($modules as $module) {
+      $hooks[$module] = $module . '_token_replace';
+    }
+  }
+
+  if ($hooks) {
+    foreach ($hooks as $function) {
+      $text = $function($text, $value);
+    }
+  }
+  return $text;
 }
 
 /**
- * hook 缓存，将 hook 函数缓存
+ * hook 缓存，将 hook 函数缓
  */
 function dd_get_hook($hook, $clear = 0) {
-	static $hooks;
-	if (!isset($hooks[$hook])) {
-		if (!$clear && ($cache = cache_get('hook_cache'))) {
-			$hooks = $cache->data;
-		}
-		if (!$cache->data || !is_array($hooks[$hook])) {
-			$hooks[$hook] = array();
-		  foreach ($GLOBALS['conf']['modules'] as $module => $info) {
-		    $function = $module .'_'. $hook;
-		    if (function_exists($function)) {
-		      $hooks[$hook][$module] = $function;
-		    }
-		  }
-		  cache_set('hook_cache', $hooks);
-		}
-	}
-	return $hooks[$hook];
+  static $hooks;
+  if (!isset($hooks[$hook])) {
+    if (!$clear && ($cache = cache_get('hook_cache'))) {
+      $hooks = $cache->data;
+    }
+    if (!$cache->data || !is_array($hooks[$hook])) {
+      $hooks[$hook] = array();
+      foreach ($GLOBALS['conf']['modules'] as $module => $info) {
+        $function = $module .'_'. $hook;
+        if (function_exists($function)) {
+          $hooks[$hook][$module] = $function;
+        }
+      }
+      cache_set('hook_cache', $hooks);
+    }
+  }
+  return $hooks[$hook];
 }
 
 /**
@@ -887,14 +887,14 @@ function ip_address() {
  */
 function dd_user_validate() {
   global $user;
-  
+
   if ($_COOKIE[session_name()] && $_SESSION['user'] && $_SESSION['user']->session == $_COOKIE[session_name()]) {
     $user = $_SESSION['user'];
     $active = dd_get_cookie('time');
     $time = time();
     dd_set_cookie('time', $time);
-    
-    if ($active > ($time - 1800)) { 
+
+    if ($active > ($time - 1800)) {
       // 两次活动时间间隔 30 分钟内
       if (($active > ($user->active + 300)) && ($active < ($user->active + 600))) {
         //每300秒写入一次用户在线时间。若距上次活动超过600秒，为不活动用户。
@@ -918,23 +918,23 @@ function dd_user_validate() {
       }
     }
   }
-  
+
   if (!$user->timezone) {
-  	$user->timezone = 'Asia/Chongqing';
+    $user->timezone = 'Asia/Chongqing';
   }
   if (!$user->uid) {
     $user = user_anonymous();  // 游客
   }
-  
+
   date_default_timezone_set(var_get('default_timezone', 'Asia/Taipei'));
-  
+
   // 管理员强制要求某个用户退出
   if ($user->uid && $GLOBALS['conf']['dida_user_enforce_logout']) {
     $key = array_search($user->uid, $GLOBALS['conf']['dida_user_enforce_logout']);
     if ($key !== false) {
       unset($GLOBALS['conf']['dida_user_enforce_logout'][$key]);
       var_set('dida_user_enforce_logout', $GLOBALS['conf']['dida_user_enforce_logout']);
-      
+
       // 强行退出
       $user = user_logout();
       $user = user_anonymous();
@@ -949,7 +949,7 @@ function dd_user_validate() {
  * @param (string) $key
  *  密钥，解密时，必须指定密钥，才可正确获取数据
  * @return (string) 加密后的字符串
- * 
+ *
  * @demo：
  *  加密：dd_encrypt($text, 'key');
  *  解密：dd_decrypt($text, 'key');
@@ -958,11 +958,11 @@ function dd_encrypt($text, $key = NULL) {
   $new = array();
   $key = dd_encrypt_key($key);
   $text = substr($key['md5'], 16, 8) . $text;
-  
+
   for ($i=0; $i <= strlen($text); $i++ ) {
     $new[$i] = ord($text[$i]) * $key['ascii'];
   }
-  
+
   $new = implode ('.', $new);
   return base64_encode($new);
 }
@@ -977,20 +977,20 @@ function dd_encrypt($text, $key = NULL) {
  */
 function dd_decrypt($text, $key = NULL) {
   $new = array();
-  
+
   $text = base64_decode($text);
   $array = explode('.', $text);
   $key = dd_encrypt_key($key);
   $count = count($array);
-  
+
   for ($i = 0; $i < $count; $i++) {
     if ($array[$i]) {
       $new[$i] = chr($array[$i] / $key['ascii']);
     }
   }
-  
+
   $new = implode('', $new);
-  
+
   if (substr($key['md5'], 16, 8) == substr($new, 0, 8)) {
     return substr($new, 8);
   } else {
@@ -1008,12 +1008,12 @@ function dd_encrypt_key($key = NULL) {
   if (!isset($key)) {
     $key = var_get('crypt_default_key', $GLOBALS['cookie_domain']);
   }
-  
+
   static $datas;
   if (!isset($datas[$key])) {
     $datas[$key]['md5'] = md5($key);
     $datas[$key]['ascii'] = 0;
-    
+
     for ($i = 0; $i <= strlen($datas[$key]['md5']); $i++ ) {
       $datas[$key]['ascii'] += ord($datas[$key]['md5'][$i]);
     }
@@ -1033,16 +1033,16 @@ function dd_is_root_admin() {
  */
 function user_logout() {
   global $user, $cookie_domain;
-  
+
   dd_log('user_logout', t('system', '用户退出'), 0, dd_get_referer($_SERVER['HTTP_REFERER']), 0, $user->uid);
-  
+
   module_invoke_all('user_logout', $user);
-  
+
   setcookie(session_name(), '', -1, '/');
   session_destroy();
   $user = user_anonymous();
   dd_set_message(t('system', '退出成功'));
-  
+
   dd_goto('');
 }
 
@@ -1052,16 +1052,16 @@ function user_logout() {
  */
 function dd_get_referer($url) {
   static $data;
-  
+
   if (!isset($data[$url])) {
     if (substr($url, 0, 1) == '/') {
       $a = $GLOBALS['base_path'];
     } else if(substr($url, 0, 4) == 'http'){
       $a = $GLOBALS['base_url'].'/';
     }
-    
+
     $strlen = strlen($a);
-    
+
     if (substr($url, 0, $strlen) == $a) {
       $data[$url] = substr($url, $strlen);
       if (!$data[$url]) {
@@ -1071,7 +1071,7 @@ function dd_get_referer($url) {
       $data[$url] = $url;
     }
   }
-  
+
   return $data[$url];
 }
 
@@ -1093,9 +1093,9 @@ function user_anonymous() {
  */
 function conf_init() {
   global $cookie_domain, $base_url, $base_root, $base_path, $is_front;
-  
+
   $is_front = dd_is_front();
-  
+
   $base_root = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == 'on') ? 'https' : 'http';
   $base_url = $base_root .= '://'. $_SERVER['HTTP_HOST'];
   if ($dir = trim(dirname($_SERVER['SCRIPT_NAME']), '\,/')) {
@@ -1105,29 +1105,29 @@ function conf_init() {
   } else {
     $base_path = '/';
   }
-  
+
   list( , $session_name) = explode('://', $base_url, 2);
   if (!empty($_SERVER['HTTP_HOST'])) {
     $cookie_domain = check_plain($_SERVER['HTTP_HOST']);
   }
-  
+
   if (ini_get('session.cookie_secure')) {
     $session_name .= 'SSL';
   }
-  
+
   $cookie_domain = ltrim($cookie_domain, '.');
   if (strpos($cookie_domain, 'www.') === 0) {
     $cookie_domain = substr($cookie_domain, 4);
   }
-  
+
   $cookie_domain = explode(':', $cookie_domain);
   $cookie_domain = '.'. $cookie_domain[0];
   if (count(explode('.', $cookie_domain)) > 2 && !is_numeric(str_replace('.', '', $cookie_domain))) {
     ini_set('session.cookie_domain', $cookie_domain);
   }
-  
+
   session_name('DIDA'. md5($session_name));
-  
+
   session_start();
 }
 
@@ -1151,7 +1151,7 @@ function dd_set_cookie($name, $value, $expires = NULL, $path = '/', $domain = NU
   if (!isset($domain)) {
     $domain = $GLOBALS['cookie_domain'];
   }
-  
+
   setcookie($name, dd_encrypt($value), $expires, $path, $domain);
 }
 
@@ -1196,8 +1196,8 @@ function dd_get_microtime() {
  * @return (string)
  */
 function format_date_week_cn($timestamp) {
-	$cn = array('日', '一', '二', '三', '四', '五', '六');
-	return $cn[date('w', $timestamp)];
+  $cn = array('日', '一', '二', '三', '四', '五', '六');
+  return $cn[date('w', $timestamp)];
 }
 
 /**
@@ -1214,18 +1214,18 @@ function format_date($timestamp, $type = 'default', $format = '') {
   switch ($type) {
     case 'small':
       $format = 'Y/m/d';
-    break;
+      break;
     case 'large':
       $cn = array('日', '一', '二', '三', '四', '五', '六');
       $m = date('w', $timestamp);
       $format = 'Y/m/d H:i:s 星期'.$cn[$m];
-    break;
+      break;
     case 'custom':
       if (!$format) $format = 'Y/m/d H:i:s';
-    break;
+      break;
     case 'medium':
       $format = 'Y/m/d H:i:s';
-    break;
+      break;
     default:
       $format = 'Y/m/d H:i:s';
   }
@@ -1261,12 +1261,12 @@ function format_interval($timestamp, $granularity = 5) {
  * @param (string) $text
  *  待转换日期
  * @return (int) 时间戳期
- */ 
+ */
 function format_date_mktime($text) {
   static $data;
   if (!isset($data[$text])) {
     $data[$text] = '';
-    
+
     if (strpos($text, '-') !== false) {
       $t = '-';
     } else if (strpos($text, '/') !== false) {
@@ -1274,15 +1274,15 @@ function format_date_mktime($text) {
     } else {
       $t = NULL;
     }
-    
+
     $time = array(0, 0, 0);
-    
+
     if (strpos($text, ':') !== false) {
       if ($a = end(explode(' ', $text, 2))) {
         $time = explode(':', $a);
       }
     }
-    
+
     if ($t) {
       $d = explode($t, $text);
       if (count($d) == 3) {
@@ -1311,12 +1311,12 @@ function dd_php_error($errno, $message, $filename, $line = NULL, $context = NULL
   if (error_reporting() == 0) return;
   if ($errno & (E_ALL ^ E_NOTICE)) {
     $msg = t('system', '!message。文件：%file(%line 行)', array('!message' => $message, '%file' => $filename, '%line' => $line));
-    
+
     text_log('php_error', dd_error_msg($msg));
-    
+
     if (!$GLOBALS['conf']['debug']) return;
     if ($GLOBALS['conf']['debug'] == 2 && $GLOBALS['user']->uid != 1) return;
-    
+
     dd_set_message($msg, 'error');
   }
 }
@@ -1332,33 +1332,33 @@ function dd_php_error($errno, $message, $filename, $line = NULL, $context = NULL
  * @return (array) 接口响应
  */
 function dd_set_ping($data, $service = array(), $method = 'weblogUpdates.extendedPing') {
-  
+
   if (!$service) {
     $service = array(
       'http://ping.baidu.com/ping/RPC2',
       'http://rpc.pingomatic.com/',
       'http://blog.yodao.com/ping/RPC2',
-      // 'http://rpc.technorati.com/rpc/ping',
-      // 'http://blogsearch.google.com/ping/RPC2' // google
+    // 'http://rpc.technorati.com/rpc/ping',
+    // 'http://blogsearch.google.com/ping/RPC2' // google
     );
   }
-  
+
   $xml = '<?xml version="1.0"?>';
   $xml .= '<methodCall><methodName>'.$method.'</methodName>';
   $xml .= '<params>';
-  
-  
+
+
   foreach ($data['params'] as $param) {
     $xml .= '<param><value>'.$param.'</value></param>';
   }
-  
+
   $xml .= '</params>';
   $xml .= '</methodCall>';
-  
+
   foreach ($service as $ping) {
     $result[] = dd_http_request($ping, $xml, 'POST', array('Content-Type' => 'text/xml'));
   }
-  
+
   return $result;
 }
 
@@ -1380,26 +1380,26 @@ function dd_set_ping($data, $service = array(), $method = 'weblogUpdates.extende
  * @return
  *  返回一个包含执行结果的对象
  *  $result->error：错误提示
- *  $result->code：HTTP 响应代码，小于 0 则为请求失败
+ *  $result->code：HTTP 响应代码，小于 0 则为请求失
  *  $result->data：返回内容
  */
 function dd_http_request($url, $data = NULL, $method = 'POST', $headers = array(), $retry = 3, $timeout = 15) {
   $result = new stdClass();
-  
+
   $uri = parse_url($url);
-  
+
   if ($uri == FALSE) {
     $result->error = t('system', '无法解析网址');
     $result->code = -1001;
     return $result;
   }
-  
+
   if (!isset($uri['scheme'])) {
     $result->error = t('system', '无效的协议');
     $result->code = -1002;
     return $result;
   }
-  
+
   switch ($uri['scheme']) {
     case 'http':
       $port = isset($uri['port']) ? $uri['port'] : 80;
@@ -1417,14 +1417,14 @@ function dd_http_request($url, $data = NULL, $method = 'POST', $headers = array(
       $result->code = -1003;
       return $result;
   }
-  
+
   // 服务器无响应
   if (!$fp) {
     $result->code = -$errno;
     $result->error = trim($errstr);
     return $result;
   }
-  
+
   if (is_array($data) || is_object($data)) {
     $http_data = '';
     foreach ($data as $key => $value) {
@@ -1434,8 +1434,8 @@ function dd_http_request($url, $data = NULL, $method = 'POST', $headers = array(
   } else {
     $http_data = $data;
   }
-  
-  
+
+
   // GET 方式，将参数附加在 url 之后
   if (isset($http_data) && $method == 'GET') {
     if (isset($uri['query'])) {
@@ -1445,65 +1445,65 @@ function dd_http_request($url, $data = NULL, $method = 'POST', $headers = array(
     }
     unset($http_data);
   }
-  
+
   // 解析路径
   $path = isset($uri['path']) ? $uri['path'] : '/';
   if (isset($uri['query'])) {
     $path .= '?'. $uri['query'];
   }
-  
-  // 创建 HTTP 请求
+
+  // 创建 HTTP 请
   $defaults = array(
     'Host' => "Host: $host",
     'User-Agent' => 'User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; zh-CN; rv:1.9.2.3) Gecko/20100401 Firefox/3.6.3 GTBDFff GTB7.0 ',
   );
-  
+
   $content_length = strlen($http_data);
   if ($content_length > 0 || $method == 'POST' || $method == 'PUT') {
     $defaults['Content-Length'] = 'Content-Length: '. $content_length;
   }
-  
+
   // 身份验证
   if (isset($uri['user'])) {
     $defaults['Authorization'] = 'Authorization: Basic '. base64_encode($uri['user'] . (!empty($uri['pass']) ? ":". $uri['pass'] : ''));
   }
-  
+
   if ($method == 'POST' && empty($headers['Content-Type'])) {
     $defaults['Content-Type'] = 'Content-Type: application/x-www-form-urlencoded; charset=utf-8';
   }
-  
+
   if ($headers) {
     foreach ($headers as $header => $value) {
       $defaults[$header] = $header .': '. $value;
     }
   }
-  
+
   $request = $method .' '. $path ." HTTP/1.0\r\n";
   if ($defaults) {
     $request .= implode("\r\n", $defaults);
   }
   $request .= "\r\n\r\n";
-  
+
   $request .= $http_data;
-  
+
   $result->request = $request;
-  
+
   fwrite($fp, $request);
-  
+
   // HTTP 响应
   $response = '';
   while (!feof($fp) && $chunk = fread($fp, 1024)) {
     $response .= $chunk;
   }
   fclose($fp);
-  
+
   // 解析响应
   list($split, $result->data) = explode("\r\n\r\n", $response, 2);
   $split = preg_split("/\r\n|\n|\r/", $split);
-  
+
   list($protocol, $code, $text) = explode(' ', trim(array_shift($split)), 3);
   $result->headers = array();
-  
+
   // 响应头
   while ($line = trim(array_shift($split))) {
     list($header, $value) = explode(':', $line, 2);
@@ -1514,54 +1514,54 @@ function dd_http_request($url, $data = NULL, $method = 'POST', $headers = array(
       $result->headers[$header] = trim($value);
     }
   }
-  
+
   $responses = array(
-    100 => 'Continue',
-    101 => 'Switching Protocols',
-    200 => 'OK',
-    201 => 'Created',
-    202 => 'Accepted',
-    203 => 'Non-Authoritative Information',
-    204 => 'No Content',
-    205 => 'Reset Content',
-    206 => 'Partial Content',
-    300 => 'Multiple Choices',
-    301 => 'Moved Permanently',
-    302 => 'Found',
-    303 => 'See Other',
-    304 => 'Not Modified',
-    305 => 'Use Proxy',
-    307 => 'Temporary Redirect',
-    400 => 'Bad Request',
-    401 => 'Unauthorized',
-    402 => 'Payment Required',
-    403 => 'Forbidden',
-    404 => 'Not Found', 
-    405 => 'Method Not Allowed',
-    406 => 'Not Acceptable',
-    407 => 'Proxy Authentication Required',
-    408 => 'Request Time-out',
-    409 => 'Conflict',
-    410 => 'Gone',
-    411 => 'Length Required',
-    412 => 'Precondition Failed',
-    413 => 'Request Entity Too Large',
-    414 => 'Request-URI Too Large',
-    415 => 'Unsupported Media Type', 
-    416 => 'Requested range not satisfiable',
-    417 => 'Expectation Failed',
-    500 => 'Internal Server Error',
-    501 => 'Not Implemented',
-    502 => 'Bad Gateway',
-    503 => 'Service Unavailable',
-    504 => 'Gateway Time-out',
-    505 => 'HTTP Version not supported'
+  100 => 'Continue',
+  101 => 'Switching Protocols',
+  200 => 'OK',
+  201 => 'Created',
+  202 => 'Accepted',
+  203 => 'Non-Authoritative Information',
+  204 => 'No Content',
+  205 => 'Reset Content',
+  206 => 'Partial Content',
+  300 => 'Multiple Choices',
+  301 => 'Moved Permanently',
+  302 => 'Found',
+  303 => 'See Other',
+  304 => 'Not Modified',
+  305 => 'Use Proxy',
+  307 => 'Temporary Redirect',
+  400 => 'Bad Request',
+  401 => 'Unauthorized',
+  402 => 'Payment Required',
+  403 => 'Forbidden',
+  404 => 'Not Found',
+  405 => 'Method Not Allowed',
+  406 => 'Not Acceptable',
+  407 => 'Proxy Authentication Required',
+  408 => 'Request Time-out',
+  409 => 'Conflict',
+  410 => 'Gone',
+  411 => 'Length Required',
+  412 => 'Precondition Failed',
+  413 => 'Request Entity Too Large',
+  414 => 'Request-URI Too Large',
+  415 => 'Unsupported Media Type',
+  416 => 'Requested range not satisfiable',
+  417 => 'Expectation Failed',
+  500 => 'Internal Server Error',
+  501 => 'Not Implemented',
+  502 => 'Bad Gateway',
+  503 => 'Service Unavailable',
+  504 => 'Gateway Time-out',
+  505 => 'HTTP Version not supported'
   );
-  
+
   if (!isset($responses[$code])) {
     $code = floor($code / 100) * 100;
   }
-  
+
   switch ($code) {
     case 200: // 成功
     case 304: // 缓存页面
@@ -1621,12 +1621,12 @@ function dd_get_strong($text, $sufpix = '：') {
 }
 
 /**
- * 邮件发送，默认使用 mail() 发送
+ * 邮件发送，默认使用 mail() 发
  * @param (array) $mails
  *  数组，包含发件人等(键名区分大小写)：
  *    To：(array) 一组收件人的姓名和邮址
  *    例1：$mails = 'user@example.com'; // 仅一个邮址，若需提供姓名或一组：
- *    例2：$mails = array(array('user@c.com', 'name'), 'user1@example.com', );
+ *    例2：$mails = array(array('user@c.com', 'name'), 'user1@example.com', )
  * @param (string) $subject
  *  邮件主题，换行符将被过滤
  * @param (string) $message
@@ -1662,77 +1662,77 @@ function dd_set_mail($mails, $subject, $message, $headers = NULL, $html = 1, $at
   } else {
     $to = $mails;
   }
-  
+
   $data_header = array();
-  
+
   if ($headers) {
     foreach ($headers as $key => $value) {
       $data_header[$key] = $key.':'.$value;
     }
     $header = implode("\r\n", $data_header);
   }
-  
+
   if (!$html) {
     $message = wordwrap($message, 70, "\n", true);
   } else {
     $header .= 'MIME-Version: 1.0' . "\r\n";
     $header .= 'Content-type: text/html; charset=utf-8' . "\r\n";
   }
-  
+
   if (!$headers['From']) {
     $header .= 'From: '.mb_encode_mimeheader($GLOBALS['conf']['site_global']['name'], 'utf-8', 'Q').' <'.var_get_key('site_global', 'mail', 'admin@'.$_SERVER['HTTP_HOST']).">\r\n";
   }
-  
+
   if (mb_send_mail($to, $subject, $message, $header)) {
     return true;
   } else {
     dd_set_message(t('system', '邮件发送失败'), 'error');
     return false;
   }
-  
-  /*
-  date_default_timezone_set('America/Toronto');
-  require_once('./tools/class.phpmailer.php');
-  $mail = new PHPMailer();
-  if ($message) {
-    $body = eregi_replace("[\]", '', $message);
-  } else {
-    if ($filepath && is_file($filepath)) {
-      $body = file_get_contents($filepath);
-      $body = eregi_replace("[\]", '', $body);
-    }
-  }
-  $mail->IsSMTP();
-  $mail->Host       = 'ssl://smtp.gmail.com';
-  $mail->SMTPDebug  = 0;
-  $mail->SMTPAuth   = true;
-  $mail->Port       = 465; 
-  $mail->Username   = "yd2004@gmail.com";
-  $mail->Password   = "......";
-  $mail->SetFrom('yd2004@gmail.com', $GLOBALS['conf']['site_name']);
-  
-  $mail->Subject = $subject;
-  
-  $mail->AltBody = '你的邮箱不支持 HTML 格式。'; 
-  
-  $mail->MsgHTML($body);
-  
-  $name = $to[1] ? $to[1] : end(explode('@', $to[0]));
-  $mail->AddAddress($to[0], $name);
-  
-  if ($att) {
-    foreach ($att as $file) {
-      $mail->AddAttachment($file);
-    }
-  }
 
-  if (!$mail->Send()) {
-    text_log('mail', '邮件发送错误: ' . $mail->ErrorInfo);
-  } else {
-    return true;
-  }
-  
-  */
+  /*
+   date_default_timezone_set('America/Toronto');
+   require_once('./tools/class.phpmailer.php');
+   $mail = new PHPMailer();
+   if ($message) {
+   $body = eregi_replace("[\]", '', $message);
+   } else {
+   if ($filepath && is_file($filepath)) {
+   $body = file_get_contents($filepath);
+   $body = eregi_replace("[\]", '', $body);
+   }
+   }
+   $mail->IsSMTP();
+   $mail->Host       = 'ssl://smtp.gmail.com';
+   $mail->SMTPDebug  = 0;
+   $mail->SMTPAuth   = true;
+   $mail->Port       = 465;
+   $mail->Username   = "yd2004@gmail.com";
+   $mail->Password   = "......";
+   $mail->SetFrom('yd2004@gmail.com', $GLOBALS['conf']['site_name']);
+
+   $mail->Subject = $subject;
+
+   $mail->AltBody = '你的邮箱不支持 HTML 格式。'; 
+
+   $mail->MsgHTML($body);
+
+   $name = $to[1] ? $to[1] : end(explode('@', $to[0]));
+   $mail->AddAddress($to[0], $name);
+
+   if ($att) {
+   foreach ($att as $file) {
+   $mail->AddAttachment($file);
+   }
+   }
+
+   if (!$mail->Send()) {
+   text_log('mail', '邮件发送错误: ' . $mail->ErrorInfo);
+   } else {
+   return true;
+   }
+
+   */
 }
 
 /**
@@ -1742,35 +1742,35 @@ function dd_set_mail($mails, $subject, $message, $headers = NULL, $html = 1, $at
  * @param (bool) $true
  *  在括号内显示地理信息，如：9.9.9.9.9(中国)。默认为：中国
  * @param (string) $function
- *  调用函数，默认使用 纯真 ip 库函数
+ *  调用函数，默认使用 纯真 ip 库函
  * @return (string) 地理信息，如：9.9.9.9.9(中国)，或：中国
  */
 function dd_get_ip($ip, $true = NULL, $function = 'qqwry_data') {
   static $ips;
   if (!$ip) return false;
-  
+
   if (!isset($ips[$ip])) {
-	  $return = '';
-  	if (preg_match("/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/", $ip)) {
-  		$iparray = explode('.', $ip);
-  		if ($iparray[0] == 10 || $iparray[0] == 127 || ($iparray[0] == 192 && $iparray[1] == 168) || ($iparray[0] == 172 && ($iparray[1] >= 16 && $iparray[1] <= 31))) {
-  			$t = t('system', '本机地址'); 
-  		} else if ($iparray[0] > 255 || $iparray[1] > 255 || $iparray[2] > 255 || $iparray[3] > 255) {
-  			$t = t('system', 'IP不存在');
-  		} else {
-  			$t = $function($ip);
-  		}
-  	} else {
-  		$t = t('system', 'IP不合法');
-	  }
-	  
+    $return = '';
+    if (preg_match("/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/", $ip)) {
+      $iparray = explode('.', $ip);
+      if ($iparray[0] == 10 || $iparray[0] == 127 || ($iparray[0] == 192 && $iparray[1] == 168) || ($iparray[0] == 172 && ($iparray[1] >= 16 && $iparray[1] <= 31))) {
+        $t = t('system', '本机地址'); 
+      } else if ($iparray[0] > 255 || $iparray[1] > 255 || $iparray[2] > 255 || $iparray[3] > 255) {
+        $t = t('system', 'IP不存在');
+      } else {
+        $t = $function($ip);
+      }
+    } else {
+      $t = t('system', 'IP不合法');
+    }
+     
     if ($true) {
       $ips[$ip] = $ip . '(' . $t .')';
     } else {
-  	  $ips[$ip] = $t;
+      $ips[$ip] = $t;
     }
   }
-  
+
   return $ips[$ip];
 }
 
@@ -1784,137 +1784,137 @@ function dd_get_ip($ip, $true = NULL, $function = 'qqwry_data') {
  */
 function qqwry_data($ip, $file = './tools/QQWry.Dat') {
   if (!is_file($file)) return false;
-  
-	if (!$fd = fopen($file, 'rb')) {
-		return false;
-	}
 
-	$ip = explode('.', $ip);
-	$ipNum = $ip[0] * 16777216 + $ip[1] * 65536 + $ip[2] * 256 + $ip[3];
+  if (!$fd = fopen($file, 'rb')) {
+    return false;
+  }
 
-	if (!($DataBegin = fread($fd, 4)) || !($DataEnd = fread($fd, 4)) ) return;
-	@$ipbegin = implode('', unpack('L', $DataBegin));
-	if ($ipbegin < 0) $ipbegin += pow(2, 32);
-	@$ipend = implode('', unpack('L', $DataEnd));
-	if ($ipend < 0) $ipend += pow(2, 32);
-	$ipAllNum = ($ipend - $ipbegin) / 7 + 1;
+  $ip = explode('.', $ip);
+  $ipNum = $ip[0] * 16777216 + $ip[1] * 65536 + $ip[2] * 256 + $ip[3];
 
-	$BeginNum = $ip2num = $ip1num = 0;
-	$ipAddr1 = $ipAddr2 = '';
-	$EndNum = $ipAllNum;
+  if (!($DataBegin = fread($fd, 4)) || !($DataEnd = fread($fd, 4)) ) return;
+  @$ipbegin = implode('', unpack('L', $DataBegin));
+  if ($ipbegin < 0) $ipbegin += pow(2, 32);
+  @$ipend = implode('', unpack('L', $DataEnd));
+  if ($ipend < 0) $ipend += pow(2, 32);
+  $ipAllNum = ($ipend - $ipbegin) / 7 + 1;
 
-	while ($ip1num > $ipNum || $ip2num < $ipNum) {
-		$Middle= intval(($EndNum + $BeginNum) / 2);
+  $BeginNum = $ip2num = $ip1num = 0;
+  $ipAddr1 = $ipAddr2 = '';
+  $EndNum = $ipAllNum;
 
-		fseek($fd, $ipbegin + 7 * $Middle);
-		$ipData1 = fread($fd, 4);
-		if (strlen($ipData1) < 4) {
-			fclose($fd);
-			return false;
-		}
-		$ip1num = implode('', unpack('L', $ipData1));
-		if ($ip1num < 0) $ip1num += pow(2, 32);
+  while ($ip1num > $ipNum || $ip2num < $ipNum) {
+    $Middle= intval(($EndNum + $BeginNum) / 2);
 
-		if ($ip1num > $ipNum) {
-			$EndNum = $Middle;
-			continue;
-		}
+    fseek($fd, $ipbegin + 7 * $Middle);
+    $ipData1 = fread($fd, 4);
+    if (strlen($ipData1) < 4) {
+      fclose($fd);
+      return false;
+    }
+    $ip1num = implode('', unpack('L', $ipData1));
+    if ($ip1num < 0) $ip1num += pow(2, 32);
 
-		$DataSeek = fread($fd, 3);
-		if (strlen($DataSeek) < 3) {
-			fclose($fd);
-			return false;
-		}
-		$DataSeek = implode('', unpack('L', $DataSeek.chr(0)));
-		fseek($fd, $DataSeek);
-		$ipData2 = fread($fd, 4);
-		if (strlen($ipData2) < 4) {
-			fclose($fd);
-			return false;
-		}
-		$ip2num = implode('', unpack('L', $ipData2));
-		if ($ip2num < 0) $ip2num += pow(2, 32);
+    if ($ip1num > $ipNum) {
+      $EndNum = $Middle;
+      continue;
+    }
 
-		if ($ip2num < $ipNum) {
-			if ($Middle == $BeginNum) {
-				fclose($fd);
-				return '未知';
-			}
-			$BeginNum = $Middle;
-		}
-	}
+    $DataSeek = fread($fd, 3);
+    if (strlen($DataSeek) < 3) {
+      fclose($fd);
+      return false;
+    }
+    $DataSeek = implode('', unpack('L', $DataSeek.chr(0)));
+    fseek($fd, $DataSeek);
+    $ipData2 = fread($fd, 4);
+    if (strlen($ipData2) < 4) {
+      fclose($fd);
+      return false;
+    }
+    $ip2num = implode('', unpack('L', $ipData2));
+    if ($ip2num < 0) $ip2num += pow(2, 32);
 
-	$ipFlag = fread($fd, 1);
-	if ($ipFlag == chr(1)) {
-		$ipSeek = fread($fd, 3);
-		if (strlen($ipSeek) < 3) {
-			fclose($fd);
-			return false;
-		}
-		$ipSeek = implode('', unpack('L', $ipSeek.chr(0)));
-		fseek($fd, $ipSeek);
-		$ipFlag = fread($fd, 1);
-	}
+    if ($ip2num < $ipNum) {
+      if ($Middle == $BeginNum) {
+        fclose($fd);
+        return '未知';
+      }
+      $BeginNum = $Middle;
+    }
+  }
 
-	if ($ipFlag == chr(2)) {
-		$AddrSeek = fread($fd, 3);
-		if (strlen($AddrSeek) < 3) {
-			fclose($fd);
-			return false;
-		}
-		$ipFlag = fread($fd, 1);
-		if ($ipFlag == chr(2)) {
-			$AddrSeek2 = fread($fd, 3);
-			if (strlen($AddrSeek2) < 3) {
-				fclose($fd);
-				return false;
-			}
-			$AddrSeek2 = implode('', unpack('L', $AddrSeek2.chr(0)));
-			fseek($fd, $AddrSeek2);
-		} else {
-			fseek($fd, -1, SEEK_CUR);
-		}
+  $ipFlag = fread($fd, 1);
+  if ($ipFlag == chr(1)) {
+    $ipSeek = fread($fd, 3);
+    if (strlen($ipSeek) < 3) {
+      fclose($fd);
+      return false;
+    }
+    $ipSeek = implode('', unpack('L', $ipSeek.chr(0)));
+    fseek($fd, $ipSeek);
+    $ipFlag = fread($fd, 1);
+  }
 
-		while (($char = fread($fd, 1)) != chr(0))
-		$ipAddr2 .= $char;
+  if ($ipFlag == chr(2)) {
+    $AddrSeek = fread($fd, 3);
+    if (strlen($AddrSeek) < 3) {
+      fclose($fd);
+      return false;
+    }
+    $ipFlag = fread($fd, 1);
+    if ($ipFlag == chr(2)) {
+      $AddrSeek2 = fread($fd, 3);
+      if (strlen($AddrSeek2) < 3) {
+        fclose($fd);
+        return false;
+      }
+      $AddrSeek2 = implode('', unpack('L', $AddrSeek2.chr(0)));
+      fseek($fd, $AddrSeek2);
+    } else {
+      fseek($fd, -1, SEEK_CUR);
+    }
 
-		$AddrSeek = implode('', unpack('L', $AddrSeek.chr(0)));
-		fseek($fd, $AddrSeek);
+    while (($char = fread($fd, 1)) != chr(0))
+    $ipAddr2 .= $char;
 
-		while (($char = fread($fd, 1)) != chr(0))
-		$ipAddr1 .= $char;
-	} else {
-		fseek($fd, -1, SEEK_CUR);
-		while (($char = fread($fd, 1)) != chr(0))
-		$ipAddr1 .= $char;
+    $AddrSeek = implode('', unpack('L', $AddrSeek.chr(0)));
+    fseek($fd, $AddrSeek);
 
-		$ipFlag = fread($fd, 1);
-		if ($ipFlag == chr(2)) {
-			$AddrSeek2 = fread($fd, 3);
-			if (strlen($AddrSeek2) < 3) {
-				fclose($fd);
-				return false;
-			}
-			$AddrSeek2 = implode('', unpack('L', $AddrSeek2.chr(0)));
-			fseek($fd, $AddrSeek2);
-		} else {
-			fseek($fd, -1, SEEK_CUR);
-		}
-		while (($char = fread($fd, 1)) != chr(0))
-		$ipAddr2 .= $char;
-	}
-	fclose($fd);
+    while (($char = fread($fd, 1)) != chr(0))
+    $ipAddr1 .= $char;
+  } else {
+    fseek($fd, -1, SEEK_CUR);
+    while (($char = fread($fd, 1)) != chr(0))
+    $ipAddr1 .= $char;
 
-	if (preg_match('/http/i', $ipAddr2)) {
-		$ipAddr2 = '';
-	}
-	$ipaddr = "$ipAddr1 $ipAddr2";
-	$ipaddr = preg_replace('/CZ88\.NET/is', '', $ipaddr);
-	$ipaddr = preg_replace('/^\s*/is', '', $ipaddr);
-	$ipaddr = preg_replace('/\s*$/is', '', $ipaddr);
-	if (preg_match('/http/i', $ipaddr) || $ipaddr == '') {
-		$ipaddr = '未知';
-	}
+    $ipFlag = fread($fd, 1);
+    if ($ipFlag == chr(2)) {
+      $AddrSeek2 = fread($fd, 3);
+      if (strlen($AddrSeek2) < 3) {
+        fclose($fd);
+        return false;
+      }
+      $AddrSeek2 = implode('', unpack('L', $AddrSeek2.chr(0)));
+      fseek($fd, $AddrSeek2);
+    } else {
+      fseek($fd, -1, SEEK_CUR);
+    }
+    while (($char = fread($fd, 1)) != chr(0))
+    $ipAddr2 .= $char;
+  }
+  fclose($fd);
+
+  if (preg_match('/http/i', $ipAddr2)) {
+    $ipAddr2 = '';
+  }
+  $ipaddr = "$ipAddr1 $ipAddr2";
+  $ipaddr = preg_replace('/CZ88\.NET/is', '', $ipaddr);
+  $ipaddr = preg_replace('/^\s*/is', '', $ipaddr);
+  $ipaddr = preg_replace('/\s*$/is', '', $ipaddr);
+  if (preg_match('/http/i', $ipaddr) || $ipaddr == '') {
+    $ipaddr = '未知';
+  }
   return iconv("gb2312", "UTF-8", $ipaddr);
 }
 
@@ -1931,7 +1931,7 @@ function dd_jqui($theme = 'base') {
 }
 
 /**
- * 载入 jqedit 插件
+ * 载入 jqedit 插
  * @param (array) $v
  *  自定义参数
  */
@@ -1942,41 +1942,41 @@ function dd_jqedit($v = array()) {
     'cancel' => t('system', '取消'),
     'tooltip' => t('system', '点此编辑'),
   );
-  
+
   $v['opt'] = array_merge($args, $v['opt']);
-  
+
   if ($v['limit']) $v['opt']['charcounter']['characters'] = $v['limit'];
-  
+
   dd_add_js(array('edit' => array($v)), 'setting');
-  
+
   dd_add_js('misc/jquery.jeditable.mini.js');
-  
+
   switch ($v['opt']['type']) {
     case 'charcounter':
       dd_add_js('misc/jquery.jeditable.charcounter.js');
       dd_add_js('misc/jquery.charcounter.js');
-    break;
+      break;
     case 'autogrow':
       dd_add_js('misc/jquery.jeditable.autogrow.js');
       dd_add_js('misc/jquery.autogrow.js');
-    break;
+      break;
     case 'masked':
       dd_add_js('misc/jquery.jeditable.masked.js');
       dd_add_js('misc/jquery.maskedinput.js');
-    break;
+      break;
     case 'datepicker':
       dd_add_js('misc/jquery.jeditable.datepicker.js');
       dd_add_js('misc/jquery.datepicker.js');
       dd_add_js('misc/data.js');
-    break;
+      break;
     case 'timepicker':
       dd_add_js('misc/jquery.jeditable.timepicker.js');
       dd_add_js('misc/jquery.timepicker.js');
-    break;
+      break;
     case 'ajaxupload':
       dd_add_js('misc/jquery.jeditable.ajaxupload.js');
       dd_add_js('misc/jquery.ajaxfileupload.js');
-    break;
+      break;
     case 'time':
       dd_add_js('misc/jquery.jeditable.time.js');
       dd_add_js('misc/jquery.dimensions.js');
@@ -1992,11 +1992,11 @@ function dd_jqedit($v = array()) {
  * @param (bool) $iframe
  *  以 iframe 模式加载
  * @param (string) $inlineId
- *  显示页面指定 id 的内容
+ *  显示页面指定 id 的内
  * @param (bool) $reload
  *  关闭后是否刷新当前页
- * @return (array) 可用于 url() 的数组
- *  
+ * @return (array) 可用于 url() 的数
+ *
  */
 function dd_dialog_att($height = 400, $width = 600, $iframe = true, $inlineId = NULL, $reload = NULL) {
   $str = "width=$width&height=$height";
@@ -2127,7 +2127,7 @@ function dd_get_footer() {
 }
 
 /**
- * 写入 tabs 导航
+ * 写入 tabs 导
  * @param (string or array) $item
  */
 function dd_set_tabs($tab = NULL) {
@@ -2146,7 +2146,7 @@ function dd_set_tabs($tab = NULL) {
 }
 
 /**
- * 获取 tabs 导航
+ * 获取 tabs 导
  * @return (string)
  */
 function dd_get_sub_tabs() {
@@ -2156,7 +2156,7 @@ function dd_get_sub_tabs() {
 }
 
 /**
- * 写入 sub tabs 导航
+ * 写入 sub tabs 导
  * @param (string or array) $item
  */
 function dd_set_sub_tabs($tab = NULL) {
@@ -2175,7 +2175,7 @@ function dd_set_sub_tabs($tab = NULL) {
 }
 
 /**
- * 获取 sub tabs 导航
+ * 获取 sub tabs 导
  * @return (string)
  */
 function dd_get_tabs() {
@@ -2210,23 +2210,6 @@ function dd_get_title() {
     $head_title .= ' - ' . $GLOBALS['conf']['site_global']['slogan'];
   }
   return $head_title;
-}
-
-/**
- * 写入区块
- * @param (array) $value
- *  区块数据，见  system_block()
- * @param (region) $name
- *  显示区域
- * @return (array)
- */
-function dd_set_block($value = NULL, $name = 'left') {
-  static $block;
-  if ($value) {
-    $block[$name] = $value;
-  } else {
-    return $block;
-  }
 }
 
 /**
@@ -2269,7 +2252,7 @@ function dd_get_menu($menus = NULL) {
   } else {
     $calss = 'site_menu_children';
   }
-  
+
   if ($menus) {
     static $i;
     if ($i == 0) {
@@ -2364,11 +2347,11 @@ function dd_get_html_head() {
 }
 
 /**
- * 添加 css 文件
+ * 添加 css 文
  * @param (string) $path
  *  css 文件路径
  * @param (string) $type
- *  添加类型，该类型决定加载顺序：core -> module -> theme
+ *  添加类型，该类型决定加载顺序：core -> module -> them
  * @param (string) $media
  *  media 类型
  * @param (bool) $cached
@@ -2394,46 +2377,46 @@ function dd_add_css($path = NULL, $type = 'module', $media = 'all', $cached = tr
  */
 function dd_get_css($css = NULL) {
   global $base_path, $conf;
-  
+
   if (!isset($css)) {
     $css = dd_add_css();
   }
-  
+
   $gets = array('core', 'module', 'theme');
   $css_path = array();
-  
+
   foreach ($css as $media => $types) {
     foreach ($types as $type => $files) {
       if (count($files)) {
         foreach ($types[$type] as $file) {
           if (strpos($file['path'], 'http://') === false && strpos($file['path'], 'https://') === false) {
-            
+
             if ($GLOBALS['conf']['cache_css_and_js'] && $file['cached']) {
               // 只缓存内部 css
               $css_path[$type][] = $file['path'];
               $filename .= $file['path'];
               continue;
             }
-            
+
             $file['path'] = $base_path . $file['path'];
-            
+
           }
-          
+
           if (strpos($file['path'], '?') === false) {
             $file['path'] .= '?'.$conf['cache_css_and_js_timestamp'];
           } else {
             $file['path'] .= '&'.$conf['cache_css_and_js_timestamp'];
           }
-          
+
           $gets[$type] .= '<link type="text/css" rel="stylesheet" media="'. $media .'" href="'. $file['path'].'" />'."\n";
 
         }
       }
     }
   }
-  
+
   if ($css_path && $filename) {
-    
+
     $filepath = file_directory_path() . '/cache/css_js/' . md5($filename.$conf['cache_css_and_js_timestamp']) . '.css';
     if (!is_file($filepath)) {
       require_once DIDA_ROOT . '/includes/css_js_min.inc';
@@ -2449,7 +2432,7 @@ function dd_get_css($css = NULL) {
       }
       _file_save_data(cssmin::minify($contents), $filepath);
     }
-    
+
     $gets['module'] .= '<link type="text/css" rel="stylesheet" media="all" href="'. $base_path . $filepath.'" />'."\n";
   }
   return $gets['core'] . $gets['module'] . $gets['theme'];
@@ -2468,14 +2451,14 @@ function _dd_build_css_path($matches, $base = NULL) {
     $_base = $base;
   }
   $path = $_base . $matches[1];
-  
+
   /*
-  $last = '';
-  while ($path != $last) {
-    $last = $path;
-    $path = preg_replace('`(^|/)(?!../)([^/]+)/../`', '$1', $path);
-  }
-  */
+   $last = '';
+   while ($path != $last) {
+   $last = $path;
+   $path = preg_replace('`(^|/)(?!../)([^/]+)/../`', '$1', $path);
+   }
+   */
   return 'url('. $path .')';
 }
 
@@ -2508,9 +2491,9 @@ function dd_js_goto($limit) {
   if ($q = dd_query_string_encode($_REQUEST, array_merge(array('q', 'js_limit'), array_keys($_COOKIE)))) {
     $q = '&' . $q;
   }
-  
+
   if ($_GET['js_limit']) $limit += $_GET['js_limit'];
-  
+
   $path = url($_GET['q'], array('query' => 'js_limit='.$limit.$q));
   echo _dd_js_print('location.href = "'.$path.'";');
   exit;
@@ -2552,10 +2535,10 @@ function dd_add_js($data = NULL, $type = 'module', $cache = true, $scope = 'head
     switch ($type) {
       case 'inline': case 'inline_nojq':
         $javascript[$scope][$type][] = array('code' => $data, 'defer' => $defer);
-      break;
+        break;
       case 'setting':
         $javascript[$scope][$type][] = $data;
-      break;
+        break;
       default:
         $javascript[$scope][$type][$data] = array('defer' => $defer, 'cache' => $cache);
     }
@@ -2591,34 +2574,34 @@ function dd_get_js($scope = 'header', $javascript = NULL) {
     );
     dd_add_js($js, 'setting');
   }
-  
+
   if (!isset($javascript)) {
     $javascript = dd_add_js(NULL, NULL, NULL, $scope);
   }
-  
+
   $init = 1;
-  
+
   if (empty($javascript)) return '';
   foreach ($javascript as $type => $data) {
     if (!$data) continue;
     switch ($type) {
       case 'setting':
         $settings = 'var settings = ' . dd_to_js(call_user_func_array('array_merge_recursive', $data)) . ';';
-      break;
+        break;
       case 'inline':
-      	$code_js = '';
+        $code_js = '';
         foreach ($data as $info) {
           $code_js .= $info['code'].';';
         }
         $output['inline'] .= '$(function() {'. $code_js . '});';
-      break;
+        break;
       case 'inline_nojq':
-      	$code_js = '';
+        $code_js = '';
         foreach ($data as $info) {
           $code_js .= $info['code'].';';
         }
         $output['inline_nojq'] .= $code_js;
-      break;
+        break;
       default:
         foreach ($data as $path => $info) {
           if ($path) {
@@ -2627,24 +2610,24 @@ function dd_get_js($scope = 'header', $javascript = NULL) {
               $filename .= $path;
               continue;
             }
-            
+
             if (strpos($path, 'http://') === false && strpos($path, 'https://') === false) {
               $path = $base_path .$path;
             }
-            
+
             if (strpos($path, '?') === false) {
               $path .= '?'.$conf['cache_css_and_js_timestamp'];
             } else {
               $path .= '&'.$conf['cache_css_and_js_timestamp'];
             }
-            
+
             $preprocess .= '<script type="text/javascript"'. ($info['defer'] ? ' defer="defer"' : '') .' src="'. $path."\"></script>\n";
-              
+
           }
         }
     }
   }
-  
+
   if ($js_path && $filename) {
     $filepath = file_mkdir(file_directory_path() . '/cache/css_js') . '/' . md5($filename.$conf['cache_css_and_js_timestamp']) . '.js';
     if (!is_file($filepath)) {
@@ -2656,15 +2639,15 @@ function dd_get_js($scope = 'header', $javascript = NULL) {
     }
     $preprocess .= '<script type="text/javascript" src="'. $base_path .$filepath .'"></script>'."\n";
   }
-  
+
   if ($output) {
     $output = "<script type=\"text/javascript\">\n<!--//--><![CDATA[//><!--\n" . $output['inline'] . $output['inline_nojq'] . "\n//--><!]]>\n</script>";
   }
-  
+
   if ($settings) {
     $settings = "<script type=\"text/javascript\">\n<!--//--><![CDATA[//><!--\n" . $settings . "\n//--><!]]>\n</script>\n";
   }
-  
+
   return $settings . $preprocess . $output;
 }
 
@@ -2683,17 +2666,17 @@ function dd_to_js($var) {
     case 'resource':
     case 'string':
       $str = '"'. str_replace(array("\r", "\n", "<", ">", "&"),
-                              array('\r', '\n', '\x3c', '\x3e', '\x26'),
-                              addslashes($var)) .'"';
-    	if (strpos($var, ':::code:::') === false) {
-      	return '"'. str_replace(array("\r", "\n", "<", ">", "&"),
-                              array('\r', '\n', '\x3c', '\x3e', '\x26'),
-                              addslashes($var)) .'"';
-    	} else {
-      	return str_replace(array("\r", "\n", "<", ">", "&", ':::code:::'),
-                              array('\r', '\n', '\x3c', '\x3e', '\x26', ''),
-                              addslashes($var));
-    	}
+      array('\r', '\n', '\x3c', '\x3e', '\x26'),
+      addslashes($var)) .'"';
+      if (strpos($var, ':::code:::') === false) {
+        return '"'. str_replace(array("\r", "\n", "<", ">", "&"),
+        array('\r', '\n', '\x3c', '\x3e', '\x26'),
+        addslashes($var)) .'"';
+      } else {
+        return str_replace(array("\r", "\n", "<", ">", "&", ':::code:::'),
+        array('\r', '\n', '\x3c', '\x3e', '\x26', ''),
+        addslashes($var));
+      }
     case 'array':
       if (empty ($var) || array_keys($var) === range(0, sizeof($var) - 1)) {
         $output = array();
@@ -2805,16 +2788,16 @@ function _decode_entities($prefix, $codepoint, $original, &$table, &$exclude) {
     $str = chr($codepoint);
   } else if ($codepoint < 0x800) {
     $str = chr(0xC0 | ($codepoint >> 6))
-         . chr(0x80 | ($codepoint & 0x3F));
+    . chr(0x80 | ($codepoint & 0x3F));
   } else if ($codepoint < 0x10000) {
     $str = chr(0xE0 | ( $codepoint >> 12))
-         . chr(0x80 | (($codepoint >> 6) & 0x3F))
-         . chr(0x80 | ( $codepoint       & 0x3F));
+    . chr(0x80 | (($codepoint >> 6) & 0x3F))
+    . chr(0x80 | ( $codepoint       & 0x3F));
   } else if ($codepoint < 0x200000) {
     $str = chr(0xF0 | ( $codepoint >> 18))
-         . chr(0x80 | (($codepoint >> 12) & 0x3F))
-         . chr(0x80 | (($codepoint >> 6)  & 0x3F))
-         . chr(0x80 | ( $codepoint        & 0x3F));
+    . chr(0x80 | (($codepoint >> 12) & 0x3F))
+    . chr(0x80 | (($codepoint >> 6)  & 0x3F))
+    . chr(0x80 | ( $codepoint        & 0x3F));
   }
   if (in_array($str, $exclude)) {
     return $original;
@@ -2836,11 +2819,11 @@ function check_plain($text) {
   if (!isset($php525)) {
     $php525 = version_compare(PHP_VERSION, '5.2.5', '>=');
   }
-  
+
   if ($php525) {
     return htmlspecialchars($text, ENT_QUOTES, 'UTF-8');
   }
-  
+
   return (preg_match('/^./us', $text) == 1) ? htmlspecialchars($text, ENT_QUOTES, 'UTF-8') : '';
 }
 
@@ -2891,7 +2874,7 @@ function check_url($uri) {
  */
 function filter_xss_bad_protocol($string, $decode = true) {
   static $allowed_protocols;
-  
+
   if (!isset($allowed_protocols)) {
     $allowed_protocols = array_flip(var_get('filter_allowed_protocols', array('http', 'https', 'ftp', 'news', 'nntp', 'telnet', 'mailto', 'irc', 'ssh', 'sftp', 'webcal', 'rtsp')));
   }
@@ -2911,7 +2894,7 @@ function filter_xss_bad_protocol($string, $decode = true) {
       }
     }
   } while ($before != $string);
-  
+
   return check_plain($string);
 }
 
@@ -2944,42 +2927,42 @@ function dd_page_header() {
  * @return (bool) true
  */
 function dd_page_cache_header($timestamp) {
-  
+
   if (var_get('site_mode', 1)) {
     // 开发模式，不允许浏览器缓存
     dd_page_header();
     return;
   }
-  
+
   $last_modified = gmdate('D, d M Y H:i:s', $timestamp) .' GMT';
   $etag = '"'. $timestamp .'"';
 
   $if_modified_since = isset($_SERVER['HTTP_IF_MODIFIED_SINCE']) ? $_SERVER['HTTP_IF_MODIFIED_SINCE'] : FALSE;
   $if_none_match = isset($_SERVER['HTTP_IF_NONE_MATCH']) ? stripslashes($_SERVER['HTTP_IF_NONE_MATCH']) : FALSE;
-  
+
   if ($if_modified_since && $if_none_match
-      && strpos($if_none_match, $etag) !== false 
-      && $if_modified_since == $last_modified) {
-    
+  && strpos($if_none_match, $etag) !== false
+  && $if_modified_since == $last_modified) {
+
     // 客户端版本有效
-    
+
     header('HTTP/1.1 304 Not Modified');
     header("Etag: $etag");
-    
+
     exit;
   }
-  
+
   header("Last-Modified: $last_modified");
   header("ETag: $etag");
 
   header("Expires: ".gmdate('D, d M Y H:i:s', ($_SERVER['REQUEST_TIME']+864000))." GMT");
   header("Cache-Control: must-revalidate");
-  
+
   return true;
 }
 
 /**
- * 设置 meta 参数
+ * 设置 meta 参
  * @param (array) $v
  *  meta 值对
  */
@@ -3006,14 +2989,14 @@ function dd_set_meta(array $v = array()) {
  * @return (string) 所有分享网站链接列表
  */
 function dd_get_share_fav($url, $title) {
-  
+
   if ($lists = module_invoke_all('share_fav')) {
     $args = array('<url>' => urlencode($url), '<title>' => urlencode($title));
     foreach ($lists as $key => $list) {
       if ($list['href']) {
         $link = strtr($list['href'], $args);
         if ($list['icon']) {
-          $data = l(img($list['icon']), $link, array('html' => true, 
+          $data = l(img($list['icon']), $link, array('html' => true,
           'attributes' => array('target' => '_blank', 'title' => $list['title'])));
         } else {
           $data = l($list['title'], $link, array('attributes' => array('target' => '_blank')));
@@ -3031,7 +3014,7 @@ function dd_get_share_fav($url, $title) {
 /**
  * 将路径解析为数组，以 / 分割，从 0 开始
  * @param (int) $index
- *  索引，从 0 开始
+ *  索引，从 0 开
  * @param (string) $path
  *  路径，默认为 $_GET['q']
  */
@@ -3077,7 +3060,7 @@ function dd_array2_to($op = 'value', $array, &$arr = array()) {
  * @return (bool)
  */
 function dd_is_front() {
-  return strpos($_SERVER['PHP_SELF'], 'index.php') !== false 
+  return strpos($_SERVER['PHP_SELF'], 'index.php') !== false
   && (!isset($_GET['q']) || $_GET['q'] == $GLOBALS['conf']['front']);
 }
 
@@ -3091,7 +3074,7 @@ function dd_redirect($url = NULL) {
 }
 
 /**
- * 跳转至 redirect 或 指定路径
+ * 跳转至 redirect 或 指定路
  * @param (string) $url
  */
 function dd_goto_redirect($url = NULL) {
@@ -3120,7 +3103,7 @@ function dd_encode_ascii($str, $imp = '.') {
         ++$i;
         $ascii .= ord(substr($str, $i, 1));
       }
-      
+
       $data[] = dechex($ascii);
     }
     $cache[$str] = implode($imp, $data);
@@ -3166,25 +3149,25 @@ function dd_decode_ascii($str, $imp = '.') {
  */
 function cache_system_set_file($filename, $var_name, $value, $path = 1) {
   $info = '//$Id$' . "\n\n";
-  
+
   if (!is_string($value)) {
     $value = var_export($value, true);
-  	if (strpos($value, 'stdClass::__set_state') !== false) {
-  		$value = str_replace('stdClass::__set_state', '(object)', $value);
-  	}
+    if (strpos($value, 'stdClass::__set_state') !== false) {
+      $value = str_replace('stdClass::__set_state', '(object)', $value);
+    }
     $value .= ';';
   }
-  
+
   if ($path == 1) {
     $filepath = DIDA_ROOT . '/' . $GLOBALS['conf_dir'] . '/cache/' . $filename;
   } else {
     $filepath = DIDA_ROOT . '/' . $path . '/' . $filename;
   }
-  
+
   if ($var_name) {
     $value = '$'. $var_name .' = '. $value;
   }
-  
+
   return file_put_contents($filepath, "<?php \n $info" . $value . "\n\n?>");
 }
 
@@ -3212,7 +3195,7 @@ function cache_del_file($filename) {
   if (strpos($filename, '/') === false) {
     $filename = DIDA_ROOT . '/' . $GLOBALS['conf_dir'] . '/cache/' . $filename;
   }
-  
+
   return @unlink($filename);
 }
 
@@ -3226,29 +3209,29 @@ function dd_get_required($required) {
 }
 
 /**
- * 获取临时一条记录
+ * 获取一条临时记录
  * @param (string) $tid
- *  记录 id
+ *  记录 i
  * @return (object)
  */
 function temp_get($tid) {
   $temp = db_query('SELECT data, type, timestamp, uid, serialized FROM {temp} WHERE tid = ?',
   array($tid), array('return' => 'one'));
-  
+
   if (isset($temp->data)) {
     if ($temp->serialized) {
       $temp->data = unserialize($temp->data);
     }
     return $temp;
   }
-  
+
   return 0;
 }
 
 /**
  * 写入一条临时记录
  * @param (string) $tid
- *  记录 id
+ *  记录 i
  * @param (*) $data
  *  待写入数据
  * @param (string) $type
@@ -3266,12 +3249,12 @@ function temp_set($tid, $data, $type = '', $uid = NULL) {
     'type' => $type,
     'uid' => isset($uid) ? $uid : $GLOBALS['user']->uid
   );
-  
+
   if (is_object($data) || is_array($data)) {
     $v['data'] = serialize($data);
     $v['serialized'] = 1;
   }
-  
+
   return db_replace('temp', $v);
 }
 
@@ -3298,31 +3281,31 @@ function dd_get_summary($body, $size, $format = NULL) {
   if (!isset($format) && filter_is_php($format)) {
     return $body;
   }
-  
+
   // 包含截断标志，优先
   if ($e = strpos($body, '<!-- break -->')) {
     $body = mb_substr($body, 0, $e);
     $size = mb_strlen(strip_tags($body));
     $body = $body .'</span>';
   }
-  
+
   $_size = mb_strlen($body, 'utf-8');
-  
+
   if ($_size <= $size) return $body;
-  
+
   $strlen_var = strlen($body);
-  
+
   // 不包含 html 标签
   if (strpos($body, '<') === false) {
     return mb_substr($body, 0, $size);
   }
-  
+
   // html 代码标记
   $html_tag = 0;
-  
+
   // 摘要字符串
   $summary_string = '';
-  
+
   /**
    * 数组用作记录摘要范围内出现的 html 标签
    * 开始和结束分别保存在 left 和 right 键名下
@@ -3335,9 +3318,9 @@ function dd_get_summary($body, $size, $format = NULL) {
     if (!$size) {
       break;
     }
-    
+
     $current_var = substr($body, $i, 1);
-    
+
     if ($current_var == '<') {
       // html 代码开始
       $html_tag = 1;
@@ -3349,12 +3332,12 @@ function dd_get_summary($body, $size, $format = NULL) {
          * 去除首尾空格，如 <br /  > < img src="" / > 等可能出现首尾空格
          */
         $html_array_str = trim($html_array_str);
-        
+
         /**
          * 判断最后一个字符是否为 /，若是，则标签已闭合，不记录
          */
         if (substr($html_array_str, -1) != '/') {
-          
+
           // 判断第一个字符是否 /，若是，则放在 right 单元
           $f = substr($html_array_str, 0, 1);
           if ($f == '/') {
@@ -3362,7 +3345,7 @@ function dd_get_summary($body, $size, $format = NULL) {
             $html_array['right'][] = str_replace('/', '', $html_array_str);
           } else if ($f != '?') {
             // 判断是否为 ?，若是，则为 PHP 代码，跳过
-            
+
             /**
              * 判断是否有半角空格，若有，以空格分割，第一个单元为 html 标签
              * 如 <h2 class="a"> <p class="a">
@@ -3379,7 +3362,7 @@ function dd_get_summary($body, $size, $format = NULL) {
             }
           }
         }
-        
+
         // 字符串重置
         $html_array_str = '';
         $html_tag = 0;
@@ -3394,36 +3377,36 @@ function dd_get_summary($body, $size, $format = NULL) {
       // 非 html 代码才记数
       --$size;
     }
-    
+
     $ord_var_c = ord($body{$i});
-    
+
     switch (true) {
       case (($ord_var_c & 0xE0) == 0xC0):
         // 2 字节
         $summary_string .= substr($body, $i, 2);
         $i += 1;
-      break;
+        break;
       case (($ord_var_c & 0xF0) == 0xE0):
-        
+
         // 3 字节
         $summary_string .= substr($body, $i, 3);
         $i += 2;
-      break;
+        break;
       case (($ord_var_c & 0xF8) == 0xF0):
         // 4 字节
         $summary_string .= substr($body, $i, 4);
         $i += 3;
-      break;
+        break;
       case (($ord_var_c & 0xFC) == 0xF8):
         // 5 字节
         $summary_string .= substr($body, $i, 5);
         $i += 4;
-      break;
+        break;
       case (($ord_var_c & 0xFE) == 0xFC):
         // 6 字节
         $summary_string .= substr($body, $i, 6);
         $i += 5;
-      break;
+        break;
       default:
         // 1 字节
         $summary_string .= $current_var;
@@ -3434,14 +3417,14 @@ function dd_get_summary($body, $size, $format = NULL) {
     /**
      * 比对左右 html 标签，不足则补全
      */
-    
+
     /**
-     * 交换 left 顺序，补充的顺序应与 html 出现的顺序相反
+     * 交换 left 顺序，补充的顺序应与 html 出现的顺序相
      * 如待补全的字符串为：<h2>abc<b>abc<p>abc
      * 补充顺序应为：</p></b></h2>
      */
     $html_array['left'] = array_reverse($html_array['left']);
-    
+
     foreach ($html_array['left'] as $index => $tag) {
       // 判断该标签是否出现在 right 中
       $key = array_search($tag, $html_array['right']);
@@ -3469,36 +3452,36 @@ function dd_get_summary($body, $size, $format = NULL) {
  */
 function dd_rss_feed($items, $channel = array(), $args = array()) {
   global $conf, $base_url;
-  
+
   $namespaces = array(
     'xmlns:dc' => 'http://purl.org/dc/elements/1.1/',
     'xml:base' => $base_url
   );
-  
+
   $channel_defaults = array('version' => '2.0', 'root' => 'channel');
-  
+
   if ($channel['namespaces']) {
     $namespaces = array_merge($namespaces, $channel['namespaces']);
   }
-  
+
   if ($channel) {
     $channel = array_merge($channel_defaults, $channel);
   } else {
     $channel = $channel_defaults;
   }
-  
+
   $output = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n";
   $output .= "<rss version=\"". $channel["version"] ."\" ". dd_attributes($namespaces) .">\n";
   $output .= "<$channel[root]>\n";
-  
+
   if ($args) {
-  	$output .= dd_xml_elements($args);
+    $output .= dd_xml_elements($args);
   }
-  
+
   $output .= $items;
   $output .= "</$channel[root]>\n";
   $output .= "</rss>\n";
-  
+
   return $output;
 }
 
@@ -3515,23 +3498,23 @@ function dd_rss_feed($items, $channel = array(), $args = array()) {
 function dd_rss_item($fields, $item = 'item', $args = array()) {
   $output = "<$item>\n";
   if (is_array($fields)) {
-  	foreach ($fields as $key => $val) {
-  		if (!is_array($val)) {
+    foreach ($fields as $key => $val) {
+      if (!is_array($val)) {
         if (strpos($val, '<') !== false) {
           $val = '<![CDATA[ '.$val.' ]]> ';
         }
-  			$output .= " <$key>". $val ."</$key>\n";
-  		} else {
-  			$val['key'] = $key;
-  			$output .= dd_xml_elements($val);
-  		}
-  	}
+        $output .= " <$key>". $val ."</$key>\n";
+      } else {
+        $val['key'] = $key;
+        $output .= dd_xml_elements($val);
+      }
+    }
   } else if ($fields) {
-  	$output .= $fields;
+    $output .= $fields;
   }
-  
+
   if ($args) $output .= dd_xml_elements($args);
-  
+
   $output .= "</$item>\n";
   return $output;
 }
@@ -3565,7 +3548,7 @@ function dd_xml_elements($array) {
 }
 
 /**
- * 默认 feed 输出
+ * 默认 feed 输
  * @param (string) $items
  *  通常为使用 dd_rss_item() 获取的 xml 元素
  * @param (string) $title
@@ -3577,13 +3560,13 @@ function dd_xml_elements($array) {
  */
 function og_feed_wrapper($items, $title, $link = NULL, $des = NULL) {
   global $conf, $base_url;
-  
+
   if (strpos($conf['site_global']['logo'], 'http') === false) {
     $logo = $base_url . $conf['site_global']['logo'];
   } else {
     $logo = $conf['site_global']['logo'];
   }
-  
+
   return dd_rss_feed($items, NULL, array(
     'title' => $title .'_'. $conf['site_global']['name'],
     'description' => ($des ? $des :$conf['site_global']['description']),
@@ -3592,6 +3575,6 @@ function og_feed_wrapper($items, $title, $link = NULL, $des = NULL) {
       'url' => $logo,
       'title' => $conf['site_global']['name'],
       'link' => $base_url,
-    ),
+  ),
   ));
 }
