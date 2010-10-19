@@ -24,7 +24,13 @@ function system_menu() {
   );
   $items['ajax'] = array(
     'access_callback' => true,
+    'description' => '全局 ajax 地址',
     'page_callback' => 'system_tools_ajax',
+  );
+  $items['g'] = array(
+    'access_callback' => true,
+    'description' => '全局重定向跳转地址',
+    'page_callback' => 'system_tools_go',
   );
   $items['admin'] = array(
     'title' => '网站管理',
@@ -370,13 +376,13 @@ function system_images_error() {
 }
 
 /**
- * ajax 地址，方便模块创建 ajax，省去定义 hook_menu 的步骤
- * 不验证权限，请在 module_tools_ajax 中自行验证
+ * 全局 ajax 地址，方便模块创建 ajax，省去定义 hook_menu 的步骤
+ * 不验证权限，请在 module_system_tools_ajax 中自行验证
  */
 function system_tools_ajax() {
-  $module = $_POST['module'] ? $_POST['module'] : $_GET['module'];
+  $module = !empty($_POST['module']) ? $_POST['module'] : $_GET['module'];
   
-  if ($module && $GLOBALS['conf']['modules'][$module]) {
+  if ($module && isset($GLOBALS['conf']['modules'][$module])) {
     
     // 传递 $_POST、$_GET
     echo module_invoke($module, 'system_tools_ajax', $_POST, $_GET);
@@ -386,6 +392,36 @@ function system_tools_ajax() {
   exit;
 }
 
+/**
+ * 全局重定向地址，方便模块创建重定向，省去定义 hook_menu 的步骤
+ * 不验证权限，请在 module_system_tools_go 中自行验证
+ */
+function system_tools_go() {
+  $module = !empty($_POST['module']) ? $_POST['module'] : $_GET['module'];
+  
+  if ($module && isset($GLOBALS['conf']['modules'][$module])) {
+    
+    // 传递 $_POST、$_GET
+    if ($path = module_invoke($module, 'system_tools_go', $_POST, $_GET)) {
+      
+      if (is_array($path)) {
+        /**
+         * 传递一个数组，参数见 dd_goto，如：
+         * array(
+         *  'user',
+         *  array('op' => 'view')
+         * );
+         */
+        call_user_func_array('dd_goto', $path);
+      } else {
+        dd_goto($path);
+      }
+    }
+    
+  }
+  
+  exit;
+}
 
 /**
  * @Implement of hook_system_tools_ajax()
@@ -1854,6 +1890,10 @@ function system_theme() {
 		  'tpl' => 'print.tpl.php',
 		  'args' => array('content'),
 		),
+    'error' => array(
+      'tpl' => 'error.tpl.php',
+      'args' => array('content'),
+    ),
 		'front' => array(
 		  'tpl' => 'front.tpl.php',
 		  'args' => array('front'),

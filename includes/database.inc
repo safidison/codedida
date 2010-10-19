@@ -71,9 +71,17 @@ function db_query($sql, $args = array(), $opt = array()) {
   $opt = db_default_options($opt);
   $sql = db_prefix_tables($sql, $opt);
   $function = 'db_' . $opt['driver'].'_query';
+  
+  if (!empty($GLOBALS['conf']['sql_info'])) {
+    $start = microtime(true);
+  }
+  
   $fetch = $function($sql, $args, $opt);
   
-  db_debug();
+  if (!empty($GLOBALS['conf']['sql_info'])) {
+    db_debug(microtime(true) - $start);
+  }
+  
   return $fetch;
 }
 
@@ -90,11 +98,17 @@ function db_exec($sql, $args = array(), array $opt = array()) {
   $opt = db_default_options($opt);
   
   if ($sql) $sql = db_prefix_tables($sql, $opt);
-  
   $function = 'db_' . $opt['driver'].'_exec';
+  
+  if (!empty($GLOBALS['conf']['sql_info'])) {
+    $start = microtime(true);
+  }
+  
   $fetch = $function($sql, $args, $opt);
   
-  db_debug();
+  if (!empty($GLOBALS['conf']['sql_info'])) {
+    db_debug(microtime(true) - $start);
+  }
   return $fetch;
 }
 
@@ -113,9 +127,16 @@ function db_replace($table, $args, array $opt = array()) {
   $opt = db_default_options($opt);
   
   $function = 'db_' . $opt['driver'].'_replace';
+  
+  if (!empty($GLOBALS['conf']['sql_info'])) {
+    $start = microtime(true);
+  }
+  
   $fetch = $function($table, $args, $opt);
   
-  db_debug();
+  if (!empty($GLOBALS['conf']['sql_info'])) {
+    db_debug(microtime(true) - $start);
+  }
   return $fetch;
 }
 
@@ -579,13 +600,14 @@ function db_write_record($table, &$o, $wheres = array(), array $opt = array()) {
 /**
  * 在页脚显示查询语句
  */
-function db_debug() {
+function db_debug($time) {
   if (!$GLOBALS['conf']['sql_info']) return;
   if ($GLOBALS['conf']['sql_info'] == 2 && $GLOBALS['user']->uid != 1) return;
   
   static $items, $repeats;
   
   if ($debug = debug_backtrace()) {
+    $items[] = '<li>耗时：'.$time.'</li>';
     foreach (array_reverse($debug) as $i => $de) {
       if (strpos($de['file'], 'index.php') === false && $de['function'] != 'db_debug') {
         if ($de['file']) {

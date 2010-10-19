@@ -255,7 +255,7 @@ function dd_get_not() {
     $text = t('system', '访问的页面不存在');
     dd_set_title(array($text));
     $default = '<h2 align="center">'.l($text, NULL).'</h2>';
-    echo theme('print', custom_get('page_not_html', $default));
+    echo theme('error', custom_get('page_not_html', $default));
   }
   exit;
 }
@@ -280,7 +280,7 @@ function dd_get_access() {
     $title = t('system', '登录以确认访问权限');
     dd_set_title(array($title));
     dd_set_message($title, 'error');
-    echo theme('print', dd_get_form('user_login_form'));
+    echo theme('error', dd_get_form('user_login_form'));
   }
   exit;
 }
@@ -324,7 +324,7 @@ function dd_unset_globals() {
  *  重定向模式，301 或 302
  */
 function dd_goto($path = '', $query = NULL, $file = NULL, $fragment = NULL, $http_response_code = 301) {
-  $url = url(urldecode($path), array('query' => $query, 'fragment' => $fragment, 'absolute' => true, 'file' => $file));
+  $url = url($path, array('query' => $query, 'fragment' => $fragment, 'absolute' => true, 'file' => $file));
   session_write_close();
   header('Location: '. $url, true, $http_response_code);
   exit();
@@ -1457,10 +1457,9 @@ function dd_http_request($url, $data = NULL, $method = 'POST', $headers = array(
     'Host' => "Host: $host",
     'User-Agent' => 'User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; zh-CN; rv:1.9.2.3) Gecko/20100401 Firefox/3.6.3 GTBDFff GTB7.0 ',
   );
-
-  $content_length = strlen($http_data);
-  if ($content_length > 0 || $method == 'POST' || $method == 'PUT') {
-    $defaults['Content-Length'] = 'Content-Length: '. $content_length;
+  
+  if (isset($http_data) && ($method == 'POST' || $method == 'PUT')) {
+    $defaults['Content-Length'] = 'Content-Length: '. strlen($http_data);
   }
 
   // 身份验证
@@ -1479,12 +1478,16 @@ function dd_http_request($url, $data = NULL, $method = 'POST', $headers = array(
   }
 
   $request = $method .' '. $path ." HTTP/1.0\r\n";
+  
   if ($defaults) {
     $request .= implode("\r\n", $defaults);
   }
+  
   $request .= "\r\n\r\n";
-
-  $request .= $http_data;
+  
+  if (isset($http_data)) {
+    $request .= $http_data;
+  }
 
   $result->request = $request;
 
@@ -1903,11 +1906,13 @@ function qqwry_data($ip, $file = './tools/QQWry.Dat') {
     while (($char = fread($fd, 1)) != chr(0))
     $ipAddr2 .= $char;
   }
+  
   fclose($fd);
 
   if (preg_match('/http/i', $ipAddr2)) {
     $ipAddr2 = '';
   }
+  
   $ipaddr = "$ipAddr1 $ipAddr2";
   $ipaddr = preg_replace('/CZ88\.NET/is', '', $ipaddr);
   $ipaddr = preg_replace('/^\s*/is', '', $ipaddr);

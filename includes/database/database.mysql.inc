@@ -16,7 +16,7 @@ function mysql_db_info() {
  */
 function db_mysql_connect($dbc, & $error) {
   $dsn = $dbc['driver'] .':host='. $dbc['host'].';port='.$dbc['port'].';dbname='.$dbc['dbname'];
-  try{
+  try {
     $db = new PDO($dsn, $dbc['dbuser'], $dbc['dbpass'], array(
       PDO::MYSQL_ATTR_USE_BUFFERED_QUERY => true,
       PDO::ATTR_PERSISTENT => true, // 持久连接
@@ -24,7 +24,7 @@ function db_mysql_connect($dbc, & $error) {
     ));
 	  $db->exec('SET NAMES "utf8"');
 	  $db->exec("SET sql_mode='ANSI,TRADITIONAL'");
-  }catch(PDOException $e) {
+  } catch (PDOException $e) {
   	$error = $e->getMessage();
   }
   return $db;
