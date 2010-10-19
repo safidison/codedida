@@ -94,6 +94,7 @@ function pager_get_querystring() {
  */
 function pager_view(array $tags = array(), $limit = 10, $element = 0, $parameters = array(), $quantity = 7, $att = array()) {
   global $pager_page_array, $pager_total, $pager_total_items;
+  
   $pager_middle = ceil($quantity / 2);
   $pager_current = $pager_page_array[$element] + 1;
   $pager_first = $pager_current - $pager_middle + 1;

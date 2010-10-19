@@ -370,17 +370,21 @@ Dida.ajaxSuccess = function(obj, data, type) {
 	      	// 删除上级中第一个匹配的 tr
 	      	obj.closest('tr').remove();
 	      break;
-	      
+	      case 'replace':
+	      	// 替换
+          var text = obj.attr('replace') ? obj.attr('replace') : '成功';
+          if (text) {
+          	obj.after('<span class="red msgjs">' + text + '</span>');
+            obj.remove();
+          }
+        break;
 	      default:
 	        if (data == 1) {
 	        	
-	          var text = obj.attr('replace');
+	        	var text = obj.attr('replace') ? obj.attr('replace') : '成功';
 	          if (text) {
-	          	if (type == 'a') {
-	          		obj.attr('href', '#').unbind('click').text(text);
-	          	} else {
-	          		obj.attr('disabled', true).after('<span class="msgjs">' + text + '</span>');
-	          	}
+	          	obj.after('<span class="red msgjs">' + text + '</span>');
+	            obj.remove();
 	          }
 	          
 	        } else if (type == 'a') {

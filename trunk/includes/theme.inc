@@ -215,6 +215,7 @@ function template_preprocess_page(&$var, $args) {
   module_alter_all('template_preprocess_page', $var, $args);
   
   dd_set_html_head('<link rel="shortcut icon" href="'.$conf['base_favicon'].'" type="image/x-icon" />');
+  dd_set_html_head('<link rel="bookmark" href="'.$conf['base_favicon'].'"/>');
   
   if ($block = dd_get_block()) {
     foreach ($block as $reg => $lists) {
