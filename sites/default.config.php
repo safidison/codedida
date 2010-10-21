@@ -16,11 +16,14 @@
  * 若未指定，将寻找 sites/www.myname.com
  * 亦即是，在此处的设置，优先级是最高的
  * 设置格式为一个数组，域名为键，配置目录为值
+ * 
+ * default：该键名为默认值，假如设置了该单元，则所有未指定配置的域名访问，都使用它
  */
  
  /**
   * 示例
   *  $config = array(
+  *    'default' => 'sites/default', // 默认，所有未指定的，使用此配置。可不设置
   *    'www.example.com' => 'sites/myhost',
   *    'photo.example.com' => 'sites/photo',
   *    'www.myname.com' => 'sites/photo'

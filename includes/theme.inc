@@ -557,14 +557,16 @@ function table_sql($header, $before = '') {
 
 function table_header($cell, $header, $ts) {
   if (is_array($cell) && isset($cell['field'])) {
-    $title = '按 ' . $cell['data'] .' 排序';
+    $title = t('system', '按 !title排序', array('!title' => $cell['data']));
     if ($cell['data'] == $ts['name']) {
+      
+      $class = 'header_ac';
       if ($ts['sort'] == 'asc') {
         $ts['sort'] = 'desc';
-        $image = img('misc/images/arrow-desc.png', '排序图标', '倒序排列');
+        $class .= ' sort_active_desc';
       } else {
         $ts['sort'] = 'asc';
-        $image = img('misc/images/arrow-asc.png', '排序图标', '正序排列');
+        $class .= ' sort_active_asc';
       }
       
       if (isset($cell['class'])) {
@@ -572,16 +574,16 @@ function table_header($cell, $header, $ts) {
       } else {
         $cell['class'] = 'active';
       }
-      $class = 'header_ac';
+      
     } else {
       $ts['sort'] = 'desc';
-      $image = '';
     }
     
     if (!empty($ts['query_string'])) {
       $ts['query_string'] = '&'. $ts['query_string'];
     }
-    $cell['data'] = l($cell['data'] . $image, $_GET['q'], array('attributes' => array('title' => $title, 'class' => $class), 'query' => 'sort='. $ts['sort'] .'&order='. urlencode($cell['data']) . $ts['query_string'], 'html' => TRUE));
+    
+    $cell['data'] = l($cell['data'], $_GET['q'], array('attributes' => array('title' => $title, 'class' => $class), 'query' => 'sort='. $ts['sort'] .'&order='. urlencode($cell['data']) . $ts['query_string'], 'html' => TRUE));
 
     unset($cell['field'], $cell['sort']);
   }
