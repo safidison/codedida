@@ -176,27 +176,38 @@ img.form_captcha_img{
 span.option_label, span.form_radio_text{
 	cursor: pointer;
 }
+.ext_sort_order {
+  padding: 0 5px;
+}
+.sort_active_desc{
+	padding-right: 14px;
+  background: url(../../misc/images/arrow-desc.png) right 0 no-repeat;
+}
+.sort_active_asc {
+	padding-right: 16px;
+  background: url(../../misc/images/arrow-asc.png) right 0 no-repeat;
+}
 /*fieldset*/
-fieldset{
+fieldset {
   margin: 10px 0;
   padding: 0;
   border: 1px solid #2E4DC6;
 }
-fieldset.fieldset-hide{
+fieldset.fieldset-hide {
   border: none;
   border-top: 1px solid #2E4DC6;
 }
-.fieldset-wrapper{
+.fieldset-wrapper {
   padding: 5px;
 }
-legend{
+legend {
   padding-left: 16px;
   font-weight: bold;
 }
-legend.desc{
+legend.desc {
   background: url(../../misc/images/arrow-desc.png) left 0 no-repeat;
 }
-legend.asc{
+legend.asc {
   background: url(../../misc/images/arrow-asc.png) left 0 no-repeat;
 }
 .ja_loading {

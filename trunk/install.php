@@ -7,6 +7,8 @@ if (is_file('sites/config.php')) {
   require_once 'sites/config.php';
   if ($config && $config[$_SERVER['HTTP_HOST']]) {
     $conf_dir = $config[$_SERVER['HTTP_HOST']];
+  } else if (!empty($config['default'])) {
+    $conf_dir = $config['default'];
   }
 }
 if (!$conf_dir) {

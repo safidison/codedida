@@ -21,6 +21,8 @@ function bootstrap($op, $inc = NULL) {
     require_once DIDA_ROOT . '/sites/config.php';
     if (isset($config) && !empty($config[$_SERVER['HTTP_HOST']])) {
       $conf_dir = $config[$_SERVER['HTTP_HOST']];
+    } else if (!empty($config['default'])) {
+      $conf_dir = $config['default'];
     }
   }
 
@@ -2513,6 +2515,84 @@ function dd_js_goto($limit) {
  */
 function dd_imp($v = array(), $str = ' | ') {
   if ($v) return '<span class="dd_imp">'.implode($str, $v).'</span>';
+}
+
+/**
+ * 获取排序链接，可用于通过 GET 参数排序
+ * 函数将使用 ext_sort 和 ext_order 两个参数，以与 theme_table 的排序区别
+ * @param (array) $sort
+ *  排序参数，例如： 
+ *    array(
+ *      'timestamp' => array('data' => '时间'),
+ *      'visit' => array('data' => '访问', 'sort' => 'desc'), // 若有 sort 参数，则表示此字段为默认值
+ *    );
+ * @param (string) $path
+ *  链接路径，如：user/login，默认为 $_GET['q']
+ * @param (array) $exclude
+ *  默认将把当前 $_GET 值保留，若不需要保留某些值，在此处指明，如：arraqy('page', 'order')
+ * @return (string) 返回 html 链接
+ */
+function dd_get_sort_link($sort, $path = NULL, $exclude = NULL) {
+  
+  if (!isset($path)) {
+    $path = $_GET['q'];
+  }
+  
+  $query = $_GET;
+  
+  if (isset($exclude) && is_array($exclude)) {
+    foreach ($exclude as $key) {
+      if (isset($query[$key])) {
+        unset($query[$key]);
+      }
+    }
+  }
+  
+  unset($query['q'], $query['page']);
+  $tags = array('asc' => 'desc', 'desc' => 'asc');
+  
+  foreach ($sort as $s => $v) {
+    $att = array();
+    $att['query'] = $query;
+    $att['query']['ext_sort'] = $s;
+    $att['attributes']['class'] = 'ext_sort_order';
+    if (is_array($v)) {
+      if (empty($v['data'])) {
+        continue;
+      }
+      
+      $title = $v['data'];
+      
+      if (empty($_GET['ext_sort'])) {
+        if (isset($v['sort']) && in_array($v['sort'], array('asc', 'desc'))) {
+          $att['attributes']['class'] .= ' sort_active_' . $v['sort']; 
+          $att['query']['ext_order'] = $tags[$v['sort']];
+        }
+      } else if (isset($v['sort']) && $_GET['ext_sort'] == $s) {
+        $att['attributes']['class'] .= ' sort_active_' . $_GET['ext_order'];
+        $att['query']['ext_order'] = $tags[$_GET['ext_order']];
+      } else {
+        $att['query']['ext_order'] = 'desc';
+      }
+      
+    } else {
+      
+      if (!empty($_GET['ext_sort']) && $s == $_GET['ext_sort'] 
+      && !empty($_GET['ext_order']) && in_array($_GET['ext_order'], array('asc', 'desc'))) {
+        $att['attributes']['class'] .= ' sort_active_' . $_GET['ext_order'];
+        $att['query']['ext_order'] = $tags[$_GET['ext_order']];
+      } else {
+        $att['query']['ext_order'] = 'desc';
+      }
+      
+      $title = $v;
+    }
+    
+    $output .= l($title, $path, $att);
+    
+  }
+  
+  return $output;
 }
 
 /**
