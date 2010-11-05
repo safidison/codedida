@@ -305,7 +305,8 @@ span.ja_loading {
   float: none;
   display: block;
 }
-.js_menu_level_parent{
+.js_menu_level_parent .js_menu_level_one_a span {
+	padding-right: 12px;
   background: url(../../misc/images/spindown-open.gif) right center no-repeat;
 }
 .js_menu_level_children{

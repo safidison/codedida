@@ -1497,7 +1497,7 @@ function user_site_menu(&$menu) {
         )
     );
     if (user_is_register()) {
-      $menu['user']['register'] = array(
+      $menu['user']['login']['#childrens'][] = $menu['user']['register'] = array(
         '#data' => l(t('user', '注册'), 'user/register'),
         '#weight' => 1000
       );
@@ -1704,6 +1704,32 @@ function user_field_view($field) {
   dd_add_css('modules/user/user.css');
   
   return $output;
+}
+
+/**
+ * @Implement of hook_block_list()
+ */
+function user_block_list($theme) {
+  return array(
+    'login' => array(
+        'title' => t('user', '用户登录'),
+        'region' => 'left',
+        'visibility' => 1,
+        'weight' => -30
+      )
+    );
+}
+
+/**
+ * @Implement of hook_block_view()
+ */
+function user_block_view($theme, $config = object) {
+  if ($config->delta == 'login' && $GLOBALS['user']->uid == 0 && arg(1) != 'login') {
+    return array(
+      'title' => t('user', '会员登录'),
+      'content' => dd_get_form('user_login_form', $_GET['q'])
+    );
+  }
 }
 
 /**

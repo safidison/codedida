@@ -410,6 +410,10 @@ function theme_breadcrumb($breadcrumb) {
   return '<div class="breadcrumb">' . implode(' › ', $breadcrumb). '</div>';
 }
 
+function theme_help($help) {
+  return '<div class="help">'.implode('', $help).'</div>';
+}
+
 function theme_item_list($items = array(), $title = NULL, $type = 'ul', $attributes = NULL, $wrapper = 1) {
   if (isset($attributes['class'])) {
     $class = ' item_'.$attributes['class'];
@@ -543,6 +547,14 @@ function table_init($header) {
   return $ts;
 }
 
+/**
+ * 获得 table 排序 sql
+ * @param (array) $header
+ *  table header
+ * @param (string) $before
+ *  在 by 之后添加内容，比如首先按照某个字段排序
+ * @return (string)
+ */
 function table_sql($header, $before = '') {
   $ts = table_init($header);
   if ($ts['sql']) {
@@ -550,7 +562,7 @@ function table_sql($header, $before = '') {
 
     $sort = mb_strtoupper($ts['sort']);
     $sort = in_array($sort, array('ASC', 'DESC')) ? $sort : '';
-
+    
     return " ORDER BY $before $field $sort";
   }
 }
@@ -606,7 +618,7 @@ function table_cell($cell, $header, $ts, $i) {
 }
 
 function table_get_querystring() {
-  return dd_query_string_encode($_REQUEST, array_merge(array('q', 'sort', 'order'), array_keys($_COOKIE)));
+  return dd_query_string_encode($_REQUEST, array_merge(array('q', 'sort', 'order', 'page'), array_keys($_COOKIE)));
 }
 
 function table_get_order($headers) {

@@ -418,6 +418,8 @@ function system_tools_go() {
       }
     }
     
+  } else if (!empty($_GET['go'])) {
+    dd_goto(urldecode($_GET['go']));
   }
   
   exit;
@@ -1910,6 +1912,10 @@ function system_theme() {
       'fun' => 'theme_breadcrumb',
       'args' => array('breadcrumb'),
 		),
+    'help' => array(
+      'fun' => 'theme_help',
+      'args' => array('help'),
+    ),
 		'table' => array(
 		  'fun' => 'theme_table',
       'args' => array('header', 'rows', 'attributes'),

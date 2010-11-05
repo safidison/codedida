@@ -1,5 +1,6 @@
 jQuery.fn.extend({
   menuLevel: function(o) {
+	
     $(this).addClass('js_menu_level_root').find('ul').css({position: 'absolute', display:'none', visibility:'visible'}).each(function() {
       if ($(this).parent('li').parent('ul').hasClass('js_menu_level_root')) {
         $(this).parent('li').addClass('js_menu_level_parent');
@@ -7,7 +8,12 @@ jQuery.fn.extend({
         $(this).parent('li').addClass('js_menu_level_children');
       }
     });
-    $(this).children('li').addClass('js_menu_level_one_li').children('a').addClass('js_menu_level_one_a');
+    
+    $(this).children('li').addClass('js_menu_level_one_li').children('a')
+    .addClass('js_menu_level_one_a').wrapInner(function() {
+    	return '<span/>';
+    });
+    
     $('.js_menu_level_parent').css({position: 'relative'}).hover(function() {
       var _c = $(this).children('ul').eq(0);
       _c.css({left: (this.offsetWidth - _c.width())/2 + 'px', top: this.offsetHeight, display:'block'});

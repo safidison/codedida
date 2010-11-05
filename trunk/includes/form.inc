@@ -489,12 +489,14 @@ function dd_form_sort_child($fields) {
  * 字段按权重排序
  */
 function dd_form_cmp($a, $b) {
-	
+  
   $a_weight = isset($a['#weight']) ? $a['#weight'] : 0;
   $b_weight = isset($b['#weight']) ? $b['#weight'] : 0;
+  
   if ($a_weight == $b_weight) {
     return 0;
   }
+  
   return ($a_weight < $b_weight) ? -1 : 1;
 }
 

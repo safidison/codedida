@@ -2106,7 +2106,7 @@ function dd_set_help($help = NULL) {
  */
 function dd_get_help() {
   if ($help = dd_set_help()) {
-    return '<div class="help">'.implode('', $help).'</div>';
+    return theme('help', $help);
   }
 }
 
@@ -2548,7 +2548,8 @@ function dd_get_sort_link($sort, $path = NULL, $exclude = NULL) {
     }
   }
   
-  unset($query['q'], $query['page']);
+  unset($query['page'], $query['q']);
+  
   $tags = array('asc' => 'desc', 'desc' => 'asc');
   
   foreach ($sort as $s => $v) {
@@ -2983,7 +2984,20 @@ function filter_xss_bad_protocol($string, $decode = true) {
   return check_plain($string);
 }
 
-
+/**
+ * 多维数组，按 weight 排序
+ */
+function dd_sort_cmp($a, $b) {
+  
+  $a_weight = isset($a['weight']) ? $a['weight'] : 0;
+  $b_weight = isset($b['weight']) ? $b['weight'] : 0;
+  
+  if ($a_weight == $b_weight) {
+    return 0;
+  }
+  
+  return ($a_weight < $b_weight) ? -1 : 1;
+}
 
 /**
  * 字母数字混合模式的随机数
