@@ -130,12 +130,52 @@ function system_admin_logs(){
       );
     }
     
-    $output = theme('table', $header, $table);
+    $output = dd_get_form('system_admin_logs_delete_form');
+    $output .= theme('table', $header, $table);
     $output .= pager_view();
+  } else {
+    $output = system_no_content();
   }
   
   dd_set_breadcrumb(array(l(t('system', '系统管理'), 'admin'), t('system', '系统日志')));
   return $output;
+}
+
+/**
+ * 系统日志删除
+ */
+function system_admin_logs_delete_form() {
+  $form['fields']['all'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('system', '清空全部日志'),
+  );
+  
+  $form['fields']['query'] = array(
+    '#type' => 'textfield',
+    '#title' => t('system', '或自定义删除条件'),
+    '#field_prefix' => 'DELETE FROM `logs` WHERE ',
+    '#description' => t('system', '请补充 sql语句，如：sid < 1000。注意，错误的 SQL 将有未知风险')
+  );
+  
+  $form['fields']['botton']['#type'] = 'submit';
+  
+  $form['settings'] = array(
+    '#validate' => array('system_admin_logs_delete_form_validate') 
+  );
+  
+  return $form; 
+}
+
+function system_admin_logs_delete_form_validate($form, $v) {
+  
+  if ($v['all']) {
+    
+    db_exec('TRUNCATE TABLE {logs}');
+  } else if ($v['query']) {
+    db_exec('DELETE FROM {logs} WHERE ' . $v['query']);
+  }
+  
+  dd_set_message(t('system', '操作成功'));
 }
 
 /**
@@ -371,6 +411,13 @@ function system_site_settings() {
     '#required' => true,
     '#default_value' => var_get('history_enabled_limit', 100000),
     '#field_suffix' => t('system', '条访问记录，0 为不限制')
+  );
+  $form['fields']['logs_enabled_limit'] = array(
+    '#type' => 'textfield',
+    '#title' => t('system', '保留最新'),
+    '#required' => true,
+    '#default_value' => var_get('logs_enabled_limit', 100000),
+    '#field_suffix' => t('system', '条系统日志，0 为不限制')
   );
   $form['fields']['site_mode'] = array(
     '#type' => 'radio',

@@ -10,5 +10,5 @@ Dida 遵循 GPL 协议发布，在遵循相同协议的前提下，你可以任�
 
 Drupal 官网：http://drupal.org/
 Drupal 中文站：http://drupalchina.org/
-Dida 主页：http://www.shuidi.org/
-CVS 地址：建设中
+Dida 主页：http://www.didaah.org/
+SVN 地址：http://codedida.googlecode.com/svn/trunk/

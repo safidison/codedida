@@ -1956,11 +1956,22 @@ function system_cron($timestamp) {
     $d->close();
   }
   
-  // 清除浏览记录
+  // 清除访问记录
   if (var_get('history_enabled', 0) && $limit = var_get('history_enabled_limit', 100000)) {
     if ($hid = db_query('SELECT hid FROM {history} ORDER BY hid DESC',
-      array(), array('limit' => array($limit, 1)))){
-      db_exec('DELETE FROM {history} WHERE hid < ?', array($hid));
+      array(), array('limit' => array($limit, 1), 'return' => 'column'))){
+      $count = db_exec('DELETE FROM {history} WHERE hid < ?', array($hid));
+      dd_log('cron', t('system', '清除访问记录 !count 条', array('!count' => $count)));
     } 
   }
+  
+  // 清除系统日志
+  if ($limit = var_get('logs_enabled_limit', 100000)) {
+    if ($sid = db_query('SELECT sid FROM {logs} ORDER BY sid DESC',
+      array(), array('limit' => array($limit, 1), 'return' => 'column'))){
+      $count = db_exec('DELETE FROM {logs} WHERE sid < ?', array($sid));
+      dd_log('cron', t('system', '清除系统日志 !count 条', array('!count' => $count)));
+    } 
+  }
+  
 }
