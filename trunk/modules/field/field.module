@@ -2516,6 +2516,9 @@ function field_file_delete($file) {
  *  自定义分组标识，即 fields.type
  * @param (object) $node
  *  节点对象
+ * @param (object) $ac
+ *  指定用户对象，默认以当前用户权限判断
+ * @return (void) 字段数据赋于 $node->fields
  */
 function field_get_node_load($module, $type, & $node, $ac = NULL) {
   global $conf;
@@ -2665,6 +2668,7 @@ function field_get_node_form($module, $type, $node = NULL, &$form = NULL, $field
   
   dd_add_js('modules/field/field.js');
   dd_add_css('modules/field/field.css');
+  
   global $conf;
   foreach ($datas as $field_id => $data) {
     if (!field_access('update', $data, $node, $ac)) {
@@ -3375,8 +3379,21 @@ function field_get_node_view($module, $type, &$node, $view_type = 0) {
 
 /**
  * 节点回调字段保存
+ * @param (string) $module
+ *  定义字段组的模块名称
+ * @param (string) $type
+ *  字段组标识，与 hook_field_call_group 中定义的一致
+ * @param (object) $value
+ *  待保存的数据，一般为用户提交的表单数据，必须有 $value->nid，以便于字段和节点关联
+ * @param (object) $node
+ *  旧的数据，如果是编辑节点，可以传递旧的节点数据
+ * @param (array) $form
+ *  表单
+ * @param (object) $ac
+ *  用户对象，默认以当前用户权限验证
+ * @return (void)
  */
-function field_get_node_save($module, $type, $value, $node = NULL, $form = NULL) {
+function field_get_node_save($module, $type, $value, $node = NULL, $form = NULL, $ac = NULL) {
   if (!$value->nid) return false;
   if (!$group = module_invoke($module, 'field_call_group', $type)) {
     return;
@@ -3387,14 +3404,14 @@ function field_get_node_save($module, $type, $value, $node = NULL, $form = NULL)
   if (!isset($node)) {
     $node = new stdClass();
     $node->nid = $value->nid;
-    field_get_node_load($module, $type, $node);
+    field_get_node_load($module, $type, $node, $ac);
   }
   
   global $conf;
   $cids = $tids = array();
   foreach ($datas as $data) {
     
-    if (!field_access('update', $data, $node)) {
+    if (!field_access('update', $data, $node, $ac)) {
       continue;
     }
     
@@ -3579,44 +3596,67 @@ function field_get_node_save($module, $type, $value, $node = NULL, $form = NULL)
 	cache_del('cid', $module.$type.$value->nid, 'cache_field');
 }
 
+/**
+ * 删除节点下的字段数据，不验证权限，一般节点被删除，其所属字段也应被删除
+ * @param (string) $module
+ *  定义字段组的模块名称
+ * @param (string) $type
+ *  字段组标识，与 hook_field_call_group 中定义的一致
+ * @param (object) $node
+ *  节点对象，必须包含 $node->nid
+ */
 function field_get_node_delete($module, $type, $node) {
-  if ($node->fields) {
-    if (!$datas = field_get_cache_field_group($module, $type)) return;
-    foreach ($node->fields as $field_id => $fields) {
-      if (!$datas[$field_id]->field_func) {
-        // 没有自定义处理函数的字段
-        if ($datas[$field_id]->field_module == 'field') {
-          switch ($data->field_type) {
-            case 'radio': case 'select': case 'checkbox': case 'selects': case 'tags':
-              db_exec('DELETE fields_term_node FROM {fields_term_node} INNER JOIN {fields_term} ON fields_term_node.tid = fields_term.tid WHERE fields_term_node.nid = ? AND fields_term.field_id = ?', array_merge($node->nid, $field_id));
-            break;
-            case 'textfield':
-              db_exec('DELETE FROM {fields_small} WHERE nid = ? AND field_id = ?', array($node->nid, $field_id));
-            break;
-            case 'textarea':
-              db_exec('DELETE FROM {fields_long} WHERE nid = ? AND field_id = ?', array($node->nid, $field_id));
-            break;
-            case 'file':
-              if ($fields) {
-                foreach ($fields as $file) {
-                  file_delete($file->fid, 1, $file->filepath);
-                }
+  
+  if (empty($node->nid)) return;
+  
+  if (!$datas = field_get_cache_field_group($module, $type)) return;
+  
+  foreach ($datas as $data) {
+
+    if (!$data->field_func) {
+      // 没有自定义处理函数的字段
+      if ($data->field_module == 'field') {
+        switch ($data->field_type) {
+          case 'radio': case 'select': case 'checkbox': case 'selects': case 'tags':
+            db_exec('DELETE fields_term_node FROM {fields_term_node} 
+            INNER JOIN {fields_term} ON fields_term_node.tid = fields_term.tid 
+            WHERE fields_term_node.nid = ? AND fields_term.field_id = ?', 
+            array($node->nid, $data->field_id));
+          break;
+          
+          case 'textfield':
+            db_exec('DELETE FROM {fields_small} WHERE nid = ? AND field_id = ?',
+            array($node->nid, $field_id));
+          break;
+          
+          case 'textarea':
+            db_exec('DELETE FROM {fields_long} WHERE nid = ? AND field_id = ?',
+            array($node->nid, $field_id));
+            
+          break;
+          case 'file':
+            if ($files = field_get_node_data($node->nid, 'file')) {
+              foreach ($files as $file) {
+                file_delete($file->fid, 1, $file->filepath);
               }
-            break;
-          }
-        } else {
-          /**
-           * 其它模块定义的类型，模块名_字段类型_call_save 函数
-           */
-          $function = $data->field_module.'_'.$data->field_type.'_field_node_delete';
-          if (function_exists($function)) $function($datas[$field_id], $node);
+            }
+          break;
         }
       } else {
-        $data->field_func('delete', $datas[$field_id], $node);
+        /**
+         * 其它模块定义的类型，模块名_字段类型_call_save 函数
+         */
+        $function = $data->field_module.'_'.$data->field_type.'_field_node_delete';
+        if (function_exists($function)) $function($data, $node);
       }
+      
+    } else {
+      $data->field_func('delete', $data, $node);
     }
-    cache_del('cid', $module.$type.$node->nid, 'cache_field');
+    
   }
+  
+  cache_del('cid', $module.$type.$node->nid, 'cache_field');
 }
 
 /**

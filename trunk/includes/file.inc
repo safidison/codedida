@@ -74,6 +74,7 @@ function file_get_form($field) {
     } else if ($field['#filetype']) {
       $type = implode('|', $field['#filetype']);
     }
+    
     $output .= '<input id="multi_'.$dom.'" class="multi" filelength="'.$field['#multi'].'" accept="'.$type.'" type="file" name="'.$field['#name'].'[]"'.dd_attributes($field['#attributes']).'/>' . dd_form_error($field);
     $output .= '<div id="multi_list_'.$dom.'"></div>';
     dd_add_js(array('multi' => array(array('dom' => $dom))), 'setting');
@@ -315,6 +316,8 @@ function file_set($filepath, $uid, $info = true) {
  *  表单上传数组
  * @param (array) $validate
  *  配置参数，见上传示例
+ * @param (int) $rename
+ *  若同名文件存在，可选设置，默认为重命名
  */
 function file_save_upload($file, $validate = NULL, $rename = 1) {
   if (isset($file['error']) && file_validate_error($file['error']) != false) return false;
@@ -339,6 +342,8 @@ function file_save_upload($file, $validate = NULL, $rename = 1) {
  *  原文件路径，必须可读
  * @param (array) $validate
  *  配置参数，见上传示例
+ * @param (int) $rename
+ *  若同名文件存在，可选设置，默认为重命名
  */
 function file_save_copy($source, $validate = NULL, $rename = 1) {
   if (!is_file($source) || !is_readable($source)) {
@@ -364,6 +369,8 @@ function file_save_copy($source, $validate = NULL, $rename = 1) {
  *  原文件路径，必须可读
  * @param (array) $validate
  *  配置参数，见上传示例
+ * @param (int) $rename
+ *  若同名文件存在，可选设置，默认为重命名
  */
 function file_save_move($source, $validate = NULL, $rename = 1) {
   if (!is_file($source) || !is_writable($source)) {
@@ -389,6 +396,8 @@ function file_save_move($source, $validate = NULL, $rename = 1) {
  *  原文件路径，必须可读
  * @param (array) $validate
  *  配置参数，见上传示例。必须有 filename 参数，即文件名
+ * @param (int) $rename
+ *  若同名文件存在，可选设置，默认为重命名
  */
 function file_save_data($data, $validate = array(), $rename = 1) {
   if (!$data) return false;
@@ -420,6 +429,12 @@ function file_save_data($data, $validate = array(), $rename = 1) {
 
 /**
  * 保存前检查文件名
+ * @param (object) $file
+ *  文件对象
+ * @param (array) $validate
+ *  验证参数
+ * @param (int) $rename
+ *  若同名文件存在，可选设置，默认为重命名
  */
 function file_create_name(&$file, $validate = NULL, $rename = 1) {
   if ($validate['savepath']) {
@@ -471,7 +486,7 @@ function file_create_name(&$file, $validate = NULL, $rename = 1) {
     return false;
   }
   
-  $file->filepath = $savepath .'/'. strtr($file->filename, array(' ' => '-', '　' => '-'));
+  $file->filepath = $savepath .'/'. urlencode($file->filename);
   
   // 重命名浏览器可执行的文件
   
@@ -608,7 +623,13 @@ function file_save($file) {
   
  // if (!isset($file->filebody)) $file->filebody = '';
   
-  if ($file->body)  $file->filebody = $file->body;
+  if ($file->body) $file->filebody = $file->body;
+  
+  if (!empty($file->fid)) {
+    $args[] = 'fid';
+  } else {
+    $args = NULL;
+  }
   
   /*
   if (db_exec('INSERT INTO {files} (uid, filename, filepath, filemime, filesize, status,
@@ -618,7 +639,7 @@ function file_save($file) {
   $file->ext_id2, $file->ext_type, $file->filebody))) {
   */
   
-  if (db_write_record('files', $file)) {
+  if (db_write_record('files', $file, $args)) {
     return $file;
   }
   
