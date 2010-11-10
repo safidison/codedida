@@ -1335,7 +1335,8 @@ function user_view($account) {
   
   $account->avatar = user_get_avatar($account->uid, '200x200');
   
-  $account->title = t('user', '!name的主页', array('!name' => user_get_current_name($account)));
+  $account->title = user_get_current_name($account);
+  $title = t('user', '!name的主页', array('!name' => $account->title));
   
   field_get_node_view('user', 'field', $account, 1);
   
@@ -1370,7 +1371,7 @@ function user_view($account) {
       }
     }
 
-    $tabs = array(l($account->title, 'user/'.$account->uid));
+    $tabs = array(l($title, 'user/'.$account->uid));
     if ($account->uid && $account->uid == $user->uid) {
       $tabs[] = l(t('user', '编辑资料'), 'user/edit');
       $tabs[] = l(t('user', '修改密码'), 'user/newpass');
@@ -1379,7 +1380,7 @@ function user_view($account) {
     dd_set_tabs($tabs);
   }
   
-  dd_set_title(array($account->title));
+  dd_set_title(array($title));
   return theme('user', $account);
 }
 

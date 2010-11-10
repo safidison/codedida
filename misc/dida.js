@@ -174,7 +174,8 @@ Dida.dialog = function(opt) {
 		$.extend(o, settings.dialogOptions);
 	}
 	
-	$('#dialog_wrapper').remove();
+	$('#dialog_wrapper').dialog('destroy').remove();
+	
 	$('body').append('<div id="dialog_wrapper" style="display: none;"></div>');
 	
 	if (isNaN(o.url)) {
@@ -210,8 +211,6 @@ Dida.dialog = function(opt) {
 	
 	if (!$.isFunction(o.close)) {
 		o.close = function(event, ui) {
-	    $('#dialog_wrapper').remove();
-	    $('#dialog_wrapper').dialog('destroy');
 	    
 	    if (o.closeCall) {
 	      Dida.callFunc(o.closeCall, o, event, ui);

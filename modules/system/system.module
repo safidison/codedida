@@ -362,7 +362,7 @@ function system_images_error() {
     }
   }
   
-  $path = var_get('image_error');
+  $path = var_get('image_error', 'misc/images/logo.png');
   
   if (is_file($path)) {
     
@@ -1282,7 +1282,7 @@ function dd_get_swfupload($dom = NULL, $v = array(), $html = 1) {
     'des' => t('system', '图片'),
   );
   
-  if ($v['html_text']) {
+  if (isset($v['html_text'])) {
     $html_text = array_merge($html_text, $v['html_text']);
     unset($v['html_text']);
   }
@@ -1378,7 +1378,7 @@ function system_status_update($op = NULL) {
       'name' => var_get_key('site_global', 'name'), // 站点名称
       'mail' => var_get_key('site_global', 'mail'), // 站长信箱
     );
-    $result = dd_http_request('http://www.shuidi.org/custom.php?module=dida_tools&op=update', $value);
+    $result = dd_http_request('http://www.didaah.org/custom.php?module=dida_tools&op=update', $value);
     if ($result->code > 0 && $result->data) {
       if ($data = json_decode($result->data)) {
         cache_set('system_status_update', $data, 'cache', 3600);

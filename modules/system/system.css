@@ -395,7 +395,9 @@ span.ja_loading {
 }
 
 #admin_custom_add_form input{
-  margin: 2px 0;
+  margin: 2px auto;
+  display: block;
+  text-align: left;
 }
 
 .system_admin_block_link_remove{
