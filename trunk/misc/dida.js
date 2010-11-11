@@ -402,10 +402,6 @@ Dida.ajaxSuccess = function(obj, data, type) {
 
 $(function() {
 	
-  $('#keywords').one('click', function() {
-    $(this).val('');
-  });
-  
   $('.button_goto').click(function() {
     location.href = $(this).attr('href');
   });
