@@ -3061,7 +3061,7 @@ function dd_page_cache_header($timestamp) {
 }
 
 /**
- * 设置 meta 参
+ * 设置 meta 参数
  * @param (array) $v
  *  meta 值对
  */
