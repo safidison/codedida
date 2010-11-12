@@ -1098,50 +1098,67 @@ function dd_label($v, $class = NULL) {
 }
 
 /**
- * meta 表单
+ * meta 表单字段，使用方法：
+ * $form['fields']['meta'] = dd_get_form_meta('asc', $value, array('title' => '页面标题');
+ * 
+ * @param (string) $sort
+ *  字段组默认展开或闭合
+ * @param (array) $value
+ *  字段默认值
+ * @param (array) $title
+ *  字段标题，如：array('title' => '页面标题')
+ * @return (array) 表单字段
+ * 
  */
-function dd_get_form_meta($sort = 'desc', $value, $title = 'meta 参数') {
+function dd_get_form_meta($sort = 'desc', $value = array(), $title = array()) {
   $form = array(
     '#fieldset_prefix' => $sort,
-    '#fieldset_legend' => $title,
+    '#fieldset_legend' => !empty($title['fieldset']) ? $title['fieldset'] : t('system', 'meta 参数'),
     '#fieldset_suffix' => 1,
     '#fieldset' => true,
   );
+  
   $form['title'] = array(
     '#type' => 'textfield',
-    '#title' => 'title',
+    '#title' => !empty($title['title']) ? $title['title'] : 'title',
     '#attributes' => array('size' => 50),
     '#default_value' => $value['title'],
   );
+  
   $form['keywords'] = array(
     '#type' => 'textfield',
-    '#title' => 'keywords',
+    '#title' => !empty($title['keywords']) ? $title['keywords'] : 'keywords',
     '#attributes' => array('size' => 50),
     '#default_value' => $value['keywords'],
   );
+  
   $form['robots'] = array(
     '#type' => 'textfield',
-    '#title' => 'robots',
+    '#title' => !empty($title['robots']) ? $title['robots'] : 'robots',
     '#attributes' => array('size' => 50),
     '#default_value' => $value['robots'],
     '#description' => t('system', 'all|none|index|noindex|follow|nofollow')
   );
+  
   $form['author'] = array(
     '#type' => 'textfield',
-    '#title' => 'author',
+    '#title' => !empty($title['author']) ? $title['author'] : 'author',
     '#attributes' => array('size' => 50),
     '#default_value' => $value['author'],
   );
+  
   $form['generator'] = array(
     '#type' => 'textfield',
-    '#title' => 'generator',
+    '#title' => !empty($title['generator']) ? $title['generator'] : 'generator',
     '#attributes' => array('size' => 50),
     '#default_value' => $value['generator'],
   );
+  
   $form['description'] = array(
     '#type' => 'textarea',
-    '#title' => 'description',
+    '#title' => !empty($title['description']) ? $title['description'] : 'description',
     '#default_value' => $value['description'],
   );
+  
   return $form;
 }

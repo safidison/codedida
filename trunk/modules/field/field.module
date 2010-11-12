@@ -85,7 +85,7 @@ function field_system_tools_ajax($v, $g) {
 
 
 /**
- * 字段权限验证
+ * 字段权限验证，uid == 1 例外
  * @param (string) $op
  *  默认分两种权限，即：view：浏览，update：填写
  *  字段依附于节点，故字段首先继承节点权限，如节点不允许浏览，字段也无法浏览
@@ -99,7 +99,8 @@ function field_system_tools_ajax($v, $g) {
 
 function field_access($op, $field, $node = NULL, $ac = NULL) {
   if (!$ac) $ac = $GLOBALS['user'];
-  //if ($ac->uid == 1) return true;
+  if ($ac->uid == 1) return true;
+  
   static $access;
   if (!isset($access[$ac->uid])) {
     $access[$ac->uid] = array();
