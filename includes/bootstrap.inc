@@ -292,7 +292,7 @@ function dd_get_access() {
  */
 function dd_get_history() {
   if ($_SERVER['HTTP_REFERER'] && strpos($_SERVER['HTTP_REFERER'], $GLOBALS['base_url']) !== false) {
-    return urlencode($_SERVER['HTTP_REFERER']);
+    return $_SERVER['HTTP_REFERER'];
   } else {
     return $GLOBALS['base_url'];
   }
