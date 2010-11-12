@@ -2378,7 +2378,7 @@ function field_get_cache_field($field_id = NULL, $clear = 0) {
  * @param (string) $type
  *  类型标识
  */
-function  field_get_data_field($module, $type) {
+function field_get_data_field($module, $type) {
   static $datas;
   if (!isset($datas[$module][$type])) {
     $datas[$module][$type] = array();

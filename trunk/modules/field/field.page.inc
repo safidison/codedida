@@ -6,7 +6,7 @@
  */
 function field_page($field) {
   dd_set_title(array($field->name));
-  dd_set_breadcrumb(array(l($field->name, 'fields/'.$field->field_id), $term->name));
+  dd_set_breadcrumb(array(l($field->name, 'fields/'.$field->field_id)));
   return module_invoke($field->module, 'field_view', $field);
 }
 
