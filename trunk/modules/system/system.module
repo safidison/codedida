@@ -150,6 +150,12 @@ function system_menu() {
     'page_callback' => 'system_admin_format',
     'file' => 'system.admin.inc'
   );
+  $items['admin/alias'] = array(
+    'title' => '别名管理',
+    'access_arguments' => array('system admin alias'),
+    'page_callback' => 'system_admin_alias',
+    'file' => 'system.admin.inc'
+  );
   $items['admin/settings'] = array(
     'title' => '站点设置',
     'access_arguments' => array('system admin settings'),
@@ -207,6 +213,7 @@ function system_perm() {
     'system admin cache' => t('system', '缓存管理'),
     'system admin front' => t('system', '首页设置'),
     'system admin settings' => t('system', '站点设置'),
+    'system admin alias' => t('system', '别名管理'),
     'system admin settings global' => t('system', '站点信息'),
     'system admin settings error' => t('system', '错误设置'),
     'system admin logs' => t('system', '系统日志'),
@@ -560,6 +567,7 @@ function system_system_admin_menus() {
     array(t('system', '文件设置'), 'admin/settings/files'),
     array(t('system', '验证码设置'), 'admin/settings/captcha'),
     array(t('system', '首页设置'), 'admin/front'),
+    array(t('system', '别名管理'), 'admin/alias'),
     array(t('system', '系统日志'), 'admin/logs'),
   ), t('system', '系统设置'));
 }

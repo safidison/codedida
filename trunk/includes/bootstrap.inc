@@ -1926,11 +1926,19 @@ function qqwry_data($ip, $file = './tools/QQWry.Dat') {
 }
 
 /**
+ * 判断是否为蜘蛛
+ */
+function dd_is_spider() {
+  return strpos($_SERVER['HTTP_USER_AGENT'], 'spider') !== false 
+  || strpos($_SERVER['HTTP_USER_AGENT'], 'bot') !== false 
+  || strpos($_SERVER['HTTP_USER_AGENT'], 'Yahoo!') !== false;
+}
+
+/**
  * 载入 vjquery ui，
  * @param (string) $theme
  *  载入的主题
  */
-
 function dd_jqui($theme = 'base') {
   dd_add_js('misc/jquery.bgiframe.js');
   dd_add_js('misc/ui/jquery.ui.js');
@@ -3657,7 +3665,7 @@ function dd_xml_elements($array) {
  * @param (string) $des
  *  描述
  */
-function og_feed_wrapper($items, $title, $link = NULL, $des = NULL) {
+function dd_feed_wrapper($items, $title, $link = NULL, $des = NULL) {
   global $conf, $base_url;
 
   if (strpos($conf['site_global']['logo'], 'http') === false) {

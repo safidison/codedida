@@ -210,6 +210,11 @@ legend.desc {
 legend.asc {
   background: url(../../misc/images/arrow-asc.png) left 0 no-repeat;
 }
+.dd_get_form_meta_fields label{
+  display:-moz-inline-box;
+  display:inline-block;
+  width: 80px;
+}
 .ja_loading {
   background-image: url(../../misc/images/throbber.gif);
   background-repeat: no-repeat;
