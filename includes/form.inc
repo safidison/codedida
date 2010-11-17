@@ -1115,6 +1115,7 @@ function dd_get_form_meta($sort = 'desc', $value = array(), $title = array()) {
     '#fieldset_prefix' => $sort,
     '#fieldset_legend' => !empty($title['fieldset']) ? $title['fieldset'] : t('system', 'meta 参数'),
     '#fieldset_suffix' => 1,
+    '#fieldset_attributes' => array('class' => 'dd_get_form_meta_fields'),
     '#fieldset' => true,
   );
   
@@ -1158,6 +1159,7 @@ function dd_get_form_meta($sort = 'desc', $value = array(), $title = array()) {
     '#type' => 'textarea',
     '#title' => !empty($title['description']) ? $title['description'] : 'description',
     '#default_value' => $value['description'],
+    '#attributes' => array('rows' => 5),
   );
   
   return $form;

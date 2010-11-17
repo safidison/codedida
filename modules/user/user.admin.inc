@@ -53,8 +53,18 @@ function user_admin_view($ac) {
 	switch (arg(4)) {
 		case 'edit':
 		  _user_admin_tabs();
-			dd_set_sub_tabs(array(l(t('user', '%string 的资料编辑', array('%string' => $ac->name)), $_GET['q'])));
+			dd_set_sub_tabs(array(
+        l(t('user', '%string 的资料编辑', array('%string' => $ac->name)), 'admin/users/view/'.$ac->uid.'/edit'),
+        l(t('user', '密码修改'), 'admin/users/view/'.$ac->uid.'/newpass')
+			));
 		return dd_get_form('user_edit_form', $ac, 'admin');
+		case 'newpass':
+      _user_admin_tabs();
+      dd_set_sub_tabs(array(
+        l(t('user', '%string 的资料编辑', array('%string' => $ac->name)), $_GET['q']),
+        l(t('user', '密码修改'), $_GET['q'])
+      ));
+		return dd_get_form('user_admin_new_pass', $ac);
 		case 'hide':
 			if (db_exec('UPDATE {users} SET status = 2, session = 0 WHERE uid = ?', array($ac->uid))) {
         /**
@@ -78,7 +88,66 @@ function user_admin_view($ac) {
 	}
 }
 
-//用户角色组权限分配
+/**
+ * 管理员为用户修改密码，修改后下次登录生效
+ * @param (object) $ac
+ */
+function user_admin_new_pass($ac) {
+  $form['fields']['name'] = array(
+    '#type' => 'value',
+    '#title' => t('user', '帐号'),
+    '#value' => $ac->name
+  );
+  
+  $form['fields']['mail'] = array(
+    '#type' => 'value',
+    '#title' => t('user', '邮箱'),
+    '#value' => $ac->mail
+  );
+  
+  $form['fields']['uid'] = array(
+    '#type' => 'hidden',
+    '#constant' => 1,
+    '#default_value' => $ac->uid
+  );
+  
+  $form['fields']['pass'] = array(
+    '#type' => 'password',
+    '#required' => 1,
+    '#title' => t('user', '新密码'),
+  );
+  
+  $form['fields']['pass2'] = array(
+    '#type' => 'password',
+    '#required' => 1,
+    '#title' => t('user', '重复密码'),
+  );
+  
+  $form['settings'] = array(
+    '#validate' => array('user_admin_new_pass_validate')
+  );
+  
+  $form['fields']['button']['#type'] = 'submit';
+  return $form;
+}
+
+function user_admin_new_pass_validate($form, $v) {
+  if ($v['pass'] != $v['pass2']) {
+    $e['pass']['#error'][] = t('user', '两次密码不一致');
+  } else if ($v['pass']) {
+    if (db_exec('UPDATE {users} SET pass = ? WHERE uid = ?', array(md5($v['pass']), $v['uid']))) {
+      dd_set_message(t('user', '密码修改成功'));
+    } else {
+      dd_set_message(t('user', '密码修改失败'), 'error');
+    }
+  }
+  
+  return $e;
+}
+
+/**
+ * 角色组权限分配
+ */
 function user_set_perm() {
   global $conf;
   _user_admin_tabs();

@@ -1525,6 +1525,123 @@ function system_admin_filter_form_validate($form, $v) {
 }
 
 /**
+ * 别名管理
+ */
+function system_admin_alias() {
+  
+  dd_set_tabs(array(
+    l(t('system', '别名管理'), 'admin/alias'),
+    l(t('system', '添加别名'), 'admin/alias/add'),
+  ));
+  
+  switch (arg(2)) {
+    case 'add':
+      $output = dd_get_form('system_admin_alias_form');
+    break;
+    
+    case 'delete':
+      if ($_GET['alias'] && db_exec('DELETE FROM {alias} WHERE alias = ?', array($_GET['alias']))) {
+        echo 'tr';
+      }
+    exit;
+    
+    default:
+      
+      $header = array(
+        t('system', '路径'),
+        t('system', '别名'),
+        array('data' => t('system', '扩展类型'), 'field' => 'type'),
+        t('system', '删除')
+      );
+      
+      if ($fetch = pager_query('SELECT * FROM {alias}' . table_sql($header), 50)) {
+        foreach ($fetch as $o) {
+          $table[] = array(
+            $o->path, l($o->alias, $o->alias), $o->type,
+            l(t('system', '删除'), 'admin/alias/delete', array(
+              'query' => 'alias=' . $o->alias,
+              'attributes' => array(
+                'class' => 'confirmajax'
+              )
+            ))
+          );
+        }
+        
+        $output = theme('table', $header, $table, array('class' => 'center_table'));
+        $output .= pager_view();
+        
+      }
+      
+      
+  }
+  
+  dd_set_breadcrumb(array(l(t('system', '系统管理'), 'admin'), t('system', '别名管理')));
+  return $output;
+}
+
+/**
+ * 别名添加表单
+ */
+function system_admin_alias_form() {
+  $form['fields']['type'] = array(
+    '#type' => 'hidden',
+    '#default_value' => 'system',
+    '#constant' => 1
+  );
+  
+  $form['fields']['tid'] = array(
+    '#type' => 'hidden',
+    '#default_value' => 0,
+    '#constant' => 1
+  );
+  
+  $form['fields']['path'] = array(
+    '#type' => 'textfield',
+    '#required' => 1,
+    '#title' => t('system', '路径'),
+    '#description' => t('system', '只能是系统路径，如：user/login')
+  );
+  
+  $form['fields']['alias'] = array(
+    '#type' => 'textfield',
+    '#required' => 1,
+    '#title' => t('system', '别名'),
+    '#description' => t('system', '不超过 255 字符，如：login.shtml')
+  );
+  
+  $form['fields']['button'] = array(
+    '#type' => 'submit',
+    '#submit' => 'system_admin_alias_form_submit'
+  );
+  
+  $form['settings'] = array(
+    '#validate' => array('system_admin_alias_form_validate'),
+    '#ajax_validate' => 1
+  );
+  
+  return $form;
+}
+
+function system_admin_alias_form_validate($form, $v) {
+  
+  if (mb_strlen($v['alias'], 'utf-8') > 255) {
+    $t['alias']['#error'][] = t('system', '别名不大于 250 字符');
+  } else if (menu_check_reservation($v['alias'])) {
+    $t['alias']['#error'][] = t('system', '别名在受限的列表中，请换一个试试');
+  } else if (menu_get_path($v['alias'])) {
+    $t['alias']['#error'][] = t('system', '%string 已经存在', array('%string' => $v['alias']));
+  }
+  
+  return $t;
+}
+
+function system_admin_alias_form_submit($form, $v) {
+  menu_set_alias($v['path'], $v['alias'], $v['type'], $v['tid']);
+  dd_set_message(t('system', '添加成功'));
+  dd_goto('admin/alias');
+}
+
+/**
  * @reference
  *  http://people.w3.org/rishida/names/languages.html
  */

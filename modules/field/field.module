@@ -1233,7 +1233,7 @@ function field_save(&$field) {
     } else if (!$field->type) {
       $error['type']['#error'][] = t('field', '字段标识不能为空');
     } else if (!$field->field_key) {
-      $error['field_key']['#error'][] = t('field', '索引名称不能为空');
+      $error['field_key']['#error'][] = t('field', '索引不能为空');
     } else if (mb_strlen($field->type, 'utf-8') > 16) {
       $error['type']['#error'][] = t('field', '字段标识长度不超过 %strlen 个字符', array('%strlen' => 16));
     } else if (mb_strlen($field->field_func, 'utf-8') > 64) {
@@ -1244,7 +1244,9 @@ function field_save(&$field) {
       $error['type']['#error'][] = t('field', '字段标识只能是数字、字母与下划线');
     } else if ($field->field_func && preg_match('/[^0-9|a-z|_]/i', $field->field_func)) {
       $error['field_func']['#error'][] = t('field', '回调函数只能是数字、字母与下划线');
-    } else if ($field->field_key && preg_match('/[^0-9|a-z|_]/i', $field->field_key)) {
+    } else if (is_numeric($field->field_key)) {
+      $error['field_key']['#error'][] = t('field', '索引不能全部是数字');
+    } else if (preg_match('/[^0-9|a-z|_]/i', $field->field_key)) {
       $error['field_key']['#error'][] = t('field', '索引名称只能是数字、字母与下划线');
     } else if (($field->field_id && db_query('SELECT COUNT(*) FROM {fields} WHERE field_key = ? AND module = ?
       AND type = ? AND field_id != ?', array($field->field_key, $field->module, $field->type, $field->field_id),
@@ -1270,7 +1272,7 @@ function field_save(&$field) {
           // 更新
           if (db_exec('UPDATE {fields} SET field_key = ?, field_type = ?, field_func = ?, type = ?, module = ?, name = ?, weight = ?, required = ?, access = ?, deleted = ?, locked = ?, data = ? WHERE field_id = ?',
             array($field->field_key, $field->field_type, $field->field_func, $field->type, $field->module, $field->name, $field->weight, $field->required, serialize($field->access), $field->deleted, $field->locked, serialize($field->data), $field->field_id), array('return' => 'return'))) {
-            $field->field_id = db_last_insert_id();
+            dd_set_message(t('field', '更新成功'));
           } else {
             dd_set_message(t('field', '更新失败'), 'error');
             return false;
