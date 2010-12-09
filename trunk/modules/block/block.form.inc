@@ -33,7 +33,14 @@ function block_add_form($block = NULL) {
     '#default_value' => $block->bid,
     '#constant' => 1,
 	);
+	
   $form['fields']['format'] = filter_form_field($block->format);
+  $form['fields']['format']['#options'][0] = t('block', '不使用以上格式，即内容不做任何处理');
+  
+  if (isset($block->format) && !$block->format) {
+    $form['fields']['format']['#default_value'] = 0;
+  }
+  
 	$form['fields']['submit']['#type'] = 'submit';
 	return $form;
 }

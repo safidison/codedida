@@ -44,3 +44,8 @@
 .admin_themes_table td{
   text-align: center;
 }
+
+.system_storage_admin_info_list {
+  overflow: hidden;
+  width:600px;
+}

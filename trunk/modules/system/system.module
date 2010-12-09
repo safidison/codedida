@@ -893,22 +893,30 @@ function system_block_view($theme, $config = object) {
       foreach ($value as $module => $infos) {
         $menus = $infos[0];
         module_alter_all('alter_admin_menus', $module, $menus);
+        
         foreach ($menus as $menu) {
           if (_l_external($menu[1]) || menu_get_item($menu[1]) == 5) {
             $content[$module][0][] = $menu;
           }
         }
+        
         if ($content[$module]) {
           $content[$module][1] = $infos[1];
         }
-        if ($table->data) {
+        
+        if (!empty($table->data)) {
           $content[$module]['#weight'] = $table->data[$module];
+        } else if (!empty($infos['#weight']) ) {
+          $content[$module]['#weight'] = $infos['#weight'];
+        } else {
+          $content[$module]['#weight'] = 0;
         }
       }
-      if ($table->data) {
-        uasort($content, 'dd_form_cmp');
-      }
+      
+      uasort($content, 'dd_form_cmp');
+      
     }
+    
     cache_set('admin_menus_' . $user->uid.'_' . $language, ($content ? $content : true));
   }
   
@@ -1490,7 +1498,13 @@ function system_token_replace($text, $value = NULL) {
 /*storage*/
 
 /**
- * 获取数据，按 ext_type
+ * 按 ext_type 获取自定义数据
+ * @param (string) $ext_type
+ *  扩展类型
+ * @param (bool) $clear
+ *  是否清除缓存，直接从数据库读取
+ *  
+ * @return (array) 以 ext_type2 索引
  */
 function dd_get_storage($ext_type, $clear = NULL) {
   static $storage;
@@ -1506,6 +1520,34 @@ function dd_get_storage($ext_type, $clear = NULL) {
       $storage[$ext_type] = $var;
       
       cache_set('storage_cache_'.$ext_type, $var);
+    }
+  }
+  return $storage[$ext_type];
+}
+
+/**
+ * 按 ext_type 获取自定义数据
+ * @param (string) $ext_type
+ *  扩展类型
+ * @param (bool) $clear
+ *  是否清除缓存，直接从数据库读取
+ *  
+ * @return (array) 以 id 索引
+ */
+function dd_get_storage_id($ext_type, $clear = NULL) {
+  static $storage;
+  if (!isset($storage[$ext_type])) {
+    if (!$clear && ($cache = cache_get('storage_cache_id_'.$ext_type))) {
+      $storage[$ext_type] = $cache->data;
+    } else if ($fetch = db_query('SELECT * FROM {storage} WHERE ext_type = ? ORDER BY weight ASC, timestamp DESC', 
+    array($ext_type))) {
+      foreach ($fetch as $data) {
+        $data->data = unserialize($data->data);
+        $var[$data->id] = $data;
+      }
+      $storage[$ext_type] = $var;
+      
+      cache_set('storage_cache_id_'.$ext_type, $var);
     }
   }
   return $storage[$ext_type];
@@ -1563,6 +1605,7 @@ function dd_storage_save(&$v) {
 function dd_storage_clear_cache($ext_type = NULL) {
   if ($ext_type) {
     dd_get_storage($ext_type, 1);
+    dd_get_storage_id($ext_type, 1);
   } else {
     cache_del('*', 'storage_cache_');
   }
@@ -1613,8 +1656,8 @@ function dd_storage_admin($ext_type, $ext_type2 = NULL, $ext_id = NULL, $fetch =
         exit;
       }
     } else if ($_GET['storage_op'] == 'cache') {
-      
       dd_storage_clear_cache($ext_type);
+      module_invoke_all('dd_storage_clear', $ext_type, $ext_type2, $ext_id);
       dd_set_message(t('system', '清除成功'));
       
       dd_goto($_GET['q']);
@@ -1645,9 +1688,17 @@ function dd_storage_admin($ext_type, $ext_type2 = NULL, $ext_id = NULL, $fetch =
       } else {
         $items = array();
         foreach (unserialize($o->data) as $key => $item) {
-          $items[] = _system_get_option_name($key, $info[$o->ext_type][$o->ext_type2]['options']) . $item;
+          if (is_array($item)) {
+            continue;
+          }
+          
+          if (mb_strlen($item) > 200) {
+            $item = mb_substr($item, 0, 200) . '…';
+          }
+          
+          $items[] = _system_get_option_name($key, $info[$o->ext_type][$o->ext_type2]['options']) . check_plain($item);
         }
-        $view = theme('item_list', $items);
+        $view = theme('item_list', $items, NULL, 'ul', array('class' => 'system_storage_admin_info_list'));
       }
       
       $table[] = array(
@@ -1665,17 +1716,20 @@ function dd_storage_admin($ext_type, $ext_type2 = NULL, $ext_id = NULL, $fetch =
         ), 'class' => 'center_table'),
         
         array('data' => dd_imp(array(
-            l(t('system', '编辑'), $_GET['q'], array('query' => 'storage_op=update&storage_id='.$o->id.'&redirect='.$redirect)),
+            l(t('system', '编辑'), $_GET['q'], array(
+              'query' => 'storage_op=update&storage_id='.$o->id.'&redirect='.$redirect,
+              'fragment' => 'dd_storage_form'
+            )),
             l(t('system', '删除'), $_GET['q'], array(
               'query' => 'storage_op=delete&storage_id='.$o->id,
               'attributes' => array('class' => 'confirmajax')
             ))
-          )), 'class' => 'center_table'
+          )), 'class' => 'center_table', 'width' => 70
         )
       );
     }
     
-    $output = theme('table', array(t('system', '内容'), t('system', '排序'), t('system', '操作')), $table);
+    $output = theme('table', array(t('system', '排序'), t('system', '操作'), t('system', '内容')), $table);
     $output .= pager_view(array(), 10, 1);
     
   }
@@ -1778,18 +1832,27 @@ function dd_storage_form($v = NULL) {
     '#default_value' => $v->ext_id ? $v->ext_id : 0,
     '#constant' => 1
   );
+  
   module_alter_all('dd_storage_form', $v, $form);
   
   if (!$form) return false;
   
   $form['fields']['submit']['#type'] = 'submit';
   
+  if (!empty($v->redirect)) {
+    $redirect = $v->redirect;
+  } else if (!empty($_GET['redirect'])) {
+    $redirect =  $_GET['redirect'];
+  } else {
+    $redirect = $_SERVER['REQUEST_URI'];
+  }
+  
   $form['settings'] = array(
     '#title' => $v->id ? t('system', '编辑内容') : t('system', '添加内容'),
     '#validate' => array('dd_storage_form_validate'),
     '#values_object' => true,
     '#ajax_validate' => true,
-    '#redirect' => $_GET['redirect'] ? $_GET['redirect'] : $_SERVER['REQUEST_URI']
+    '#redirect' => $redirect
   );
   
   return $form;

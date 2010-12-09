@@ -1810,12 +1810,12 @@ function user_share_fav() {
     ),
     'baidu_cang' => array(
       'title' => 'Baidu 搜藏',
-      'href' => 'http://cang.baidu.com/do/add?it=<title>&iu=<url>',
+      'href' => 'http://cang.baidu.com/do/add?it=<title>&iu=<url>&dc=<desc>&tn=<tags>',
       'icon' => 'misc/icon/share_baidu.gif',
     ),
     'google_bookmark' => array(
       'title' => 'Google 书签',
-      'href' => 'http://www.google.com/bookmarks/mark?op=edit&bkmk=<url>&title=<title>',
+      'href' => 'http://www.google.com/bookmarks/mark?op=edit&bkmk=<url>&title=<title>&labels=<tags>&annotation=<desc>',
       'icon' => 'misc/icon/share_google.gif',
     ),
     'kaixin001' => array(
@@ -1835,8 +1835,13 @@ function user_share_fav() {
     ),
     'sina_t' => array(
       'title' => '新浪微博',
-      'href' => 'http://v.t.sina.com.cn/share/share.php?url=<url>&title=<title>',
+      'href' => 'http://v.t.sina.com.cn/share/share.php?url=<url>&title=<title>&pic=<pic>',
       'icon' => 'misc/icon/share_sina.gif',
+    ),
+    'qq_t' => array(
+      'title' => '腾讯微博',
+      'href' => 'http://v.t.qq.com/share/share.php?title=<title>&url=<url>&title=<title>&pic=<pic>',
+      'icon' => 'misc/icon/share_qq.gif',
     ),
   );
 }
