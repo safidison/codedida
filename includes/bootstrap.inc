@@ -1377,7 +1377,7 @@ function dd_set_ping($data, $service = array(), $method = 'weblogUpdates.extende
  *  写入的数据，字符串或数组、对象
  * @param (int) $retry
  *  重定向次数
- * @param (int) $timeout
+ * @param (float) $timeout
  *  超时时间，默认 15 秒
  * @return
  *  返回一个包含执行结果的对象
@@ -1385,7 +1385,7 @@ function dd_set_ping($data, $service = array(), $method = 'weblogUpdates.extende
  *  $result->code：HTTP 响应代码，小于 0 则为请求失
  *  $result->data：返回内容
  */
-function dd_http_request($url, $data = NULL, $method = 'POST', $headers = array(), $retry = 3, $timeout = 15) {
+function dd_http_request($url, $data = NULL, $method = 'POST', $headers = array(), $retry = 3, $timeout = 15.0) {
   $result = new stdClass();
 
   $uri = parse_url($url);
@@ -1402,24 +1402,44 @@ function dd_http_request($url, $data = NULL, $method = 'POST', $headers = array(
     return $result;
   }
 
+  $options = array(
+    'headers' => empty($headers) ? array() : $headers,
+    'method' => $method,
+    'data' => NULL,
+    'max_redirects' => $retry,
+    'timeout' => (float) $timeout,
+    'context' => NULL,
+  );
+  
   switch ($uri['scheme']) {
-    case 'http':
+    case 'http': case 'feed':
       $port = isset($uri['port']) ? $uri['port'] : 80;
       $host = $uri['host'] . ($port != 80 ? ':'. $port : '');
       $fp = @fsockopen($uri['host'], $port, $errno, $errstr, $timeout);
-      break;
+      
+      $port = isset($uri['port']) ? $uri['port'] : 80;
+      $socket = 'tcp://' . $uri['host'] . ':' . $port;
+      $options['headers']['Host'] = $uri['host'] . ($port != 80 ? ':' . $port : '');
+      
+    break;
     case 'https':
       // 须编译 openssl
       $port = isset($uri['port']) ? $uri['port'] : 443;
-      $host = $uri['host'] . ($port != 443 ? ':'. $port : '');
-      $fp = @fsockopen('ssl://'. $uri['host'], $port, $errno, $errstr, $timeout);
-      break;
+      $socket = 'ssl://' . $uri['host'] . ':' . $port;
+      $options['headers']['Host'] = $uri['host'] . ($port != 443 ? ':' . $port : '');
+    break;
     default:
       $result->error = t('system','%string 协议不存在', array('%string' => $uri['scheme']));
       $result->code = -1003;
       return $result;
   }
 
+  if (empty($options['context'])) {
+    $fp = @stream_socket_client($socket, $errno, $errstr, $options['timeout']);
+  } else {
+    $fp = @stream_socket_client($socket, $errno, $errstr, $options['timeout'], STREAM_CLIENT_CONNECT, $options['context']);
+  }
+  
   // 服务器无响应
   if (!$fp) {
     $result->code = -$errno;
@@ -1427,25 +1447,28 @@ function dd_http_request($url, $data = NULL, $method = 'POST', $headers = array(
     return $result;
   }
 
+  $options['headers'] += array(
+    'User-Agent' => 'Mozilla/5.0 (Windows; U; Windows NT 6.1; zh-CN; rv:1.9.2.3) Gecko/20100401 Firefox/3.6.3 GTBDFff GTB7.0',
+  );
+  
   if (is_array($data) || is_object($data)) {
-    $http_data = '';
+    $options['data'] = '';
     foreach ($data as $key => $value) {
-      $http_data .= rawurlencode(trim($key)) .'=' . rawurlencode(trim($value)) . '&';
+      $options['data'] .= rawurlencode(trim($key)) .'=' . rawurlencode(trim($value)) . '&';
     }
-    $http_data = substr($http_data, 0, -1);
+    $options['data'] = substr($options['data'], 0, -1);
   } else {
-    $http_data = $data;
+    $options['data'] = $data;
   }
 
-
   // GET 方式，将参数附加在 url 之后
-  if (isset($http_data) && $method == 'GET') {
+  if (!empty($options['data']) && $method == 'GET') {
     if (isset($uri['query'])) {
-      $uri['query'] .= '&' .$http_data;
+      $uri['query'] .= '&' .$options['data'];
     } else {
-      $uri['query'] = $http_data;
+      $uri['query'] = $options['data'];
     }
-    unset($http_data);
+    unset($options['data']);
   }
 
   // 解析路径
@@ -1453,119 +1476,123 @@ function dd_http_request($url, $data = NULL, $method = 'POST', $headers = array(
   if (isset($uri['query'])) {
     $path .= '?'. $uri['query'];
   }
-
-  // 创建 HTTP 请
-  $defaults = array(
-    'Host' => "Host: $host",
-    'User-Agent' => 'User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; zh-CN; rv:1.9.2.3) Gecko/20100401 Firefox/3.6.3 GTBDFff GTB7.0 ',
-  );
   
-  if (isset($http_data) && ($method == 'POST' || $method == 'PUT')) {
-    $defaults['Content-Length'] = 'Content-Length: '. strlen($http_data);
+  if (isset($options['data']) && ($method == 'POST' || $method == 'PUT')) {
+    $options['headers']['Content-Length'] = strlen($options['data']);
   }
 
   // 身份验证
   if (isset($uri['user'])) {
-    $defaults['Authorization'] = 'Authorization: Basic '. base64_encode($uri['user'] . (!empty($uri['pass']) ? ":". $uri['pass'] : ''));
+    $options['headers']['Authorization'] = 'Basic ' . base64_encode($uri['user'] . (!empty($uri['pass']) ? ":" . $uri['pass'] : ''));
   }
 
   if ($method == 'POST' && empty($headers['Content-Type'])) {
-    $defaults['Content-Type'] = 'Content-Type: application/x-www-form-urlencoded; charset=utf-8';
-  }
-
-  if ($headers) {
-    foreach ($headers as $header => $value) {
-      $defaults[$header] = $header .': '. $value;
-    }
-  }
-
-  $request = $method .' '. $path ." HTTP/1.0\r\n";
-  
-  if ($defaults) {
-    $request .= implode("\r\n", $defaults);
+    $options['headers']['Content-Type'] = 'application/x-www-form-urlencoded; charset=utf-8';
   }
   
-  $request .= "\r\n\r\n";
-  
-  if (isset($http_data)) {
-    $request .= $http_data;
+  $request = $options['method'] . ' ' . $path . " HTTP/1.1\r\n";
+  foreach ($options['headers'] as $name => $value) {
+    $request .= $name . ': ' . trim($value) . "\r\n";
   }
+  
+  $request .= "\r\n" . $options['data'];
 
   $result->request = $request;
-
+  
+  // 写入数据
+  stream_set_timeout($fp, floor($options['timeout']), floor(1000000 * fmod($options['timeout'], 1)));
   fwrite($fp, $request);
 
-  // HTTP 响应
+  // 读取响应头
+  $info = stream_get_meta_data($fp);
+  $alive = !$info['eof'];
   $response = '';
-  while (!feof($fp) && $chunk = fread($fp, 1024)) {
+  
+  while ($alive) {
+    $chunk = fread($fp, 1024);
     $response .= $chunk;
+    $info = stream_get_meta_data($fp);
+    $alive = !$info['eof'] && $chunk;
   }
+  
   fclose($fp);
-
+  
   // 解析响应
-  list($split, $result->data) = explode("\r\n\r\n", $response, 2);
-  $split = preg_split("/\r\n|\n|\r/", $split);
-
-  list($protocol, $code, $text) = explode(' ', trim(array_shift($split)), 3);
+  list($response, $result->data) = explode("\r\n\r\n", $response, 2);
+  
+  // 过滤 Transfer-Encoding 标识
+  if ($result->data && strpos($response, 'Transfer-Encoding: chunked') !== false) {
+    $result->data = dd_filter_unchunkHttp11($result->data);
+  }
+  
+  $response = preg_split("/\r\n|\n|\r/", $response);
+  
+  list($protocol, $code, $status_message) = explode(' ', trim(array_shift($response)), 3);
+  $result->protocol = $protocol;
+  $result->status_message = $status_message;
+  
   $result->headers = array();
-
+  
   // 响应头
-  while ($line = trim(array_shift($split))) {
-    list($header, $value) = explode(':', $line, 2);
-    if (isset($result->headers[$header]) && $header == 'Set-Cookie') {
+  while ($line = trim(array_shift($response))) {
+    list($name, $value) = explode(':', $line, 2);
+    $name = strtolower($name);
+    if (isset($result->headers[$name]) && $name == 'set-cookie') {
       // Cookie: 以逗号分隔取得的 Cookie
-      $result->headers[$header] .= ','. trim($value);
+      $result->headers[$name] .= ',' . trim($value);
     } else {
-      $result->headers[$header] = trim($value);
+      $result->headers[$name] = trim($value);
     }
   }
 
   $responses = array(
-  100 => 'Continue',
-  101 => 'Switching Protocols',
-  200 => 'OK',
-  201 => 'Created',
-  202 => 'Accepted',
-  203 => 'Non-Authoritative Information',
-  204 => 'No Content',
-  205 => 'Reset Content',
-  206 => 'Partial Content',
-  300 => 'Multiple Choices',
-  301 => 'Moved Permanently',
-  302 => 'Found',
-  303 => 'See Other',
-  304 => 'Not Modified',
-  305 => 'Use Proxy',
-  307 => 'Temporary Redirect',
-  400 => 'Bad Request',
-  401 => 'Unauthorized',
-  402 => 'Payment Required',
-  403 => 'Forbidden',
-  404 => 'Not Found',
-  405 => 'Method Not Allowed',
-  406 => 'Not Acceptable',
-  407 => 'Proxy Authentication Required',
-  408 => 'Request Time-out',
-  409 => 'Conflict',
-  410 => 'Gone',
-  411 => 'Length Required',
-  412 => 'Precondition Failed',
-  413 => 'Request Entity Too Large',
-  414 => 'Request-URI Too Large',
-  415 => 'Unsupported Media Type',
-  416 => 'Requested range not satisfiable',
-  417 => 'Expectation Failed',
-  500 => 'Internal Server Error',
-  501 => 'Not Implemented',
-  502 => 'Bad Gateway',
-  503 => 'Service Unavailable',
-  504 => 'Gateway Time-out',
-  505 => 'HTTP Version not supported'
+    100 => 'Continue',
+    101 => 'Switching Protocols',
+    200 => 'OK',
+    201 => 'Created',
+    202 => 'Accepted',
+    203 => 'Non-Authoritative Information',
+    204 => 'No Content',
+    205 => 'Reset Content',
+    206 => 'Partial Content',
+    300 => 'Multiple Choices',
+    301 => 'Moved Permanently',
+    302 => 'Found',
+    303 => 'See Other',
+    304 => 'Not Modified',
+    305 => 'Use Proxy',
+    307 => 'Temporary Redirect',
+    400 => 'Bad Request',
+    401 => 'Unauthorized',
+    402 => 'Payment Required',
+    403 => 'Forbidden',
+    404 => 'Not Found',
+    405 => 'Method Not Allowed',
+    406 => 'Not Acceptable',
+    407 => 'Proxy Authentication Required',
+    408 => 'Request Time-out',
+    409 => 'Conflict',
+    410 => 'Gone',
+    411 => 'Length Required',
+    412 => 'Precondition Failed',
+    413 => 'Request Entity Too Large',
+    414 => 'Request-URI Too Large',
+    415 => 'Unsupported Media Type',
+    416 => 'Requested range not satisfiable',
+    417 => 'Expectation Failed',
+    500 => 'Internal Server Error',
+    501 => 'Not Implemented',
+    502 => 'Bad Gateway',
+    503 => 'Service Unavailable',
+    504 => 'Gateway Time-out',
+    505 => 'HTTP Version not supported',
   );
 
   if (!isset($responses[$code])) {
     $code = floor($code / 100) * 100;
   }
+  
+  $result->code = $code;
 
   switch ($code) {
     case 200: // 成功
@@ -1574,18 +1601,46 @@ function dd_http_request($url, $data = NULL, $method = 'POST', $headers = array(
     case 301: // 永久重定向
     case 302: // 临时重定向
     case 307: // 临时重定向
-      $location = $result->headers['Location'];
+      
+      if (substr($result->headers['location'], 0, 4) == 'http') {
+        $location = $result->headers['location'];
+      } else {
+        $location = $uri['scheme'] . '://' . $uri['host'] . $result->headers['location'];
+      }
+      
       if ($retry) {
-        $result = dd_http_request($result->headers['Location'], $data, $method, $headers, --$retry);
+        $options['max_redirects']--;
+        $result = dd_http_request($location, $data, $method, $headers, $options['max_redirects']);
         $result->redirect_code = $result->code;
       }
+      
       $result->redirect_url = $location;
-      break;
+    break;
     default:
-      $result->error = $text;
+      $result->error = $status_message;
   }
-  $result->code = $code;
+  
   return $result;
+}
+
+/**
+ * HTTP 1.1 Transfer-Encoding: chunked 过滤
+ * @param (string) $data
+ *  http 返回主体
+ * @return (string) 去除 Transfer-Encoding 标识
+ */
+function dd_filter_unchunkHttp11($data) {
+  $fp = 0;
+  $outData = "";
+  while ($fp < strlen($data)) {
+    $rawnum = substr($data, $fp, strpos(substr($data, $fp), "\r\n") + 2);
+    $num = hexdec(trim($rawnum));
+    $fp += strlen($rawnum);
+    $chunk = substr($data, $fp, $num);
+    $outData .= $chunk;
+    $fp += strlen($chunk);
+  }
+  return $outData;
 }
 
 // 文本错误信息
@@ -3093,12 +3148,22 @@ function dd_set_meta(array $v = array()) {
  *  待分享的链接
  * @param (string) $title
  *  待分享的标题
+ * @param (string) $desc
+ *  描述
+ * @param (string) $tags
+ *  标签
+ * @param (string) $pic
+ *  图片地址，图片分享
  * @return (string) 所有分享网站链接列表
  */
-function dd_get_share_fav($url, $title) {
+function dd_get_share_fav($url, $title, $desc = '', $tags = '', $pic = '') {
 
   if ($lists = module_invoke_all('share_fav')) {
-    $args = array('<url>' => urlencode($url), '<title>' => urlencode($title));
+    $args = array(
+      '<url>' => urlencode($url), '<title>' => urlencode($title),
+      '<desc>' => urlencode($desc), '<tags>' => urlencode($tags),
+      '<pic>' => $pic ? urlencode($pic) : ''
+    );
     foreach ($lists as $key => $list) {
       if ($list['href']) {
         $link = strtr($list['href'], $args);

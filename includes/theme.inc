@@ -2,28 +2,28 @@
 // $Id$
 
 function theme_init() {
-  global $conf, $base_path;
-  $template = !$GLOBALS['user']->theme ? $conf['default_theme'] : $GLOBALS['user']->theme;
+  global $conf, $base_path, $base_theme_name;
+  $base_theme_name = !$GLOBALS['user']->theme ? $conf['default_theme'] : $GLOBALS['user']->theme;
   
-  $conf['base_theme'] = $base_path . $conf['themes'][$template]['path'];
-  $conf['base_logo'] = $base_path . ($conf['themes'][$template]['logo'] ? $conf['themes'][$template]['logo'] : 'misc/images/logo.png');
-  $conf['base_favicon'] = $base_path . ($conf['themes'][$template]['favicon'] ? $conf['themes'][$template]['favicon'] : 'misc/images/favicon.ico');
+  $conf['base_theme'] = $base_path . $conf['themes'][$base_theme_name]['path'];
+  $conf['base_logo'] = $base_path . ($conf['themes'][$base_theme_name]['logo'] ? $conf['themes'][$base_theme_name]['logo'] : 'misc/images/logo.png');
+  $conf['base_favicon'] = $base_path . ($conf['themes'][$base_theme_name]['favicon'] ? $conf['themes'][$base_theme_name]['favicon'] : 'misc/images/favicon.ico');
   
-  if (is_file(DIDA_ROOT .'/'. $conf['themes'][$template]['path'] . '/template.php')) {
-    require_once DIDA_ROOT .'/'. $conf['themes'][$template]['path'] . '/template.php';
+  if (is_file(DIDA_ROOT .'/'. $conf['themes'][$base_theme_name]['path'] . '/template.php')) {
+    require_once DIDA_ROOT .'/'. $conf['themes'][$base_theme_name]['path'] . '/template.php';
   }
   
-  if (!$conf['themes'][$template]['styles']) {
-    dd_add_css($conf['themes'][$template]['path'].'/css/style.css', 'theme');
+  if (!$conf['themes'][$base_theme_name]['styles']) {
+    dd_add_css($conf['themes'][$base_theme_name]['path'].'/css/style.css', 'theme');
   } else {
-    foreach ($conf['themes'][$template]['styles'] as $style) {
-      dd_add_css($conf['themes'][$template]['path'].'/'. $style, 'theme');
+    foreach ($conf['themes'][$base_theme_name]['styles'] as $style) {
+      dd_add_css($conf['themes'][$base_theme_name]['path'].'/'. $style, 'theme');
     }
   }
   
-  if ($conf['themes'][$template]['scripts']) {
-    foreach ($conf['themes'][$template]['scripts'] as $script) {
-      dd_add_js($conf['themes'][$template]['path'].'/'. $script, 'theme');
+  if ($conf['themes'][$base_theme_name]['scripts']) {
+    foreach ($conf['themes'][$base_theme_name]['scripts'] as $script) {
+      dd_add_js($conf['themes'][$base_theme_name]['path'].'/'. $script, 'theme');
     }
   }
   

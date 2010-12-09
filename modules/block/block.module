@@ -217,7 +217,11 @@ function block_block_view($theme, $config) {
     
     if ($o = db_query('SELECT * FROM {boxes} WHERE bid = ?', array($bid), array('return' => 'one'))) {
       $block['title'] = t('block', $config->title);
-      $block['content'] = filter_view($o->body, $o->format, 'block', $o->bid);
+      if ($o->format) {
+        $block['content'] = filter_view($o->body, $o->format, 'block', $o->bid);
+      } else {
+        $block['content'] = $o->body;
+      }
     }
     
   }

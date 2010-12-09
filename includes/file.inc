@@ -392,8 +392,8 @@ function file_save_move($source, $validate = NULL, $rename = 1) {
 
 /**
  * 字符串保存为文件
- * @param (string) $source
- *  原文件路径，必须可读
+ * @param (string) $data
+ *  待保存的字符串
  * @param (array) $validate
  *  配置参数，见上传示例。必须有 filename 参数，即文件名
  * @param (int) $rename
