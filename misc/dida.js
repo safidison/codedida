@@ -174,7 +174,9 @@ Dida.dialog = function(opt) {
 		$.extend(o, settings.dialogOptions);
 	}
 	
-	$('#dialog_wrapper').dialog('destroy').remove();
+	if ($('#dialog_wrapper').size()) {
+		$('#dialog_wrapper').dialog('destroy').remove();
+	}
 	
 	$('body').append('<div id="dialog_wrapper" style="display: none;"></div>');
 	
