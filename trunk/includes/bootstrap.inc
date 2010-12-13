@@ -1738,11 +1738,13 @@ function dd_set_mail($mails, $subject, $message, $headers = NULL, $html = 1, $at
     $header .= 'MIME-Version: 1.0' . "\r\n";
     $header .= 'Content-type: text/html; charset=utf-8' . "\r\n";
   }
+  
+  mb_language('UTF-8');
 
   if (!$headers['From']) {
     $header .= 'From: '.mb_encode_mimeheader($GLOBALS['conf']['site_global']['name'], 'utf-8', 'Q').' <'.var_get_key('site_global', 'mail', 'admin@'.$_SERVER['HTTP_HOST']).">\r\n";
   }
-
+  
   if (mb_send_mail($to, $subject, $message, $header)) {
     return true;
   } else {

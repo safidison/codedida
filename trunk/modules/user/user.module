@@ -952,8 +952,8 @@ function user_insert($value) {
       user_set_roles($value->uid, $value->rid);
       $value->roles = user_get_roles($uid, true);
       
-      if (var_get_key('user', 'status', 0) == 0) {
-        _user_activation($uid, $value->name, $value->mail, $_SERVER['REQUEST_TIME']);
+      if (var_get_key('user', 'status', 0) == 0 && $value->status < 1) {
+        _user_activation($value->uid, $value->name, $value->mail, $_SERVER['REQUEST_TIME']);
       }
       
       $value->nid = $value->uid;
