@@ -1774,7 +1774,8 @@ function dd_set_mail($mails, $subject, $message, $headers = NULL, $html = 1, $at
     $header .= 'Content-type: text/html; charset=utf-8' . "\r\n";
   }
   
-  mb_language('UTF-8');
+  // mb_language('utf-8');
+  mb_language('uni');
 
   if (!$headers['From']) {
     $header .= 'From: '.mb_encode_mimeheader($GLOBALS['conf']['site_global']['name'], 'utf-8', 'Q').' <'.var_get_key('site_global', 'mail', 'admin@'.$_SERVER['HTTP_HOST']).">\r\n";
