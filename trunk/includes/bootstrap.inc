@@ -42,7 +42,7 @@ function bootstrap($op, $inc = NULL) {
 
   if (!$installed) dd_to_install();
 
-  if (is_file($conf_dir .'/cache/conf.php')) {
+  if (is_file(DIDA_ROOT . '/' . $conf_dir .'/cache/conf.php')) {
     require_once DIDA_ROOT . '/' . $conf_dir .'/cache/conf.php';
   } else {
     dd_to_install();
@@ -871,6 +871,41 @@ function dd_rand_str() {
 }
 
 /**
+ * 获取指定长度的不重复的随机字符串
+ * @param (int) $len
+ *  字符串长度
+ * @param (string) $query
+ *  查询数据库语句，验证是否已使用，如：SELECT COUNT(name) FROM {users} WHERE name = ?
+ * @return (string)
+ */
+function dd_get_rand_string($len, $query) {
+  $chars = array(
+  'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k',
+  'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v',
+  'w', 'x', 'y', 'z', 'A', 'B', 'C', 'D', 'E', 'F', 'G',  
+  'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R',
+  'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '0', '1', '2',  
+  '3', '4', '5', '6', '7', '8', '9');
+  
+  $charsLen = count($chars) - 1;   
+  
+  $t = 1;
+  while ($t) {
+    
+    $output = '';
+    for ($i = 0; $i < $len; $i++)  {
+      $output .= $chars[mt_rand(0, $charsLen)];
+    }
+    
+    if (!db_query($query, array($output), array('return' => 'colum'))) {
+      $t = 0;
+    }
+  }
+  
+  return $output;
+}
+
+/**
  * 获取客户端 ip
  */
 function ip_address() {
@@ -1649,7 +1684,7 @@ function dd_error_msg($msg) {
   $error = array(
     '错误信息：'.$msg,
     '发生时间：'. format_date(time()),
-    '当前用户：'.$GLOBALS['user']->name,
+    '当前用户：'.($GLOBALS['user'] ? $GLOBALS['user']->name : '游客'),
     '用户主机：'. ip_address(),
     '当前页面：'.$_SERVER['REQUEST_URI']
   );
@@ -1664,7 +1699,7 @@ function dd_error_msg($msg) {
  *  错误信息
  */
 function text_log($filename, $msg) {
-  $filepath = './sites/logs/'.$_SERVER['HTTP_HOST'].'_'. $filename . '_'.date("Y") .'_'.date("m") . '.txt';
+  $filepath = DIDA_ROOT . '/sites/logs/'.$_SERVER['HTTP_HOST'].'_'. $filename . '_'.date("Y") .'_'.date("m") . '.txt';
   $handle = fopen($filepath, 'ab');
   fwrite($handle, $msg. "\n<!-- 分隔符 -->\n");
   fclose($handle);

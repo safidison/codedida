@@ -54,6 +54,7 @@ function theme() {
   global $conf, $user;
   
   $temp = !$user->theme ? $conf['themes'][$conf['default_theme']] : $conf['themes'][$user->theme];
+  $temp['path'] = DIDA_ROOT . '/' . $temp['path'];
   
   $args = func_get_args();
   $hook = array_shift($args);
@@ -67,7 +68,7 @@ function theme() {
     return false;
   }
   
-  $module_path = $conf['modules'][$theme['module']]['path'];
+  $module_path = DIDA_ROOT . '/' . $conf['modules'][$theme['module']]['path'];
   
   /**
    * 包含文件

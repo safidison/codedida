@@ -486,7 +486,11 @@ function file_create_name(&$file, $validate = NULL, $rename = 1) {
     return false;
   }
   
-  $file->filepath = $savepath .'/'. urlencode($file->filename);
+  if (var_get('file_upload_rename', 1)) {
+    $file->filepath = $savepath .'/'. md5($file->filename) . '.' . $file->extension;
+  } else {
+    $file->filepath = $savepath .'/'. $file->filename;
+  }
   
   // 重命名浏览器可执行的文件
   
