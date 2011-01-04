@@ -7,4 +7,6 @@
 ./sites/logs：程序运行生成的各种日志
 
 
-如何实现同一程序，多站点？请看 ./sites/demo.example.com 下说明文件
+如何使用同一程序，创建多个站点？
+以当前访问域名自动匹配，请看 ./sites/demo.example.com 下说明文件
+自定义配置请看本目录下 default.config.php 文件
