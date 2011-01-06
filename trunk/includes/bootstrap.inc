@@ -1131,6 +1131,8 @@ function user_anonymous() {
 function conf_init() {
   global $cookie_domain, $base_url, $base_root, $base_path, $is_front;
 
+  session_set_save_handler('sess_open', 'sess_close', 'sess_read', 'sess_write', 'sess_destroy', 'sess_gc');
+  
   $is_front = dd_is_front();
 
   $base_root = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == 'on') ? 'https' : 'http';
@@ -1162,7 +1164,7 @@ function conf_init() {
   if (count(explode('.', $cookie_domain)) > 2 && !is_numeric(str_replace('.', '', $cookie_domain))) {
     ini_set('session.cookie_domain', $cookie_domain);
   }
-
+  
   session_name('DIDA'. md5($session_name));
 
   session_start();

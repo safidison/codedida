@@ -469,8 +469,6 @@ function module_set_enabled($list, $type, $modules = array()) {
 function module_invoke($modules, $hook) {
   
   $args = func_get_args();
-  $modules = $args[0];
-  $hook = $args[1];
   unset($args[0], $args[1]);
   
   if (is_string($modules)) {
