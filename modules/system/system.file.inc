@@ -9,6 +9,8 @@ function system_file_upload() {
     case 'ckeditor': case 'swfupload': case 'markitup':
       if ($_GET['name'] && $_FILES[$_GET['name']]) {
         
+        $validate = array('ext_type' => $_GET['op']);
+        
         if ($_GET['image_size']) {
           $validate['image']['size'] = $_GET['image_size'];
         } else if ($_GET['type'] == 'image') {
