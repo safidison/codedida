@@ -151,8 +151,8 @@ function image_crop($source, $destination, $x, $y, $width, $height, $mark = NULL
  */
 function image_to_type_data($source, $ext, $newext, $newsource) {
   if ($ext != $newext) {
-    $function = 'imagecreatefrom'.$ext;
-    $functionnew = 'imagecreatefrom'.$newext;
+    $function = 'imagecreatefrom' . $ext;
+    $functionnew = 'image' . ($newext == 'jpg' ? 'jpeg' : $newext);
     if (function_exists($function) && function_exists($functionnew)) {
       if ($im = $function($source)) {
         $functionnew($im, $newsource);

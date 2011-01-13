@@ -121,39 +121,3 @@ function block_install() {
   $ret = module_install_schema('install', 'block');
   return $ret;
 }
-
-function block_update_1(){
-  $schema['boxes'] = array(
-  	'description' => '文本区块',
-  	'fields' => array(
-      'bid' => array(
-        'type' => 'serial',
-        'unsigned' => TRUE,
-        'not null' => TRUE,
-      ),
-      'title' => array(
-        'type' => 'varchar',
-        'length' => 64,
-        'not null' => TRUE,
-        'default' => '',
-        'description' => '默认标题',
-      ),
-      'body' => array(
-        'type' => 'text',
-        'not null' => FALSE,
-        'size' => 'big',
-        'description' => '内容'
-      ),
-      'format' => array(
-        'type' => 'int',
-        'not null' => TRUE,
-    		'size' => 'tiny',
-        'default' => 0,
-        'description' => '输入格式',
-      ),
-  	),
-  	'primary key' => array('bid'),
-  );
-  $ret = db_create_table('test', $schema['boxes']);
-  return $ret;
-}
