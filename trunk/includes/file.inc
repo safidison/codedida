@@ -515,9 +515,10 @@ function file_create_name(&$file, $validate = NULL, $rename = 1) {
     $i = 0;
     switch ($rename) {
       case 1:
-        $file->filepath = str_replace($file->filename, $file->uid.$i.'_'.$file->filename, $oldfilepath);
+        $name = basename($oldfilepath);
+        $file->filepath = str_replace($name, $file->uid.$i.'_'.$name, $oldfilepath);
         while (is_file($file->filepath)) {
-          $file->filepath = str_replace($file->filename, $file->uid.$i.'_'.$file->filename, $oldfilepath);
+          $file->filepath = str_replace($name, $file->uid.$i.'_'.$name, $oldfilepath);
           ++$i;
         }
       break;
