@@ -501,8 +501,6 @@ function file_create_name(&$file, $validate = NULL, $rename = 1) {
     $file->extension = 'txt';
   }
   
-  
-  
   if (!$rename) {
     return true;
   }
