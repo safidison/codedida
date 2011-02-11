@@ -751,7 +751,7 @@ $(function() {
       var o = this;
 	    o.showStatus = true;
 	    o.showOn = "both";
-	    o.buttonImage = "/misc/images/calendar.gif";
+	    o.buttonImage = settings.base_path + "misc/images/calendar.gif";
 	    o.buttonImageOnly = true;
       
       if (o.start || o.end) {
