@@ -61,6 +61,9 @@
 #dialog_wrapper_loading img{
 	padding: 0 6px;
 }
+.dida_search_form_field_keyword_default {
+  color: #ccc;
+}
 h2.system_no_content{
   text-align: center;
   margin: 12px 0;

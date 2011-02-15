@@ -446,6 +446,25 @@ $(function() {
     return false;
   });
   
+  $('.dida_search_form_field_keyword').each(function(){
+  	if (!$(this).val()) {
+  		$(this).val($(this).attr('title')).addClass('dida_search_form_field_keyword_default');
+  	}
+  });
+  
+	$('.dida_search_form_field_keyword').focusout(function(){
+		if (!$(this).val()) {
+			$(this).val($(this).attr('title')).addClass('dida_search_form_field_keyword_default');
+		}
+	});
+	
+	$('.dida_search_form_field_keyword').focusin(function(){
+		var t = $(this).attr('title');
+		if (t && $(this).val() == t) {
+			$(this).val("").removeClass('dida_search_form_field_keyword_default');
+		}
+	});
+  
   $('.dd_form_ajax_field').change(function() {
   	var href = $(this).attr('href');
   	
