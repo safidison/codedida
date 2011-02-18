@@ -1142,14 +1142,14 @@ function conf_init() {
   } else {
     $base_path = '/';
   }
-
-  list( , $session_name) = explode('://', $base_url, 2);
-  
-  if (ini_get('session.cookie_secure')) {
-    $session_name .= 'SSL';
-  }
   
   if (empty($cookie_domain)) {
+    list( , $session_name) = explode('://', $base_url, 2);
+    
+    if (ini_get('session.cookie_secure')) {
+      $session_name .= 'SSL';
+    }
+  
     if (!empty($_SERVER['HTTP_HOST'])) {
       $cookie_domain = check_plain($_SERVER['HTTP_HOST']);
     }
@@ -1162,6 +1162,8 @@ function conf_init() {
     if (count(explode('.', $cookie_domain)) > 2 && !is_numeric(str_replace('.', '', $cookie_domain))) {
       ini_set('session.cookie_domain', $cookie_domain);
     }
+  } else {
+    $session_name = $cookie_domain;
   }
   
   session_name('DIDA'. md5($session_name));
