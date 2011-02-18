@@ -15,7 +15,7 @@ function bootstrap($op, $inc = NULL) {
 
   if ($called) return;
 
-  global $user, $database, $dbc, $db, $conf, $conf_dir, $installed;
+  global $cookie_domain, $user, $database, $dbc, $db, $conf, $conf_dir, $installed;
 
   if (is_file(DIDA_ROOT . '/sites/config.php')) {
     require_once DIDA_ROOT . '/sites/config.php';
@@ -1131,8 +1131,6 @@ function user_anonymous() {
 function conf_init() {
   global $cookie_domain, $base_url, $base_root, $base_path, $is_front;
 
-  session_set_save_handler('sess_open', 'sess_close', 'sess_read', 'sess_write', 'sess_destroy', 'sess_gc');
-  
   $is_front = dd_is_front();
 
   $base_root = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == 'on') ? 'https' : 'http';
@@ -1146,23 +1144,24 @@ function conf_init() {
   }
 
   list( , $session_name) = explode('://', $base_url, 2);
-  if (!empty($_SERVER['HTTP_HOST'])) {
-    $cookie_domain = check_plain($_SERVER['HTTP_HOST']);
-  }
-
+  
   if (ini_get('session.cookie_secure')) {
     $session_name .= 'SSL';
   }
-
-  $cookie_domain = ltrim($cookie_domain, '.');
-  if (strpos($cookie_domain, 'www.') === 0) {
-    $cookie_domain = substr($cookie_domain, 4);
-  }
-
-  $cookie_domain = explode(':', $cookie_domain);
-  $cookie_domain = '.'. $cookie_domain[0];
-  if (count(explode('.', $cookie_domain)) > 2 && !is_numeric(str_replace('.', '', $cookie_domain))) {
-    ini_set('session.cookie_domain', $cookie_domain);
+  
+  if (empty($cookie_domain)) {
+    if (!empty($_SERVER['HTTP_HOST'])) {
+      $cookie_domain = check_plain($_SERVER['HTTP_HOST']);
+    }
+    $cookie_domain = ltrim($cookie_domain, '.');
+    if (strpos($cookie_domain, 'www.') === 0) {
+      $cookie_domain = substr($cookie_domain, 4);
+    }
+    $cookie_domain = explode(':', $cookie_domain);
+    $cookie_domain = '.'. $cookie_domain[0];
+    if (count(explode('.', $cookie_domain)) > 2 && !is_numeric(str_replace('.', '', $cookie_domain))) {
+      ini_set('session.cookie_domain', $cookie_domain);
+    }
   }
   
   session_name('DIDA'. md5($session_name));
