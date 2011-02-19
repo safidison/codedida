@@ -213,18 +213,16 @@ function system_themes_page() {
   ));
   
   if ($_GET['op'] == 'default' && $_GET['name']) {
-    if ($_GET['name'] != $GLOBALS['conf']['default_theme']) {
-      if (db_exec('UPDATE {system} SET status = -1 WHERE filename = ?', array($_GET['name']))) {
-        db_exec('UPDATE {system} SET status = 1 WHERE filename = ?', array($GLOBALS['conf']['default_theme']));
-        cache_del('*', 'admin_menus_');
-        var_set('default_theme',  $_GET['name']);
-        dd_set_message(t('system', '%string 已被设为默认主题，请设置区块', array('%string' => $_GET['name'])));
-        dd_goto('admin/blocks/settings/'.$_GET['name']);
-        exit;
-      }
+    if (db_exec('UPDATE {system} SET status = -1 WHERE filename = ?', array($_GET['name']))) {
+      db_exec('UPDATE {system} SET status = 1 WHERE status = -1 AND filename != ?', array($_GET['name']));
+      cache_del('*', 'admin_menus_');
+      var_set('default_theme',  $_GET['name']);
+      dd_set_message(t('system', '%string 已被设为默认主题，请设置区块', array('%string' => $_GET['name'])));
+      dd_goto('admin/blocks/settings/'.$_GET['name']);
     }
     dd_goto($_GET['q']);
   }
+  
   foreach (module_list('theme') as $name => $theme) {
     $filename = $theme['info']['name'] ? $theme['info']['name'] : $name;
     
