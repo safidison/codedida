@@ -70,7 +70,7 @@ jQuery.fn.extend({
       mouseout: null,
       bodyDom: 'href',
       auto: false
-    }
+    };
     
     $.extend(opt, o);
     
