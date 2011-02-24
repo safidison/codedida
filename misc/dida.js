@@ -44,7 +44,7 @@ Dida.external = function(path) {
 				};
   	return types[par[0]];
   }
-}
+};
 
 Dida.url = function(q, opt) {
   var url = q;
@@ -120,7 +120,7 @@ Dida.parseQuery = function(query) {
 Dida.getUrl = function() {
   var url = location.href;
   return url.replace(/^[^\?]*\??/,'');
-}
+};
 
 Dida.messageShow = function(text, opt) {
   var o;
@@ -135,7 +135,7 @@ Dida.messageShow = function(text, opt) {
   
   $('body').append('<div style="position:absolute;top:0;right:0;z-index: 1000;" class="js_messageShow '+o.status+'">'+text+'</div>');
   window.setTimeout(function() {$('.js_messageShow').remove();}, o.timeOut);
-}
+};
 
 Dida.callFunc = function(cb) {
 	if (typeof cb == 'function') {
@@ -145,12 +145,12 @@ Dida.callFunc = function(cb) {
     func = eval(cb);
     return func.apply(null, Array.prototype.slice.call(arguments, 1));
   }
-}
+};
 
 Dida.isImage = function(p) {
 	var regu = /.*(jpg|gif|png)$/i;
 	return p && regu.test(p);
-}
+};
 
 Dida.dialog = function(opt) {
 	
@@ -166,7 +166,7 @@ Dida.dialog = function(opt) {
 		reload: false,
 		closeCall: false,
 		iframe: false
-	}
+	};
 	
 	$.extend(o, opt);
 	
@@ -221,7 +221,7 @@ Dida.dialog = function(opt) {
 			if (o.reload) {
 				location.reload();
 			}
-		}
+		};
 	}
 	
   if (o.inlineId) {
@@ -242,7 +242,7 @@ Dida.dialog = function(opt) {
 	        $('#dialog_wrapper_loading').hide();
 	        $('#dialog_iframe_wrapper').show();
 	      });
-			}
+			};
   	}
 		$('#dialog_wrapper').dialog(o);
 		
@@ -265,7 +265,7 @@ Dida.dialog = function(opt) {
 					
 		      $('#dialog_wrapper_loading').hide();
 		    });
-			}
+			};
   	}
   	
 		$('#dialog_wrapper').dialog(o);
@@ -314,13 +314,13 @@ Dida.dialog = function(opt) {
 	});
 	
 	return false;
-}
+};
 
 Dida.dialog_colse = function() {
 	$('#dialog_wrapper').dialog('destroy');
 	$('#dialog_wrapper').remove();
 	location.reload();
-}
+};
 
 Dida.php = {
 	in_array: function(str, arr) {
@@ -400,7 +400,7 @@ Dida.ajaxSuccess = function(obj, data, type) {
     eval(data);
     
   }
-}
+};
 
 $(function() {
 	
@@ -441,7 +441,7 @@ $(function() {
       var url = $$.attr('href');
       $.get(url, {'timestamp': Dida.gettime()}, function(data) {
       	Dida.ajaxSuccess($$, data, 'a');
-      })
+      });
     }
     return false;
   });
@@ -559,9 +559,9 @@ $(function() {
           $.get(url, opt, function(data) {
           	$$.next('ja_loading').remove();
           	Dida.ajaxSuccess($$, data, 'input');
-          })
+          });
         }
-      })
+      });
     }
     return false;
   });
@@ -670,8 +670,8 @@ $(function() {
       						response([]);
       					}
       				}
-      			})
-      		}
+      			});
+      		};
       	}
       	$(ui_auto[i].dom).autocomplete(ui_auto[i]);
       	if ($.browser.mozilla) {
@@ -777,16 +777,23 @@ $(function() {
       	o.onClose = function(text) { 
 					var instance = $(this).data("datepicker");
 					uidata_vali($(this), text, instance, instance.settings.start ? 'start' : 'end');
-        }
+        };
       }
       
       if (o.showTime) {
       	o.duration = '';
         o.showTime = true;
-        o.constrainInput = false;
+        if (typeof(o.showSecond) == 'undefined') {
+        	o.showSecond = true;
+        }
+        if (o.showSecond && typeof(o.timeFormat) == 'undefined') {
+        	o.timeFormat = 'hh:mm:ss';
+        }
+        $(o.dom).datetimepicker(o).focus(function() { this.blur(); });
+      } else {
+      	$(o.dom).datepicker(o).focus(function() { this.blur(); });
       }
       
-      $(o.dom).datepicker(o).focus(function() { this.blur(); });
     });
   };
   
