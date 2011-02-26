@@ -2760,7 +2760,8 @@ function dd_get_js($scope = 'header', $javascript = NULL) {
       'cache_css_and_js_timestamp' => $conf['cache_css_and_js_timestamp'],
       'base_theme' => $conf['base_theme'],
       'base_path' => $base_path,
-      'clean_url' => $conf['clean_url'] ? true : false
+      'clean_url' => $conf['clean_url'] ? true : false,
+      'user_is_login' => !empty($GLOBALS['user']->uid)
     );
     dd_add_js($js, 'setting');
   }

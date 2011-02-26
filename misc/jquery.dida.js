@@ -1,6 +1,6 @@
 jQuery.fn.extend({
   menuLevel: function(o) {
-	
+  
     $(this).addClass('js_menu_level_root').find('ul').css({position: 'absolute', display:'none', visibility:'visible'}).each(function() {
       if ($(this).parent('li').parent('ul').hasClass('js_menu_level_root')) {
         $(this).parent('li').addClass('js_menu_level_parent');
@@ -11,7 +11,7 @@ jQuery.fn.extend({
     
     $(this).children('li').addClass('js_menu_level_one_li').children('a')
     .addClass('js_menu_level_one_a').wrapInner(function() {
-    	return '<span/>';
+      return '<span/>';
     });
     
     $('.js_menu_level_parent').css({position: 'relative'}).hover(function() {
@@ -54,9 +54,9 @@ jQuery.fn.extend({
       }
     }
     $.post(o.path, o, function(t) {
-    	if (t < 0) {
-    		Dida.loca();
-    	}
+      if (t < 0) {
+        Dida.loca();
+      }
       count = t;
       interId = window.setInterval(show, 1000);
     });
@@ -139,28 +139,28 @@ jQuery.fn.extend({
     }
     
     if(opt.mouseout == 'hide'){
-    	$(this).find(opt.className).each(function(){
-    		$($(this).attr(opt.bodyDom)).hover(function(){ 
-    			$(this).show().attr('alt', 'block');
-    		}, function(){
-    			$(this).hide().attr('alt', 'none');
-    		});
-    	});
-	    root.mouseout(function(){
-	    	$(this).find(opt.className).each(function(){
-	    		if($($(this).attr(opt.bodyDom)).attr('alt') == 'none'){
-	    			$(this).removeClass('active');
-	    			$($(this).attr(opt.bodyDom)).hide();
-	    		}
-	    	});
-	    });
+      $(this).find(opt.className).each(function(){
+        $($(this).attr(opt.bodyDom)).hover(function(){ 
+          $(this).show().attr('alt', 'block');
+        }, function(){
+          $(this).hide().attr('alt', 'none');
+        });
+      });
+      root.mouseout(function(){
+        $(this).find(opt.className).each(function(){
+          if($($(this).attr(opt.bodyDom)).attr('alt') == 'none'){
+            $(this).removeClass('active');
+            $($(this).attr(opt.bodyDom)).hide();
+          }
+        });
+      });
     }
     
     switch(opt.event){
       case 'click':
         $$.click(function(){ 
-        	show($(this));
-        	return false;
+          show($(this));
+          return false;
        });
       break;
       default:
