@@ -437,7 +437,9 @@ function file_save_data($data, $validate = array(), $rename = 1) {
  *  若同名文件存在，可选设置，默认为重命名
  */
 function file_create_name(&$file, $validate = NULL, $rename = 1) {
-  if ($validate['savepath']) {
+  if (!empty($validate['filepath'])) {
+    $file->filepath = $validate['filepath'];
+  } else if ($validate['savepath']) {
     $savepath = file_mkdir(file_directory_path() . '/' .$validate['savepath']);
   } else {
     $savepath = file_get_path();
@@ -468,7 +470,7 @@ function file_create_name(&$file, $validate = NULL, $rename = 1) {
     return false;
   }
   
-  if (!is_writable($savepath)) {
+  if (!empty($savepath) && !is_writable($savepath)) {
     dd_set_message(t('system', '文件夹 %string 必须有读取权限', array('%string' => $savepath)), 'error');
     return false;
   }
@@ -486,10 +488,12 @@ function file_create_name(&$file, $validate = NULL, $rename = 1) {
     return false;
   }
   
-  if (var_get('file_upload_rename', 1)) {
-    $file->filepath = $savepath .'/'. md5($file->filename) . '.' . $file->extension;
-  } else {
-    $file->filepath = $savepath .'/'. $file->filename;
+  if (empty($file->filepath)) {
+    if (var_get('file_upload_rename', 1)) {
+      $file->filepath = $savepath .'/'. md5($file->filename) . '.' . $file->extension;
+    } else {
+      $file->filepath = $savepath .'/'. $file->filename;
+    }
   }
   
   // 重命名浏览器可执行的文件

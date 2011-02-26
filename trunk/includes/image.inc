@@ -155,10 +155,14 @@ function image_to_type_data($source, $ext, $newext, $newsource) {
     $functionnew = 'image' . ($newext == 'jpg' ? 'jpeg' : $newext);
     if (function_exists($function) && function_exists($functionnew)) {
       if ($im = $function($source)) {
-        $functionnew($im, $newsource);
-        imagedestroy($im);
+        if ($functionnew($im, $newsource)) {
+          imagedestroy($im);
+          return true;
+        }
       }
     }
+  } else {
+    return file_save_move($source, array('filepath' => $newsource, 'no_insert' => 1), 0);
   }
 }
 

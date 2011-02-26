@@ -10,9 +10,9 @@ Dida.dejson = function(data) {
 Dida.getck = function(name) {
   var arr = document.cookie.match(new RegExp("(^| )"+name+"=([^;]*)(;|$)"));
   if (arr != null) {
-  	return decodeURIComponent(arr[2]);
+    return decodeURIComponent(arr[2]);
   } else {
-  	return null;
+    return null;
   }
 };
 
@@ -22,27 +22,27 @@ Dida.gettime = function() {
 };
 
 Dida.getsize = function() {
-	var de = document.documentElement;
-	var w = window.innerWidth || self.innerWidth || (de&&de.clientWidth) || document.body.clientWidth;
-	var h = window.innerHeight || self.innerHeight || (de&&de.clientHeight) || document.body.clientHeight;
-	arrayPageSize = [w,h];
-	return arrayPageSize;
+  var de = document.documentElement;
+  var w = window.innerWidth || self.innerWidth || (de&&de.clientWidth) || document.body.clientWidth;
+  var h = window.innerHeight || self.innerHeight || (de&&de.clientHeight) || document.body.clientHeight;
+  arrayPageSize = [w,h];
+  return arrayPageSize;
 };
 
 Dida.external = function(path) {
-	
-	if (path.substr(0, 1) == '/') {
-		return true;
-	}
-	
-	if (path.indexOf(':') != -1) {
-		
-		var par = path.split(':');
-		var types = {
-					'http': 1, 'https': 1, 'ftp': 1, 'news': 1, 'nntp': 1,
-					'telnet': 1, 'mailto': 1, 'irc': 1, 'ssh': 1, 'sftp': 1, 'webcal': 1, 'rtsp': 1
-				};
-  	return types[par[0]];
+  
+  if (path.substr(0, 1) == '/') {
+    return true;
+  }
+  
+  if (path.indexOf(':') != -1) {
+    
+    var par = path.split(':');
+    var types = {
+          'http': 1, 'https': 1, 'ftp': 1, 'news': 1, 'nntp': 1,
+          'telnet': 1, 'mailto': 1, 'irc': 1, 'ssh': 1, 'sftp': 1, 'webcal': 1, 'rtsp': 1
+        };
+    return types[par[0]];
   }
 };
 
@@ -51,15 +51,15 @@ Dida.url = function(q, opt) {
   var external = Dida.external(q);
   
   if (!external) {
-  	if (settings.clean_url || url.indexOf('?') != -1) {
-  		url = settings.base_path + q;
-  	} else {
-  		url = settings.base_path + '?q=' + q;
-  	}
+    if (settings.clean_url || url.indexOf('?') != -1) {
+      url = settings.base_path + q;
+    } else {
+      url = settings.base_path + '?q=' + q;
+    }
   }
   
   if (opt) {
-  	
+    
     if (url.indexOf('?') == -1) {
       url += '?';
     } else {
@@ -138,9 +138,9 @@ Dida.messageShow = function(text, opt) {
 };
 
 Dida.callFunc = function(cb) {
-	if (typeof cb == 'function') {
-		eval(cb);
-	} else {
+  if (typeof cb == 'function') {
+    eval(cb);
+  } else {
     var func;
     func = eval(cb);
     return func.apply(null, Array.prototype.slice.call(arguments, 1));
@@ -148,269 +148,270 @@ Dida.callFunc = function(cb) {
 };
 
 Dida.isImage = function(p) {
-	var regu = /.*(jpg|gif|png)$/i;
-	return p && regu.test(p);
+  var regu = /.*(jpg|gif|png)$/i;
+  return p && regu.test(p);
 };
 
 Dida.dialog = function(opt) {
-	
-	var o = {
-		width: 700,
-		height: 450,
-		title: '', 
-		url: '',
-		closeText: '关闭',
-		autoOpen: true,
-		modal: false,
-		//bgiframe: true,
-		reload: false,
-		closeCall: false,
-		iframe: false
-	};
-	
-	$.extend(o, opt);
-	
-	if ($.isPlainObject(settings.dialogOptions)) {
-		$.extend(o, settings.dialogOptions);
-	}
-	
-	if ($('#dialog_wrapper').size()) {
-		$('#dialog_wrapper').dialog('destroy').remove();
-	}
-	
-	$('body').append('<div id="dialog_wrapper" style="display: none;"></div>');
-	
-	if (isNaN(o.url)) {
-		
-		var queryString = o.url.replace(/^[^\?]*\??/,'');
-		var params = Dida.parseQuery(queryString);
-		if (params) {
-			o.params = params;
-			if (params['width']) {
-				o.width = parseInt(params['width']);
-			}
-			if (params['height']) {
-				o.height =  parseInt(params['height']);
-			}
-			if (params['inlineId']) {
-				o.inlineId = params['inlineId'];
-			}
-			if (params['iframe']) {
-				o.iframe = true;
-			}
-			if (params['closeCall']) {
-				o.closeCall = params['closeCall'];
-			}
-			if (params['reload']) {
-				o.reload = params['reload'];
-			}
-			if (params['modal']) {
-				o.modal = params['modal'];
-			}
-		}
-		
-	}
-	
-	if (!$.isFunction(o.close)) {
-		o.close = function(event, ui) {
-	    
-	    if (o.closeCall) {
-	      Dida.callFunc(o.closeCall, o, event, ui);
-	    }
-	    
-			if (o.reload) {
-				location.reload();
-			}
-		};
-	}
-	
-  if (o.inlineId) {
-
-		$('#'+o.inlineId).dialog(o);
-		
-  } else if (o.iframe) {
-  	if (!$.isFunction(o.open)) {
-			o.open = function() {
-				var h = '<div id="dialog_wrapper_loading">';
-				h += '<img align="absmiddle" src="'+settings.base_path+'misc/images/loading.gif" />加载中，请稍候…</div>';
-				h += '<iframe id="dialog_iframe_wrapper" frameborder="no" border="0" src="'+o.url+'" width="100%"';
-				h += ' height="100%" style="display:none"></iframe>';
-				
-				$(this).append(h);
-				
-				$('#dialog_iframe_wrapper').load(function() {
-	        $('#dialog_wrapper_loading').hide();
-	        $('#dialog_iframe_wrapper').show();
-	      });
-			};
-  	}
-		$('#dialog_wrapper').dialog(o);
-		
-  } else if (Dida.isImage(o.url)) {
-  	if (!$.isFunction(o.open)) {
-			o.open = function() {
-				var _s = Dida.getsize();
-				var h = '<div id="dialog_wrapper_loading">';
-				h += '<img align="absmiddle" src="'+settings.base_path+'misc/images/loading.gif" />加载中，请稍候…</div>';
-				h += '<img id="dialog_image_wrapper" src="'+o.url+'" />';
-				$(this).append(h);
-				$('#dialog_image_wrapper').load(function() {
-					var _sw = $(this).width()+160 < _s[0] ? $(this).width()+80 : _s[0]-80;
-					var _sh = $(this).height()+160 < _s[1] ? $(this).height()+80 : _s[1]-80;
-					$('#dialog_wrapper').dialog( "option", {
-						'width': _sw,
-						'height': _sh,
-						'position': 'center'
-						});
-					
-		      $('#dialog_wrapper_loading').hide();
-		    });
-			};
-  	}
-  	
-		$('#dialog_wrapper').dialog(o);
-		
-  } else {
-  	if (!$.isFunction(o.open)) {
-			o.open = function() {
-				var h = '<div id="dialog_wrapper_loading">';
-				h += '<img align="absmiddle" src="'+settings.base_path+'misc/images/loading.gif" />加载中，请稍候…</div>';
-				h += '<div id="dialog_ajax_wrapper" style="display:none"></div>';
-				
-				$(this).append(h);
-				$.post(o.url, o.ajax_vars, function(html) {
-					$('#dialog_wrapper_loading').hide();
-					$('#dialog_ajax_wrapper').html(html).show();
-				});
-			}
-  	}
-		$('#dialog_wrapper').dialog(o);
-		
+  
+  var o = {
+    width: 700,
+    height: 450,
+    title: '', 
+    url: '',
+    closeText: '关闭',
+    autoOpen: true,
+    modal: false,
+    //bgiframe: true,
+    reload: false,
+    closeCall: false,
+    iframe: false
+  };
+  
+  $.extend(o, opt);
+  
+  if ($.isPlainObject(settings.dialogOptions)) {
+    $.extend(o, settings.dialogOptions);
   }
   
-	$("#dialog_wrapper").prev('.ui-widget-header').find(".ui-dialog-titlebar-close")
-	.before('<a href="#" title="最小化" class="ui-icon ui-icon-minusthick ui-icon-dialog-max-min"></a>');
-	
-	$(".ui-icon-dialog-max-min").click(function() {
-		var obj = $(this).parents(".ui-dialog").find("#dialog_wrapper");
-		if (obj.css('display') == 'none') {
-			
-			obj.show();
-			$(this).attr('title', '最小化').removeClass('ui-icon-plusthick').addClass('ui-icon-minusthick')
-			.parents(".ui-dialog").css('height', 'auto');
-			
-			$('#dialog_wrapper').dialog("option", "position", 'center');
-			
-		} else {
-			obj.hide();
-			
-			$(this).attr('title', '最大化').removeClass('ui-icon-minusthick').addClass('ui-icon-plusthick')
-			.parents(".ui-dialog").css('height', '35px');
-			
-			$('#dialog_wrapper').dialog("option", "position", ['right', 'bottom']);
-		}
-		
-		return false;
-	});
-	
-	return false;
+  if ($('#dialog_wrapper').size()) {
+    $('#dialog_wrapper').dialog('destroy').remove();
+  }
+  
+  $('body').append('<div id="dialog_wrapper" style="display: none;"></div>');
+  
+  if (isNaN(o.url)) {
+    
+    var queryString = o.url.replace(/^[^\?]*\??/,'');
+    var params = Dida.parseQuery(queryString);
+    if (params) {
+      o.params = params;
+      if (params['width']) {
+        o.width = parseInt(params['width']);
+      }
+      if (params['height']) {
+        o.height =  parseInt(params['height']);
+      }
+      if (params['inlineId']) {
+        o.inlineId = params['inlineId'];
+      }
+      if (params['iframe']) {
+        o.iframe = true;
+      }
+      if (params['closeCall']) {
+        o.closeCall = params['closeCall'];
+      }
+      if (params['reload']) {
+        o.reload = params['reload'];
+      }
+      if (params['modal']) {
+        o.modal = params['modal'];
+      }
+    }
+    
+  }
+  
+  if (!$.isFunction(o.close)) {
+    o.close = function(event, ui) {
+      
+      if (o.closeCall) {
+        Dida.callFunc(o.closeCall, o, event, ui);
+      }
+      
+      if (o.reload) {
+        location.reload();
+      }
+    };
+  }
+  
+  if (o.inlineId) {
+
+    $('#'+o.inlineId).dialog(o);
+    
+  } else if (o.iframe) {
+    if (!$.isFunction(o.open)) {
+      o.open = function() {
+        var h = '<div id="dialog_wrapper_loading">';
+        h += '<img align="absmiddle" src="'+settings.base_path+'misc/images/loading.gif" />加载中，请稍候…</div>';
+        h += '<iframe id="dialog_iframe_wrapper" frameborder="no" border="0" src="'+o.url+'" width="100%"';
+        h += ' height="100%" style="display:none"></iframe>';
+        
+        $(this).append(h);
+        
+        $('#dialog_iframe_wrapper').load(function() {
+          $('#dialog_wrapper_loading').hide();
+          $('#dialog_iframe_wrapper').show();
+        });
+      };
+    }
+    $('#dialog_wrapper').dialog(o);
+    
+  } else if (Dida.isImage(o.url)) {
+    if (!$.isFunction(o.open)) {
+      o.open = function() {
+        var _s = Dida.getsize();
+        var h = '<div id="dialog_wrapper_loading">';
+        h += '<img align="absmiddle" src="'+settings.base_path+'misc/images/loading.gif" />加载中，请稍候…</div>';
+        h += '<img id="dialog_image_wrapper" src="'+o.url+'" />';
+        $(this).append(h);
+        $('#dialog_image_wrapper').load(function() {
+          var _sw = $(this).width()+160 < _s[0] ? $(this).width()+80 : _s[0]-80;
+          var _sh = $(this).height()+160 < _s[1] ? $(this).height()+80 : _s[1]-80;
+          $('#dialog_wrapper').dialog( "option", {
+            'width': _sw,
+            'height': _sh,
+            'position': 'center'
+            });
+          
+          $('#dialog_wrapper_loading').hide();
+        });
+      };
+    }
+    
+    $('#dialog_wrapper').dialog(o);
+    
+  } else {
+    if (!$.isFunction(o.open)) {
+      o.open = function() {
+        var h = '<div id="dialog_wrapper_loading">';
+        h += '<img align="absmiddle" src="'+settings.base_path+'misc/images/loading.gif" />加载中，请稍候…</div>';
+        h += '<div id="dialog_ajax_wrapper" style="display:none"></div>';
+        
+        $(this).append(h);
+        $.post(o.url, o.ajax_vars, function(html) {
+          $('#dialog_wrapper_loading').hide();
+          $('#dialog_ajax_wrapper').html(html).show();
+        });
+      };
+    }
+    
+    $('#dialog_wrapper').dialog(o);
+    
+  }
+  
+  $("#dialog_wrapper").prev('.ui-widget-header').find(".ui-dialog-titlebar-close")
+  .before('<a href="#" title="最小化" class="ui-icon ui-icon-minusthick ui-icon-dialog-max-min"></a>');
+  
+  $(".ui-icon-dialog-max-min").click(function() {
+    var obj = $(this).parents(".ui-dialog").find("#dialog_wrapper");
+    if (obj.css('display') == 'none') {
+      
+      obj.show();
+      $(this).attr('title', '最小化').removeClass('ui-icon-plusthick').addClass('ui-icon-minusthick')
+      .parents(".ui-dialog").css('height', 'auto');
+      
+      $('#dialog_wrapper').dialog("option", "position", 'center');
+      
+    } else {
+      obj.hide();
+      
+      $(this).attr('title', '最大化').removeClass('ui-icon-minusthick').addClass('ui-icon-plusthick')
+      .parents(".ui-dialog").css('height', '35px');
+      
+      $('#dialog_wrapper').dialog("option", "position", ['right', 'bottom']);
+    }
+    
+    return false;
+  });
+  
+  return false;
 };
 
 Dida.dialog_colse = function() {
-	$('#dialog_wrapper').dialog('destroy');
-	$('#dialog_wrapper').remove();
-	location.reload();
+  $('#dialog_wrapper').dialog('destroy');
+  $('#dialog_wrapper').remove();
+  location.reload();
 };
 
 Dida.php = {
-	in_array: function(str, arr) {
-	  for (i = 0; i < arr.length; i++) {
-	    var thisEntry = arr[i].toString();
-	    if (thisEntry == str) {
-	      return true;
-	    }
-	  }
-	  return false;
-	}
+  in_array: function(str, arr) {
+    for (i = 0; i < arr.length; i++) {
+      var thisEntry = arr[i].toString();
+      if (thisEntry == str) {
+        return true;
+      }
+    }
+    return false;
+  }
 };
 
 Dida.ajaxSuccess = function(obj, data, type) {
-	
-	obj.removeClass('ja_loading');
-	
+  
+  obj.removeClass('ja_loading');
+  
   if (obj.attr('type') != 'js') {
-  	var level = obj.attr('level');
-  	
-  	if (level && data == 1) {
-  		data = level;
-  	}
-  	
-  	var fun = obj.attr('fun');
-  	
-  	if (fun) {
-  		
-  		// 调用函数，依次传递：返回值、当前元素、类型
-  		Dida.callFunc(fun, data, obj, type);
-  		
-  	} else {
-  	
-	    switch (data) {
-	      case 'parent':
-	      	// 删除父级
-	      	obj.parent().remove();
-	      break;
-	      case 'two':
-	      	// 删除祖级
-	      	obj.parent().parent().remove();
-	      break;
-	      case 'own':
-	      	// 删除本身
-	      	obj.remove();
-	      break;
-	      case 'tr':
-	      	// 删除上级中第一个匹配的 tr
-	      	obj.closest('tr').remove();
-	      break;
-	      case 'replace':
-	      	// 替换
+    var level = obj.attr('level');
+    
+    if (level && data == 1) {
+      data = level;
+    }
+    
+    var fun = obj.attr('fun');
+    
+    if (fun) {
+      
+      // 调用函数，依次传递：返回值、当前元素、类型
+      Dida.callFunc(fun, data, obj, type);
+      
+    } else {
+    
+      switch (data) {
+        case 'parent':
+          // 删除父级
+          obj.parent().remove();
+        break;
+        case 'two':
+          // 删除祖级
+          obj.parent().parent().remove();
+        break;
+        case 'own':
+          // 删除本身
+          obj.remove();
+        break;
+        case 'tr':
+          // 删除上级中第一个匹配的 tr
+          obj.closest('tr').remove();
+        break;
+        case 'replace':
+          // 替换
           var text = obj.attr('replace') ? obj.attr('replace') : '成功';
           if (text) {
-          	obj.after('<span class="red msgjs">' + text + '</span>');
+            obj.after('<span class="red msgjs">' + text + '</span>');
             obj.remove();
           }
         break;
-	      default:
-	        if (data == 1) {
-	        	
-	        	var text = obj.attr('replace') ? obj.attr('replace') : '成功';
-	          if (text) {
-	          	obj.after('<span class="red msgjs">' + text + '</span>');
-	            obj.remove();
-	          }
-	          
-	        } else if (type == 'a') {
-	          alert(data ? data : '操作失败');
-	        } else {
-	        	obj.after('<span class="msgjs">' + (data ? data : '操作失败') + '</span>');
-	        }
-	    }
-  	}
+        default:
+          if (data == 1) {
+            
+            var text = obj.attr('replace') ? obj.attr('replace') : '成功';
+            if (text) {
+              obj.after('<span class="red msgjs">' + text + '</span>');
+              obj.remove();
+            }
+            
+          } else if (type == 'a') {
+            alert(data ? data : '操作失败');
+          } else {
+            obj.after('<span class="msgjs">' + (data ? data : '操作失败') + '</span>');
+          }
+      }
+    }
   } else {
-  	
+    
     eval(data);
     
   }
 };
 
 $(function() {
-	
+  
   $('.button_goto').click(function() {
     location.href = $(this).attr('href');
   });
   
   $('.homepage_button').click(function() {
     if ($.browser.msie) {
-      this.style.behavior='url(#default#homepage)';this.setHomePage($(this).attr('href'))
+      this.style.behavior='url(#default#homepage)';this.setHomePage($(this).attr('href'));
     } else {
       alert('你的浏览器安全设置过高，不支持此操作。');
     }
@@ -418,10 +419,10 @@ $(function() {
   });
   
   $('.favorites_button').click(function() {
-  	if (!$.browser.mozilla) {
-	    Dida.favorite($(this).attr('title'), $(this).attr('href'));
-	    return false;
-  	}
+    if (!$.browser.mozilla) {
+      Dida.favorite($(this).attr('title'), $(this).attr('href'));
+      return false;
+    }
   });
   
   $('.confirm').live('click', function() {
@@ -436,58 +437,58 @@ $(function() {
   $('.confirmajax').live('click', function() {
     msg = $(this).attr('alt');
     if (confirm((msg ? msg : '确认此操作吗？'))) {
-    	$(this).addClass('ja_loading');
+      $(this).addClass('ja_loading');
       var $$ = $(this);
       var url = $$.attr('href');
       $.get(url, {'timestamp': Dida.gettime()}, function(data) {
-      	Dida.ajaxSuccess($$, data, 'a');
+        Dida.ajaxSuccess($$, data, 'a');
       });
     }
     return false;
   });
   
   $('.dida_search_form_field_keyword').each(function(){
-  	if (!$(this).val()) {
-  		$(this).val($(this).attr('title')).addClass('dida_search_form_field_keyword_default');
-  	}
+    if (!$(this).val()) {
+      $(this).val($(this).attr('title')).addClass('dida_search_form_field_keyword_default');
+    }
   });
   
-	$('.dida_search_form_field_keyword').focusout(function(){
-		if (!$(this).val()) {
-			$(this).val($(this).attr('title')).addClass('dida_search_form_field_keyword_default');
-		}
-	});
-	
-	$('.dida_search_form_field_keyword').focusin(function(){
-		var t = $(this).attr('title');
-		if (t && $(this).val() == t) {
-			$(this).val("").removeClass('dida_search_form_field_keyword_default');
-		}
-	});
+  $('.dida_search_form_field_keyword').focusout(function(){
+    if (!$(this).val()) {
+      $(this).val($(this).attr('title')).addClass('dida_search_form_field_keyword_default');
+    }
+  });
+  
+  $('.dida_search_form_field_keyword').focusin(function(){
+    var t = $(this).attr('title');
+    if (t && $(this).val() == t) {
+      $(this).val("").removeClass('dida_search_form_field_keyword_default');
+    }
+  });
   
   $('.dd_form_ajax_field').change(function() {
-  	var href = $(this).attr('href');
-  	
-  	if ($(this).hasClass('changeconfirm') && !confirm('确认此操作吗？')) {
-  		return false;
-  	}
-  	
-  	if (href) {
-  		var $$ = $(this);
-  		$.ajax({
+    var href = $(this).attr('href');
+    
+    if ($(this).hasClass('changeconfirm') && !confirm('确认此操作吗？')) {
+      return false;
+    }
+    
+    if (href) {
+      var $$ = $(this);
+      $.ajax({
         type: 'POST',
         url: href,
         dataType: 'html',
         data: 'id='+$(this).attr('alt')+'&value=' + $(this).val(),
         success: function(data) {
-  				if (data == -1) {
-  					alert('操作失败');
-  				}else if (data == 'two') {
-  					$$.parent().parent().remove();
-  				}
+          if (data == -1) {
+            alert('操作失败');
+          }else if (data == 'two') {
+            $$.parent().parent().remove();
+          }
         }
-  		});
-  	}
+      });
+    }
   });
   
   $('.form_all_check').click(function() {
@@ -508,20 +509,20 @@ $(function() {
   });
   
   $('.dc_form_ajax_form_button').click(function() {
-  	var s = $.param($(this).parents('form').formToArray());
-  	var getUrl = $(this).attr('alt');
-  	if (getUrl) {
-	  	$.ajax({
-	  		type: 'POST',
-	  		url: getUrl,
-	  		dataType: 'script',
-	  		data: s,
-	  		error: function(e) {
-	  			alert('error');
-	  		}
-	  	});
-  	};
-  	return false;
+    var s = $.param($(this).parents('form').formToArray());
+    var getUrl = $(this).attr('alt');
+    if (getUrl) {
+      $.ajax({
+        type: 'POST',
+        url: getUrl,
+        dataType: 'script',
+        data: s,
+        error: function(e) {
+          alert('error');
+        }
+      });
+    };
+    return false;
   });
   
   $('.fieldset-hide').children('.fieldset-wrapper').hide();
@@ -531,15 +532,15 @@ $(function() {
     return false;
   });
   
-	$('.thickbox, .dialog').click(function() {
-		var o = {};
-		o.url = $(this).attr('href');
-		o.title = $(this).attr('title') || $(this).text();
-		
-		Dida.dialog(o);
-		
-		return false;
-	});
+  $('.thickbox, .dialog').click(function() {
+    var o = {};
+    o.url = $(this).attr('href');
+    o.title = $(this).attr('title') || $(this).text();
+    
+    Dida.dialog(o);
+    
+    return false;
+  });
   
   $('input[class="admin_delete_button"]').click(function() {
     if (confirm('确认此操作吗？')) {
@@ -557,8 +558,8 @@ $(function() {
             opt.name = $(this).attr('alt');
           }
           $.get(url, opt, function(data) {
-          	$$.next('ja_loading').remove();
-          	Dida.ajaxSuccess($$, data, 'input');
+            $$.next('ja_loading').remove();
+            Dida.ajaxSuccess($$, data, 'input');
           });
         }
       });
@@ -567,10 +568,20 @@ $(function() {
   });
   
   $('.login_msg').click(function() {
-    if (confirm('你需要登录才能进行此操作，立即登录？')) {
-      location.href = Dida.url('user/login', {redirect: $(this).attr('href') ? $(this).attr('href') : location.pathname});
+    if (!settings.user_is_login) {
+      if (confirm('你需要登录才能进行此操作，立即登录？')) {
+        var u = '';
+        if ($(this).attr('redirect')) {
+          u = $(this).attr('redirect');
+        } else if ($(this).attr('href')) {
+          u = $(this).attr('href');
+        } else {
+          u = location.pathname;
+        }
+        location.href = Dida.url('user/login', {redirect: u});
+      }
+      return false;
     }
-    return false;
   });
   
   $('.confirm_msg').click(function() {
@@ -582,13 +593,13 @@ $(function() {
     for (var attr in settings.multi) {
       var element = settings.multi[attr];
       $(element).each(function() {
-      	$('#multi_' + this.dom).MultiFile({'list' : '#multi_list_' + this.dom});
+        $('#multi_' + this.dom).MultiFile({'list' : '#multi_list_' + this.dom});
       });
     }
   }
   if (settings.edit) {
     $(settings.edit).each(function() {
-    	$(this.dom).editable(null, this.opt);
+      $(this.dom).editable(null, this.opt);
     });
   }
   
@@ -604,14 +615,14 @@ $(function() {
         var h = location.href;
         
         if (go > 0) {
-        	if (h.indexOf('page=') != -1) {
-        		var re = /page=\d*/i;
-        		h = h.replace(re, 'page=' + go);
-        	} else {
-        		h = Dida.url(h, {'page': go});
-        	}
+          if (h.indexOf('page=') != -1) {
+            var re = /page=\d*/i;
+            h = h.replace(re, 'page=' + go);
+          } else {
+            h = Dida.url(h, {'page': go});
+          }
         } else {
-        	var re = /[\?|&]page=\d*/i;
+          var re = /[\?|&]page=\d*/i;
           h = h.replace(re, '');
         }
         location.href = h;
@@ -622,66 +633,66 @@ $(function() {
     for (var attr in settings.farbtastic) {
       var element = settings.farbtastic[attr];
       $(element).each(function() {
-			  var f = $.farbtastic(this.dom);
-			  var p = $(this.dom).css('opacity', 0.25);
-			  var selected;
-			  $(this.items)
-			    .each(function () { f.linkTo(this); $(this).css('opacity', 0.35); })
-			    .focus(function() {
-			      if (selected) {
-			        $(selected).css('opacity', 0.35).removeClass('colorwell-selected');
-			      }
-			      f.linkTo(this);
-			      p.css('opacity', 1);
-			      $(selected = this).css('opacity', 1).addClass('colorwell-selected');
-			    });
+        var f = $.farbtastic(this.dom);
+        var p = $(this.dom).css('opacity', 0.25);
+        var selected;
+        $(this.items)
+          .each(function () { f.linkTo(this); $(this).css('opacity', 0.35); })
+          .focus(function() {
+            if (selected) {
+              $(selected).css('opacity', 0.35).removeClass('colorwell-selected');
+            }
+            f.linkTo(this);
+            p.css('opacity', 1);
+            $(selected = this).css('opacity', 1).addClass('colorwell-selected');
+          });
       });
     }
   };
   
   //自动完成
   if (settings.auto) {
-  	var ui_auto = {};
+    var ui_auto = {};
     $(settings.auto).each(function(i, item) {
       if (item.dom) {
-      	ui_auto[i] = item;
-      	if (ui_auto[i].url) {
-      		ui_auto[i].cache = {};
-      		ui_auto[i].source = function(request, response) {
-      			if (ui_auto[i].cache[request.term] != undefined) {
-      				response(ui_auto[i].cache[request.term]);
-      				return;
-      			}
-      			
-      			$.ajax({
-      				url: ui_auto[i].url,
-      				dataType: 'json',
-      				type: 'POST',
-      				data: {value: request.term},
-      				success: function(data) {
-      					if (!data.error && data.contents) {
-      						ui_auto[i].cache[request.term] = data.contents;
-	    						response(data.contents);
-      					} else {
-      						if (ui_auto[i].range && ($.browser.mozilla || $.browser.msie)) {
-      							$(ui_auto[i].dom).val("");
-      						}
-      						ui_auto[i].cache[request.term] = [];
-      						response([]);
-      					}
-      				}
-      			});
-      		};
-      	}
-      	$(ui_auto[i].dom).autocomplete(ui_auto[i]);
-      	if ($.browser.mozilla) {
-      		/**
-      		 * firefox 中文输入法 bug
-      		 */
-	      	$(ui_auto[i].dom).bind("text", function() {
-	      		$(this).autocomplete('search');
-	      	});
-      	}
+        ui_auto[i] = item;
+        if (ui_auto[i].url) {
+          ui_auto[i].cache = {};
+          ui_auto[i].source = function(request, response) {
+            if (ui_auto[i].cache[request.term] != undefined) {
+              response(ui_auto[i].cache[request.term]);
+              return;
+            }
+            
+            $.ajax({
+              url: ui_auto[i].url,
+              dataType: 'json',
+              type: 'POST',
+              data: {value: request.term},
+              success: function(data) {
+                if (!data.error && data.contents) {
+                  ui_auto[i].cache[request.term] = data.contents;
+                  response(data.contents);
+                } else {
+                  if (ui_auto[i].range && ($.browser.mozilla || $.browser.msie)) {
+                    $(ui_auto[i].dom).val("");
+                  }
+                  ui_auto[i].cache[request.term] = [];
+                  response([]);
+                }
+              }
+            });
+          };
+        }
+        $(ui_auto[i].dom).autocomplete(ui_auto[i]);
+        if ($.browser.mozilla) {
+          /**
+           * firefox 中文输入法 bug
+           */
+          $(ui_auto[i].dom).bind("text", function() {
+            $(this).autocomplete('search');
+          });
+        }
       }
     });
   }
@@ -699,67 +710,67 @@ $(function() {
   };
   
   if (settings.markItUp && typeof(Dida.markitup) == 'object') {
-  	$(settings.markItUp).each(function() {
-  		if (this.dom) {
-	  		var $$ = this;
-	  		var type = $$.type || 'html';
-	  		$(this.dom).markItUp(Dida.markitup[type]($$.options));
-  		}
-  	});
+    $(settings.markItUp).each(function() {
+      if (this.dom) {
+        var $$ = this;
+        var type = $$.type || 'html';
+        $(this.dom).markItUp(Dida.markitup[type]($$.options));
+      }
+    });
   }
   
   // ajax 验证
   if (settings.ajax_validate) {
-  	
-  	$(settings.ajax_validate).each(function(i) {
-  		var o = this;
-  		
-  		if (o.ajax_submit) {
-  			o.submitHandler = function(form) {
-  				$(form).ajaxSubmit(o.options);
-  			};
-  		}
-  		
-  		$('#'+ o.form_id).validate(o);
-  		
-  	});
-  	
-  	$.validator.addMethod("required", function(value, element, param) {
-  		if ( !this.depend(param, element) )
-  			return "dependency-mismatch";
-  		switch( element.nodeName.toLowerCase() ) {
-	  		case 'select':
-	  			var val = $(element).val();
-	  			return val && val.length > 0;
-	  		case 'input':
-	  			if ( this.checkable(element) ) {
-	  				if (element.type == 'checkbox') {
-	  					var name = $(element).parent('.form_checkbox_option').attr('alt');
-	  					if (name) {
-  							cd = false;
-  							var errorClass = this.settings.errorClass;
-  							$(element).parents('form').find('.'+name).each(function() {
-	  							if ($(this).attr('checked')) {
-	  								cd = true;
-	  								$(element).parents('form').find('.'+name).each(function() {
-	  									$(this).next('label.'+errorClass).hide();
-	  								});
-	  								return cd;
-	  								
-	  							}
-	  						});
-	  						
-	  						return cd;
-	  					}
-	  				}
-	  				
-	  				return this.getLength(value, element) > 0;
-	  			}
-	  		default:
-	  			return $.trim(value).length > 0;
-  		}
-  	});
-  	
+    
+    $(settings.ajax_validate).each(function(i) {
+      var o = this;
+      
+      if (o.ajax_submit) {
+        o.submitHandler = function(form) {
+          $(form).ajaxSubmit(o.options);
+        };
+      }
+      
+      $('#'+ o.form_id).validate(o);
+      
+    });
+    
+    $.validator.addMethod("required", function(value, element, param) {
+      if ( !this.depend(param, element) )
+        return "dependency-mismatch";
+      switch( element.nodeName.toLowerCase() ) {
+        case 'select':
+          var val = $(element).val();
+          return val && val.length > 0;
+        case 'input':
+          if ( this.checkable(element) ) {
+            if (element.type == 'checkbox') {
+              var name = $(element).parent('.form_checkbox_option').attr('alt');
+              if (name) {
+                cd = false;
+                var errorClass = this.settings.errorClass;
+                $(element).parents('form').find('.'+name).each(function() {
+                  if ($(this).attr('checked')) {
+                    cd = true;
+                    $(element).parents('form').find('.'+name).each(function() {
+                      $(this).next('label.'+errorClass).hide();
+                    });
+                    return cd;
+                    
+                  }
+                });
+                
+                return cd;
+              }
+            }
+            
+            return this.getLength(value, element) > 0;
+          }
+        default:
+          return $.trim(value).length > 0;
+      }
+    });
+    
   };
   
   //时间控件
@@ -768,54 +779,58 @@ $(function() {
     var element = settings.uidata;
     $(element).each(function(i) {
       var o = this;
-	    o.showStatus = true;
-	    o.showOn = "both";
-	    o.buttonImage = settings.base_path + "misc/images/calendar.gif";
-	    o.buttonImageOnly = true;
+      o.showStatus = true;
+      o.showOn = "both";
+      o.buttonImage = settings.base_path + "misc/images/calendar.gif";
+      o.buttonImageOnly = true;
       
       if (o.start || o.end) {
-      	o.onClose = function(text) { 
-					var instance = $(this).data("datepicker");
-					uidata_vali($(this), text, instance, instance.settings.start ? 'start' : 'end');
+        o.onClose = function(text) { 
+          var instance = $(this).data("datepicker");
+          uidata_vali($(this), text, instance, instance.settings.start ? 'start' : 'end');
         };
       }
       
       if (o.showTime) {
-      	o.duration = '';
+        o.duration = '';
         o.showTime = true;
         if (typeof(o.showSecond) == 'undefined') {
-        	o.showSecond = true;
+          o.showSecond = true;
         }
         if (o.showSecond && typeof(o.timeFormat) == 'undefined') {
-        	o.timeFormat = 'hh:mm:ss';
+          o.timeFormat = 'hh:mm:ss';
         }
-        $(o.dom).datetimepicker(o).focus(function() { this.blur(); });
+        if (o.dateDisabled) {
+          $(o.dom).timepicker(o).focus(function() { this.blur(); });
+        } else {
+          $(o.dom).datetimepicker(o).focus(function() { this.blur(); });
+        }
       } else {
-      	$(o.dom).datepicker(o).focus(function() { this.blur(); });
+        $(o.dom).datepicker(o).focus(function() { this.blur(); });
       }
       
     });
   };
   
   function uidata_vali(obj, text, instance, type) {
-  	var val_end, val_start;
-  	if (type == 'start') {
-  		val_start = text;
-  		val_end = $(instance.settings.start).val();
-  	} else {
-  		val_end = text;
-  		val_start = $(instance.settings.end).val();
-  	}
-  	
-  	if (val_end && val_start) {
+    var val_end, val_start;
+    if (type == 'start') {
+      val_start = text;
+      val_end = $(instance.settings.start).val();
+    } else {
+      val_end = text;
+      val_start = $(instance.settings.end).val();
+    }
+    
+    if (val_end && val_start) {
       re = /[^0-9]/g;
       val_end = val_end.replace(re, '');
       val_start = val_start.replace(re, '');
       if (val_end <= val_start) {
-      	obj.val('');
-      	alert('结束日期必须大于开始日期');
+        obj.val('');
+        alert('结束日期必须大于开始日期');
       }
-  	}
-  	return false;
+    }
+    return false;
   };
 });

@@ -25,7 +25,7 @@ jQuery.fn.farbtastic = function (callback) {
 jQuery.farbtastic = function (container, callback) {
   var container = $(container).get(0);
   return container.farbtastic || (container.farbtastic = new jQuery._farbtastic(container, callback));
-}
+};
 
 jQuery._farbtastic = function (container, callback) {
   // Store farbtastic object
