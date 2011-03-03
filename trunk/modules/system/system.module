@@ -1055,11 +1055,12 @@ function dd_get_editor($dom, $v = array()) {
 		dd_add_js('misc/ckeditor/ckeditor.js', 'module', 0);
 		dd_add_js('misc/farbtastic.js');
     dd_add_js('misc/jquery.form.js');
+    
 		$toolbar['full'] = array(
       array(
-        'Source','-','AutoSave','Maximize','Preview','-',
+        'Source','-','AutoSave','Maximize','Preview', 'Print', '-',
         'Templates','Cut','Copy','Paste','PasteText', 'PasteFromWord','-',
-        'Print', 'SpellChecker', 'Scayt', 'Undo','Redo', '-','Find','Replace','-',
+        'Undo','Redo','-',
         'SelectAll','RemoveFormat','Form','Checkbox','Radio','TextField',
         'Textarea','Select','Button','ImageButton','HiddenField'),
       '/',
@@ -1072,7 +1073,7 @@ function dd_get_editor($dom, $v = array()) {
       '/',
       array(
         'Styles','Format','Font','FontSize','TextColor',
-        'BGColor','ShowBlocks','-','MyColor', 'About', 'swfupload', 'insertcode'
+        'BGColor','ShowBlocks','-', 'swfupload', 'Find','Replace', 'about'
       )
     );
     
@@ -1130,8 +1131,10 @@ function dd_get_editor($dom, $v = array()) {
 	if ($_COOKIE['editorColor']) $v['uiColor'] = $_COOKIE['editorColor'];
 	
 	if ($v['upload_image']) {
-		$v['filebrowserImageUploadUrl'] = url('files/editor', array('query' => 'op=ckeditor&name=upload&type=image'));
-    if (!$v['filebrowserBrowseUrl']) {
+	  if (empty($v['filebrowserImageUploadUrl'])) {
+		  $v['filebrowserImageUploadUrl'] = url('files/editor', array('query' => 'op=ckeditor&name=upload&type=image'));
+	  }
+    if (empty($v['filebrowserBrowseUrl'])) {
       $v['filebrowserBrowseUrl'] = url('files/editor', array('query' => 'op=ckeditorbrowser&type=image'));
     }
     $v['filebrowserWindowHeight'] = '100%';
@@ -1185,13 +1188,17 @@ function dd_get_editor_text($dom, $type = 'html', $v = array()) {
     dd_add_css('misc/markitup/skins/dida/style.css');
   }
   
-  if ($v['upload_image'] && !$v['filebrowserImageUploadUrl']) {
-    $v['filebrowserImageUploadUrl'] = url('files/editor', array('query' => 'op=markitup&name=upload&type=image'));
+  if ($v['upload_image']) {
+    if (empty($v['filebrowserImageUploadUrl'])) {
+      $v['filebrowserImageUploadUrl'] = url('files/editor', array('query' => 'op=markitup&name=upload&type=image'));
+    }
     $v['filebrowserImageBrowseUrl'] = url('files/editor', array('query' => 'op=markitupbrowser&name=upload&type=image'));
   }
   
-  if ($v['upload'] && !$v['filebrowserUploadUrl']) {
-    $v['filebrowserUploadUrl'] = url('files/editor', array('query' => 'op=markitup&name=upload'));
+  if ($v['upload']) {
+    if (empty($v['filebrowserUploadUrl'])) {
+      $v['filebrowserUploadUrl'] = url('files/editor', array('query' => 'op=markitup&name=upload'));
+    }
     $v['filebrowserBrowseUrl'] = url('files/editor', array('query' => 'op=markitupbrowser&name=upload'));
   }
   
@@ -2004,6 +2011,13 @@ function system_cron($timestamp) {
   db_exec('DELETE FROM {cache_page} WHERE expire != 0 AND expire < ?', array($_SERVER['REQUEST_TIME']));
   db_exec('DELETE FROM {cache_menu} WHERE expire != 0 AND expire < ?', array($_SERVER['REQUEST_TIME']));
   db_exec('DELETE FROM {cache_form} WHERE expire != 0 AND expire < ?', array($_SERVER['REQUEST_TIME']));
+  
+  // 清除 status < 1 的文件，每次清理 500 条记录
+  if ($fetch = db_query('SELECT fid, filepath FROM {files} WHERE status < 1', NULL, array('limit' => 500))) {
+    foreach ($fetch as $o) {
+      file_delete($o->fid, 1, $o->filepath);
+    }
+  }
   
   // 清理过期文件，storage 表中不存在的条目，则视为过期
   

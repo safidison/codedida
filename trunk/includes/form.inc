@@ -23,7 +23,7 @@
 */
 
 function dd_get_form($form_id) {
-  global $conf, $user;
+  global $conf, $user, $form_tokens;
   dd_add_js('misc/form.js');
   
   $args = func_get_args();
@@ -34,6 +34,8 @@ function dd_get_form($form_id) {
   } else {
   	$form_token = md5(uniqid(mt_rand(), true));
   }
+  
+  $form_tokens[$form_id] = $form_token;
   
   $form = call_user_func_array($form_id, $args);
   
