@@ -7,14 +7,28 @@
 function system_file_upload() {
   switch ($_GET['op']) {
     case 'ckeditor': case 'swfupload': case 'markitup':
-      if ($_GET['name'] && $_FILES[$_GET['name']]) {
+      if (!empty($_GET['name']) && $_FILES[$_GET['name']]) {
         
-        $validate = array('ext_type' => $_GET['op']);
-        
-        if ($_GET['image_size']) {
+        if (!empty($_GET['image_size'])) {
           $validate['image']['size'] = $_GET['image_size'];
-        } else if ($_GET['type'] == 'image') {
+        } else if (!empty($_GET['type']) && $_GET['type'] == 'image') {
           $validate['image'] = true;
+        }
+        
+        if (!empty($_GET['ext_type'])) {
+          $validate['ext_type'] = $_GET['ext_type'];
+        }
+        
+        if (!empty($_GET['ext_id']) && is_numeric($_GET['ext_id'])) {
+          $validate['ext_id'] = $_GET['ext_id'];
+        }
+        
+        if (!empty($_GET['ext_id2']) && is_numeric($_GET['ext_id2'])) {
+          $validate['ext_id2'] = $_GET['ext_id2'];
+        }
+        
+        if (isset($_GET['status']) && is_numeric($_GET['status'])) {
+          $validate['status'] = $_GET['status'];
         }
         
         $file = file_save_upload($_FILES[$_GET['name']], $validate);
