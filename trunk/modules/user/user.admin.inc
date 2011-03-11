@@ -61,7 +61,7 @@ function user_admin_view($ac) {
 		case 'newpass':
       _user_admin_tabs();
       dd_set_sub_tabs(array(
-        l(t('user', '%string 的资料编辑', array('%string' => $ac->name)), $_GET['q']),
+        l(t('user', '%string 的资料编辑', array('%string' => $ac->name)), 'admin/users/view/'.$ac->uid.'/edit'),
         l(t('user', '密码修改'), $_GET['q'])
       ));
 		return dd_get_form('user_admin_new_pass', $ac);

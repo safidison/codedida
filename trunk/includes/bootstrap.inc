@@ -1452,10 +1452,6 @@ function dd_http_request($url, $data = NULL, $method = 'POST', $headers = array(
   switch ($uri['scheme']) {
     case 'http': case 'feed':
       $port = isset($uri['port']) ? $uri['port'] : 80;
-      $host = $uri['host'] . ($port != 80 ? ':'. $port : '');
-      $fp = @fsockopen($uri['host'], $port, $errno, $errstr, $timeout);
-      
-      $port = isset($uri['port']) ? $uri['port'] : 80;
       $socket = 'tcp://' . $uri['host'] . ':' . $port;
       $options['headers']['Host'] = $uri['host'] . ($port != 80 ? ':' . $port : '');
       
@@ -1528,7 +1524,7 @@ function dd_http_request($url, $data = NULL, $method = 'POST', $headers = array(
     $options['headers']['Content-Type'] = 'application/x-www-form-urlencoded; charset=utf-8';
   }
   
-  $request = $options['method'] . ' ' . $path . " HTTP/1.1\r\n";
+  $request = $options['method'] . ' ' . $path . " HTTP/1.0\r\n";
   foreach ($options['headers'] as $name => $value) {
     $request .= $name . ': ' . trim($value) . "\r\n";
   }
@@ -1558,10 +1554,12 @@ function dd_http_request($url, $data = NULL, $method = 'POST', $headers = array(
   // 解析响应
   list($response, $result->data) = explode("\r\n\r\n", $response, 2);
   
-  // 过滤 Transfer-Encoding 标识
+  /*
+  // http 1.1 分块输出，过滤 Transfer-Encoding 标识
   if ($result->data && strpos($response, 'Transfer-Encoding: chunked') !== false) {
     $result->data = dd_filter_unchunkHttp11($result->data);
   }
+  */
   
   $response = preg_split("/\r\n|\n|\r/", $response);
   
