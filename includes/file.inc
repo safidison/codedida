@@ -605,10 +605,15 @@ function file_save_validate(&$file, $validate) {
         break;
         default:
           if (!isset($file->{$key})) {
-          $file->{$key} = $val;
+            $file->{$key} = $val;
           }
       }
     }
+    
+    if (!empty($validate['watermark']) && strpos($file->filemime, 'image/') !== false) {
+      image_gd_mark($file->filepath);
+    }
+    
   }
   
   return true;
@@ -724,7 +729,7 @@ function file_validate_image(&$file, $val) {
           $w = explode('x', $item);
           if (($data['width'] > $w[0]) || ($data['height'] > $w[1])) {
             $function = 'image_'. ($val['style'] ? $val['style'] : 'scale_resize');
-            if ($function($file->filepath, $file->filepath, $w[0], $w[1], $val['watermark'])) {
+            if ($function($file->filepath, $file->filepath, $w[0], $w[1], false)) {
               dd_set_message(t('system', '图片长宽超限，已被缩减至 %string', array('%string' => $w[0] .'x'. $w[1])));
             }
           }

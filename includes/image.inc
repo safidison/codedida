@@ -205,9 +205,27 @@ function image_gd_resize($source, $destination, $width, $height, $mark = false) 
   }
   imagecopyresampled($res, $im, 0, 0, 0, 0, $width, $height, $info['width'], $info['height']);
   /*
-  if (!$mark && $width > 200 && $height > 200) {
-    $watermark = imagecreatefrompng('misc/watermark.png');
-    imagecopy($res, $watermark, $width-155, $height-35, 0, 0, 145, 25);
+  if (!$mark && $width > 149 && $height > 119) {
+    $watermark = imagecreatefrompng('misc/images/watermark-min.png');
+    
+    $i = $_width = 0;
+    $_width_row = rand(80, 150);
+    
+    while ($_width < $width) {
+      if ($i > 30) break;
+      $_height = rand(60, 100);
+      $_height_count = floor($height/$_height);
+      while ($_height_count--) {
+        imagecopy($res, $watermark, $_width, $_height*$_height_count, 0, 0, 100, 30);
+      }
+      $_width += $_width_row;
+      ++$i;
+    }
+    
+    imagedestroy($watermark);
+    
+    $watermark = imagecreatefrompng('misc/images/watermark.png');
+    imagecopy($res, $watermark, $width-130, $height-46, 0, 0, 120, 36);
     imagedestroy($watermark);
   }
   */
@@ -219,22 +237,57 @@ function image_gd_resize($source, $destination, $width, $height, $mark = false) 
   return $result;
 }
 
-function image_gd_mark($filepath) {
+/**
+ * 图片水印
+ * @param (string) $filepath
+ * 	文件路径，必须是 php 有权限读写操作的文件
+ * @param (int) $min_width
+ * 	最小宽度，小于此宽度不打水印
+ * @param (int) $min_height
+ * 	最小高度，小于此高度不打水印
+ * @param (bool) $rand
+ * 	是否随机打水印
+ * @return (bool)
+ */
+function image_gd_mark($filepath, $min_width = 149, $min_height = 119, $rand = true) {
   $info = image_get_info($filepath);
-  if ($info['width'] > 200 && $info['height'] > 200) {
+  if ($info['width'] > $min_width && $info['height'] > $min_height) {
+    
     $im = image_gd_open($filepath, $info['extension']);
     if (!$im) {
       return false;
     }
-    $watermark = imagecreatefrompng('misc/watermark.png');
-    imagecopy($im, $watermark, $info['width']-155, $info['height']-35, 0, 0, 145, 25);
-    $result = image_gd_close($im, $filepath, $info['extension']);
+    
+    if ($rand) {
+      $watermark = imagecreatefrompng('misc/images/watermark-min.png');
+      
+      $i = $_width = 0;
+      $_width_row = rand(80, 150);
+      
+      while ($_width < $info['width']) {
+        if ($i > 30) break;
+        $_height = rand(60, 100);
+        $_height_count = floor($info['height']/$_height);
+        while ($_height_count--) {
+          imagecopy($im, $watermark, $_width, $_height*$_height_count, 0, 0, 100, 30);
+        }
+        $_width += $_width_row;
+        ++$i;
+      }
+      
+      imagedestroy($watermark);
+    }
+    
+    $watermark = imagecreatefrompng('misc/images/watermark.png');
+    imagecopy($im, $watermark, $info['width']-130, $info['height']-46, 0, 0, 120, 36);
     imagedestroy($watermark);
+    
+    $result = image_gd_close($im, $filepath, $info['extension']);
     imagedestroy($im);
+    
     return $result;
   }
 }
-
 /**
  * 旋转图像
  */
