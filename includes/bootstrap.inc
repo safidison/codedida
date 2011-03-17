@@ -1529,7 +1529,11 @@ function dd_http_request($url, $data = NULL, $method = 'POST', $headers = array(
     $request .= $name . ': ' . trim($value) . "\r\n";
   }
   
-  $request .= "\r\n" . $options['data'];
+  $request .= "\r\n";
+  
+  if (isset($options['data'])) {
+    $request .= $options['data'];
+  }
 
   $result->request = $request;
   
