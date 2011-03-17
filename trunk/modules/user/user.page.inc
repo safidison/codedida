@@ -306,19 +306,19 @@ function user_page_login_ajax() {
         switch ($_GET['call']) {
           case 'to':
             //关闭本页，刷新父页
-            dd_js_print('self.parent._tb_remove()');
+            dd_js_print('self.parent.dialog_colse()');
           break;
           case 'function':
             //执行指定函数
-            $_GET['function'] ? dd_js_print('self.parent.tb_remove(); self.parent.'. $_GET['function'] .'();') : dd_js_print('self.parent.tb_remove();');
+            $_GET['function'] ? dd_js_print('self.parent.dialog_colse(); self.parent.'. $_GET['function'] .'();') : dd_js_print('self.parent.dialog_colse();');
           break;
           case 'close':
             //关闭层
-            dd_js_print('self.parent.tb_remove();');
+            dd_js_print('self.parent.dialog_colse();');
           break;
           default:
             $url = $_GET['redirect'] ? $_GET['redirect'] : url(dd_get_token(var_get_key('user', 'redirect', 'user/' . $_SESSION['user']->uid), $_SESSION['user'], array('user', 'system')));
-            dd_js_print('window.location.href = "'.urldecode($url).'"');
+            dd_js_print('window.parent.location.href = "'.urldecode($url).'"');
         }
       } else {
         dd_js_print('alert(\''.t('user', '抱歉，登录失败了').'\')');
