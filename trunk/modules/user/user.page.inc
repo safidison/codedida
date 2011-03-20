@@ -91,6 +91,7 @@ function user_page_pass_submit(&$form, &$v) {
  */
 function user_page_newpass() {
   global $user;
+  
   if ($_GET['ajax'] == 'submit') {
     if (!$_POST['pass']) {
       $error[] = t('user', '新密码不能为空');
@@ -103,26 +104,34 @@ function user_page_newpass() {
     	$_POST['mail'] = $user->mail;
     	
     	if (!$error = module_invoke_all('user', 'newpass', (object)$_POST)) {
-        $ok = true;
+    	  $salt = user_get_salt_pass($_POST['pass']);
+        $ok = false;
+        
 	      if (!$_SESSION['oldpass'] || $_SESSION['oldpass'] < time() - 300) {
-          if ($_POST['pass'] != $_POST['oldpass']) {
-	          $ok = db_exec('UPDATE {users} SET pass = ? WHERE uid =? AND pass = ?', array(md5($_POST['pass']), $user->uid, md5($_POST['oldpass'])));
+          if ($_POST['pass'] != $_POST['oldpass'] 
+          && user_is_login_pass(array('uid' => $user->uid), $_POST['oldpass'])) {
+	          $ok = db_exec('UPDATE {users} SET pass = ?, salt = ? WHERE uid = ?',
+	          array($salt['pass'], $salt['salt'], $user->uid));
           }
 	      } else {
-	        db_exec('UPDATE {users} SET pass = ? WHERE uid = ?', array(md5($_POST['pass']), $user->uid));
-          
+	        $ok = db_exec('UPDATE {users} SET pass = ?, salt = ? WHERE uid = ?',
+	        array($salt['pass'], $salt['salt'], $user->uid));
 	        unset($_SESSION['oldpass']);
 	      }
+	      
 	      if ($ok) {
 	        setcookie(session_name(), session_id(), -1, '/', $cookie_domain);
 	        dd_set_message(t('user', '密码修改成功'));
 	        dd_js_print('window.location.href = "'.url('user/newpass').'"');
+	        
 	        exit();
 	      } else {
 	        $error[] = t('user', '旧密码不匹配');
 	      }
+	      
       }
     }
+    
     dd_js_print('$(\'#ajax_description\').html("'.addslashes(implode('<br />', dd_array2_to('value', $error))).'").show(300);');
     exit();
   }

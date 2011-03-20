@@ -871,14 +871,15 @@ function dd_rand_str() {
 }
 
 /**
- * 获取指定长度的不重复的随机字符串
+ * 获取指定长度的随机字符串
  * @param (int) $len
  *  字符串长度
  * @param (string) $query
- *  查询数据库语句，验证是否已使用，如：SELECT COUNT(name) FROM {users} WHERE name = ?
+ *  查询数据库语句，若有此值得，则获取不重复的值
+ *  验证是否已使用，如：SELECT COUNT(name) FROM {users} WHERE name = ?
  * @return (string)
  */
-function dd_get_rand_string($len, $query) {
+function dd_get_rand_string($len, $query = NULL) {
   $chars = array(
   'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k',
   'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v',
@@ -887,7 +888,7 @@ function dd_get_rand_string($len, $query) {
   'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '0', '1', '2',  
   '3', '4', '5', '6', '7', '8', '9');
   
-  $charsLen = count($chars) - 1;   
+  $charsLen = count($chars) - 1;
   
   $t = 1;
   while ($t) {
@@ -897,9 +898,14 @@ function dd_get_rand_string($len, $query) {
       $output .= $chars[mt_rand(0, $charsLen)];
     }
     
-    if (!db_query($query, array($output), array('return' => 'colum'))) {
+    if ($query) {
+      if (!db_query($query, array($output), array('return' => 'colum'))) {
+        $t = 0;
+      }
+    } else {
       $t = 0;
     }
+    
   }
   
   return $output;
