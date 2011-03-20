@@ -51,7 +51,7 @@ function system_file_upload() {
           if ($file->filepath) {
             $json['filepath'] = f($file->filepath);
           } else {
-            $json['error'] = '上传失败';
+            $json['error'] = t('system', '上传失败');
           }
           echo json_encode($json);
         }

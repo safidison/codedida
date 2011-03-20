@@ -1,5 +1,33 @@
 <?php
 // $Id$
+
+/**
+ * @Implement of hook_update_x()
+ * users 表添加 salt 字段，密码随机数，加强帐号安全
+ */
+function user_update_5() {
+  $salt = array(
+    'type' => 'char',
+    'length' => 6,
+    'not null' => TRUE,
+    'default' => '',
+    'description' => '密码随机数'
+  );
+  
+  if ($ret = db_add_field('users', 'salt', $salt)) {
+    // 修改已有用户密码及写入随机数
+    if ($fetch = db_query('SELECT uid, pass FROM {users}')) {
+      foreach ($fetch as $o) {
+        $salt = dd_get_rand_string(6);
+        db_exec('UPDATE {users} SET pass = ?, salt = ? WHERE uid = ?',
+        array(md5($o->pass . $salt), $salt, $o->uid));
+      }
+    }
+  }
+  
+  return $ret;
+}
+
 function user_schema() {
   $schema['role'] = array(
     'description' => '用户权限角色组',
@@ -102,6 +130,13 @@ function user_schema() {
         'not null' => TRUE,
         'default' => 0,
         'description' => '注册时间',
+      ),
+      'salt' => array(
+        'type' => 'char',
+        'length' => 6,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => '密码随机数'
       ),
       'login' => array(
         'type' => 'int',

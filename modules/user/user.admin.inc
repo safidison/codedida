@@ -132,10 +132,12 @@ function user_admin_new_pass($ac) {
 }
 
 function user_admin_new_pass_validate($form, $v) {
+  
   if ($v['pass'] != $v['pass2']) {
     $e['pass']['#error'][] = t('user', '两次密码不一致');
   } else if ($v['pass']) {
-    if (db_exec('UPDATE {users} SET pass = ? WHERE uid = ?', array(md5($v['pass']), $v['uid']))) {
+    $p = user_get_salt_pass($v['pass']);
+    if (db_exec('UPDATE {users} SET pass = ?, salt = ? WHERE uid = ?', array($p['pass'], $p['salt'], $v['uid']))) {
       dd_set_message(t('user', '密码修改成功'));
     } else {
       dd_set_message(t('user', '密码修改失败'), 'error');

@@ -577,8 +577,7 @@ function user_edit_validate($form, &$value) {
   }
   
   // 验证密码
-  if (!$error && $value['op'] == 'user' && !db_query('SELECT uid FROM {users} WHERE uid = ? AND pass = ?',
-  array($ac->uid, md5($value['pass'])), array('return' => 'column'))) {
+  if (!$error && $value['op'] == 'user' && !user_is_login_pass(array('uid' => $ac->uid), $value['pass'])) {
     $error['pass']['#error'][] = t('user', '密码不匹配');
   }
   
@@ -619,8 +618,10 @@ function user_edit_submit($form, &$value) {
     $ac->name = $value['_dida_values']->name;
   }
   
-  if (isset($value['_dida_values']->pass)) {
-    $value['_dida_values']->pass = md5($value['_dida_values']->pass);
+  if (isset($value['_dida_values']->pass) && $salt = user_get_salt_pass($value['_dida_values']->pass)) {
+    // 修改密码，并重新生成随机串
+    $value['_dida_values']->pass = $salt['pass'];
+    $value['_dida_values']->salt = $salt['salt'];
   } else {
     unset($value['_dida_values']->pass);
   }
@@ -945,7 +946,10 @@ function user_insert($value) {
   $value->created = $_SERVER['REQUEST_TIME'];
   $value->session = $_COOKIE[session_name()];
   $value->host = ip_address();
-  $value->pass = md5($value->pass);
+  
+  $salt = user_get_salt_pass($value->pass);
+  $value->pass = $salt['pass'];
+  $value->salt = $salt['salt'];
   
   if (db_write_record('users', $value)) {
     if ($value->uid) {
@@ -1003,6 +1007,51 @@ function _user_newpass($uid, $name, $mail) {
     );
     return true;
   }
+}
+
+/**
+ * 验证用户密码
+ * @param (array) $ac
+ *  需查询的用户，，uid、name、mail 必有其一，用于查询 salt
+ * @param (string) $pass
+ *  密码明文
+ * 
+ * @return (bool or object)
+ *  若该用户不存在或密码不匹配，返回 false。通过验证，返回用户对象，仅包含 uid name mail status
+ */
+function user_is_login_pass(array $ac, $pass) {
+  if (!empty($ac['uid'])) {
+    $user = db_query('SELECT uid, name, mail, status, salt, pass FROM {users} WHERE uid = ?',
+    array($ac['uid']), array('return' => 'one'));
+  } else if (!empty($ac['name'])) {
+    $user = db_query('SELECT uid, name, mail, status, salt, pass FROM {users} WHERE name = ?',
+    array($ac['name']), array('return' => 'one'));
+  } else if (!empty($ac['mail'])) {
+    $user = db_query('SELECT uid, name, mail, status, salt, pass FROM {users} WHERE mail = ?',
+    array($ac['mail']), array('return' => 'one'));
+  } else {
+    return false;
+  }
+  
+  if (!empty($user) && md5(md5($pass) . $user->salt) == $user->pass) {
+    unset($user->pass);
+    return $user;
+  } else {
+    return false;
+  }
+}
+
+/**
+ * 获取密码随机串和密码密文
+ * @param (string) $pass
+ *  密码明文
+ * @return (array) 返回密文和salt，salt 固定 6 位
+ *  array('salt' => '', 'pass' => '')
+ */
+function user_get_salt_pass($pass) {
+  $arr = array('salt' => dd_get_rand_string(6));
+  $arr['pass'] = md5(md5($pass) . $arr['salt']);
+  return $arr;
 }
 
 /**
@@ -1183,21 +1232,18 @@ function user_login_form($url = NULL) {
  * 登录验证
  */
 function user_login_validate(&$form, &$value) {
-  $value['_dida_values']->pass = md5($value['_dida_values']->pass);
-  
   if (strpos($value['_dida_values']->mail, '@') !== false) {
     $value['_dida_values']->name = NULL;
-    $user = db_query('SELECT uid, status FROM {users} WHERE mail = ? AND pass = ?',
-    array($value['_dida_values']->mail, $value['_dida_values']->pass), array('return' => 'one'));
+    $user = user_is_login_pass(array('mail' => $value['_dida_values']->mail), $value['_dida_values']->pass);
   } else {
     $value['_dida_values']->name = $value['_dida_values']->mail;
     $value['_dida_values']->mail = NULL;
     
-    $user = db_query('SELECT uid, status FROM {users} WHERE name = ? AND pass = ?',
-    array($value['_dida_values']->name, $value['_dida_values']->pass), array('return' => 'one'));
+    $user = user_is_login_pass(array('name' => $value['_dida_values']->name), $value['_dida_values']->pass);
   }
   
-  if ($user) {
+  if (!empty($user)) {
+    unset($value['_dida_values']->pass, $value['pass']);
     if (!$error = module_invoke_all('user_login_validate', $form, $value['_dida_values'])) {
       if ($msg = _user_login_validate($user, $value['_dida_values'])) {
         if ($msg === true) {
