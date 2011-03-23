@@ -37,7 +37,15 @@ if ($pass = var_get('cron_pass', false)) {
 }
 
 // 获得上一次执行时间
-$timestamp = var_get('cron_last_time', 0);
+//$timestamp = var_get('cron_last_time', 0);
+
+// 从数据库直接读取
+if ($value = db_query('SELECT value FROM {variable} WHERE name = ?',
+array('cron_last_time'), array('return' => 'column'))) {
+  $timestamp = unserialize($value);
+} else {
+  $value = 0;
+}
 
 /**
  * 获得最小执行时间，默认为 3600 秒，防止频繁执行
@@ -55,7 +63,8 @@ if ($GLOBALS['user']->uid != 1) {
 set_time_limit(600);
 
 // 读取任务列表，每次最多 100 条
-if ($fetch = db_query('SELECT * FROM {cron} WHERE status = 0 ORDER BY weight ASC, cid ASC', NULL, array('limit' => 100))) {
+if ($fetch = db_query('SELECT * FROM {cron} WHERE status = 0 
+ORDER BY weight ASC, cid ASC', NULL, array('limit' => 100))) {
   foreach ($fetch as $o) {
     if (!$o->data) continue;
     
@@ -81,7 +90,11 @@ if ($fetch = db_query('SELECT * FROM {cron} WHERE status = 0 ORDER BY weight ASC
 module_invoke_all('cron', $timestamp);
 
 // 写入运行时间
-var_set('cron_last_time', time());
+// var_set('cron_last_time', time());
+
+// 直接写入数据库，避免调用 var_set() 更新 conf.php 文件
+db_exec('UPDATE {variable} SET value = ? WHERE name = ?',
+array(serialize(time()), 'cron_min_time'));
 
 // 写入日志
 dd_log('cron', t('system', '成功运行了计划任务'));

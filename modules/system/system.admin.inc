@@ -737,13 +737,14 @@ function system_cache_settings() {
     l(t('system', '页面缓存清理'), 'admin/cache/clearpage'),
   ));
   
-  $options['./includes/cache.inc'] = t('system', '系统默认');
+  $options['/includes/cache.inc'] = t('system', '系统默认');
   
-  if (is_dir('./includes/cache')) {
-    if ($objs = glob('./includes/cache/*')) {
+  if (is_dir(DIDA_ROOT . '/includes/cache')) {
+    if ($objs = glob(DIDA_ROOT . '/includes/cache/*')) {
       foreach ($objs as $obj) {
         if (strpos($obj, '.inc') !== false) {
-          $options[$obj] = next(explode('.', basename($obj), 3));
+          $name = basename($obj);
+          $options['/includes/cache/' . $name] = next(explode('.', $name, 3));
         }
       }
     }
@@ -753,7 +754,7 @@ function system_cache_settings() {
     '#title' => t('system', '缓存方式'),
     '#type' => 'select',
     '#required' => 1,
-    '#default_value' => var_get('dd_cache_file', './includes/cache.inc'),
+    '#default_value' => var_get('dd_cache_file', '/includes/cache.inc'),
     '#options' => $options,
   );
   

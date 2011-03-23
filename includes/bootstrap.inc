@@ -15,7 +15,7 @@ function bootstrap($op, $inc = NULL) {
 
   if ($called) return;
 
-  global $cookie_domain, $user, $database, $dbc, $db, $conf, $conf_dir, $installed;
+  global $cookie_domain, $user, $database, $dbc, $db, $conf, $conf_dir, $installed, $free_update;
 
   if (is_file(DIDA_ROOT . '/sites/config.php')) {
     require_once DIDA_ROOT . '/sites/config.php';
@@ -66,7 +66,7 @@ function bootstrap($op, $inc = NULL) {
       require_once DIDA_ROOT . '/includes/image.inc';
       require_once DIDA_ROOT . '/includes/form.inc';
       require_once DIDA_ROOT . '/includes/file.inc';
-      require_once var_get('dd_cache_file', DIDA_ROOT . '/includes/cache.inc');
+      require_once DIDA_ROOT . var_get('dd_cache_file', '/includes/cache.inc');
       require_once DIDA_ROOT . '/includes/module.inc';
       require_once DIDA_ROOT . '/includes/menu.inc';
       require_once DIDA_ROOT . '/includes/pager.inc';
@@ -917,7 +917,9 @@ function dd_get_rand_string($len, $query = NULL) {
 function ip_address() {
   static $ip_address = NULL;
   if (!isset($ip_address)) {
-    $ip_address = $_SERVER['REMOTE_ADDR'];
+    if (isset($_SERVER['REMOTE_ADDR'])) {
+      $ip_address = $_SERVER['REMOTE_ADDR'];
+    }
     if (array_key_exists('HTTP_X_FORWARDED_FOR', $_SERVER)) {
       $ip_address = array_pop(explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']));
     }
@@ -1360,7 +1362,7 @@ function dd_php_error($errno, $message, $filename, $line = NULL, $context = NULL
 
     text_log('php_error', dd_error_msg($msg));
 
-    if (!$GLOBALS['conf']['debug']) return;
+    if (empty($GLOBALS['conf']['debug'])) return;
     if ($GLOBALS['conf']['debug'] == 2 && $GLOBALS['user']->uid != 1) return;
 
     dd_set_message($msg, 'error');
@@ -1693,11 +1695,11 @@ function dd_filter_unchunkHttp11($data) {
 function dd_error_msg($msg) {
   global $user;
   $error = array(
-    '错误信息：'.$msg,
+    '错误信息：'. $msg,
     '发生时间：'. format_date(time()),
     '当前用户：'.($GLOBALS['user'] ? $GLOBALS['user']->name : '游客'),
     '用户主机：'. ip_address(),
-    '当前页面：'.$_SERVER['REQUEST_URI']
+    '当前页面：'. isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '未知'
   );
   return implode("\n", $error);
 }
