@@ -324,31 +324,34 @@ function _system_call_custom_form($op) {
 } 
 
 function _system_call_custom_form_validate(&$form, &$v) {
-  if ($uid = db_query('SELECT uid FROM {users} WHERE name = ? AND pass = ?',
-  array($v['name'], md5($v['pass'])), array('return' => 'column'))) {
-    if ($uid == 1) {
-      if ($v['op'] == 'cache_clear') {
-        system_cache_clear_submit($form, $v);
-      } else if ($v['op'] == 'install') {
-        // 升级模块
-        global $conf;
-        $modules = array_keys($conf['modules']);
-        
-        $query = module_set_enabled('enabled', 'module', $modules);
-        
-        if (!empty($query) && is_array($query)) {
-          dd_set_message('升级成功，升级中执行了以下 sql：<br>' .implode('<br>', $query));
-        } else {
-          dd_set_message(t('system', '没有模块需要升级'));
-        }
-        
-        dd_goto(NULL);
+  if ($GLOBALS['free_update'] !== true) {
+    if ($ac = user_is_login_pass(array('name' => $v['name']), $v['pass'])) {
+      if ($ac->uid != 1) {
+        $t['name']['#error'][] = t('system', '你没有权限使用此功能');
       }
     } else {
-      $t['name']['#error'][] = t('system', '只有 uid 为 1的用户才能使用此功能');
+      $t['name']['#error'][] = t('system', '帐号和密码不匹配');
     }
-  } else {
-    $t['name']['#error'][] = t('system', '帐号和密码不匹配');
+  }
+  
+  if (empty($t)) {
+    if ($v['op'] == 'cache_clear') {
+      system_cache_clear_submit($form, $v);
+    } else if ($v['op'] == 'install') {
+      // 升级模块
+      global $conf;
+      $modules = array_keys($conf['modules']);
+      
+      $query = module_set_enabled('enabled', 'module', $modules);
+      
+      if (!empty($query) && is_array($query)) {
+        dd_set_message('升级成功，升级中执行了以下 sql：<br>' .implode('<br>', $query));
+      } else {
+        dd_set_message(t('system', '没有模块需要升级'));
+      }
+      
+      dd_goto(NULL);
+    }
   }
   
   return $t;
