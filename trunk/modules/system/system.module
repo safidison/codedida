@@ -107,7 +107,7 @@ function system_menu() {
     'page_callback' => 'system_status_update',
   );
   $items['admin/status/php'] = array(
-    'access_callback' => true,
+    'access_arguments' => array('system view admin'),
     'page_callback' => 'system_status_php',
     'file' => 'system.admin.inc',
   );
