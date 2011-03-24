@@ -66,7 +66,11 @@ function bootstrap($op, $inc = NULL) {
       require_once DIDA_ROOT . '/includes/image.inc';
       require_once DIDA_ROOT . '/includes/form.inc';
       require_once DIDA_ROOT . '/includes/file.inc';
-      require_once DIDA_ROOT . var_get('dd_cache_file', '/includes/cache.inc');
+      if (is_file(DIDA_ROOT . var_get('dd_cache_file'))) {
+        require_once DIDA_ROOT . var_get('dd_cache_file');
+      } else {
+        require_once DIDA_ROOT . '/includes/cache.inc';
+      }
       require_once DIDA_ROOT . '/includes/module.inc';
       require_once DIDA_ROOT . '/includes/menu.inc';
       require_once DIDA_ROOT . '/includes/pager.inc';
@@ -2145,6 +2149,8 @@ function dd_dialog_att($height = 400, $width = 600, $iframe = true, $inlineId = 
  */
 function dd_set_message($message = NULL, $type = 'status', $repeat = true) {
   if ($message) {
+    if (is_array($message)) $message = dd_array_to_string($message);
+    
     if ($type == 'sql_bug' && !$GLOBALS['conf']['debug']) {
       text_log('sql_bug', $message);
       if (!$GLOBALS['conf']['debug']) {

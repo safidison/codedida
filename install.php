@@ -1,6 +1,8 @@
 <?php
 // $Id$
-error_reporting(E_ERROR|E_PARSE|E_CORE_ERROR|E_CORE_WARNING);
+
+error_reporting(E_ALL ^ E_NOTICE);
+
 define('DIDA_ROOT', getcwd());
 
 if (is_file('sites/config.php')) {
@@ -11,11 +13,12 @@ if (is_file('sites/config.php')) {
     $conf_dir = $config['default'];
   }
 }
-if (!$conf_dir) {
-  if (!is_dir('sites/'.$_SERVER['HTTP_HOST'])) {
+
+if (empty($conf_dir)) {
+  if (!is_dir('sites/' . $_SERVER['HTTP_HOST'])) {
     $conf_dir = 'sites';
   } else {
-    $conf_dir = 'sites/'.$_SERVER['HTTP_HOST'];
+    $conf_dir = 'sites/' . $_SERVER['HTTP_HOST'];
   }
 }
 
@@ -36,9 +39,9 @@ if (is_file($setting_file)) {
     $base_path = '/';
   }
   
-  if ($installed) {
-    if ($conf['status']) {
-      header('Location: '.$base_path, true, 301);
+  if (!empty($installed)) {
+    if (!empty($conf['status'])) {
+      header('Location: ' . $base_path, true, 301);
     } else {
       header('Content-Type: text/html; charset=utf-8');
       echo $setting_file . ' 文件显示系统已经安装，或许这是一个旧的配置文件，请确认并清除该文件内容';
@@ -62,29 +65,35 @@ if (is_file('./install/install.php') && function_exists('install')) {
 $title = '检查安装环境';
 
 if (!$error = dida_is_setup()) { // 检查安装环境
-	switch ($_GET['setup']) {
-	  case 1:
-      $title = '选择数据库';
-	    $database_type = dida_setup_data_select(); // 选择数据库
-	  break;
-	  case 2:
-      $title = '填写数据库信息';
-	    $database_form = dida_setup_data_form(); // 填写数据库信息
-	  break;
-	  case 3:
-      $title = '测试数据库权限';
-	    $body = dida_setup_data_test(); // 测试数据库
-	  break;
-	  case 4:
-      $title = '填写管理员信息';
-	    $body = dida_setup(); // 安装程序
-	  break;
-	  default:
-	  	dd_goto(f('install.php?setup=1'));
-	}
+  if (empty($_GET['setup'])) {
+    dd_goto(f('install.php?setup=1'));
+  } else {
+  	switch ($_GET['setup']) {
+  	  case 1:
+        $title = '选择数据库';
+  	    $database_type = dida_setup_data_select(); // 选择数据库
+  	  break;
+  	  case 2:
+        $title = '填写数据库信息';
+  	    $database_form = dida_setup_data_form(); // 填写数据库信息
+  	  break;
+  	  case 3:
+        $title = '测试数据库权限';
+  	    $body = dida_setup_data_test(); // 测试数据库
+  	  break;
+  	  case 4:
+        $title = '填写管理员信息';
+  	    $body = dida_setup(); // 安装程序
+  	  break;
+  	  default:
+  	  	dd_goto(f('install.php?setup=1'));
+  	}
+  }
 }
 
 function dida_is_setup() {
+  $error = NULL;
+  
   if (version_compare(PHP_VERSION, '5.2.0', '<')) {
     $error[] = 'PHP版本至少为 5.2';
   }
@@ -104,7 +113,7 @@ function dida_is_setup() {
     $error[] = ' 日志目录(sites/logs)必须有读取权限 ';
   }
   
-  if ($error) return $error;
+  if (!empty($error)) return $error;
   
   global $conf, $conf_dir, $conf_file, $setting_file;
   
@@ -142,13 +151,13 @@ function dida_setup_data_select() {
   global $database, $setting_file;
   $type = db_info();
   
-  if ($_GET['clear']) {
+  if (!empty($_GET['clear'])) {
     if (file_put_contents($setting_file, '')) {
       $database = NULL;
     }
   }
   
-  if ($_POST['driver'] && $type[$_POST['driver']]) {
+  if (!empty($_POST['driver']) && !empty($type[$_POST['driver']])) {
     $setting_string = '<?php';
     $setting_string .= "\n";
     $setting_string .= '$database[\'default\'] = array(';
@@ -158,7 +167,8 @@ function dida_setup_data_select() {
     }
   }
   
-  if ($database && $database['default'] && $database['default']['driver'] && $type[$database['default']['driver']]) {
+  if (!empty($database) && !empty($database['default']) 
+  && !empty($database['default']['driver']) && !empty($type[$database['default']['driver']])) {
     dd_goto(f('install.php?setup=2'));
   }
   
@@ -167,10 +177,14 @@ function dida_setup_data_select() {
 
 function dida_setup_data_form() {
   global $database, $error, $conf_dir, $setting_file;
+  
   $type = db_info();
-  if (!$database || !$database['default'] || !$database['default']['driver']  |$type[$database['default']['driver']]) {
+  
+  if (empty($database) || empty($database['default']) 
+  || empty($database['default']['driver']) || empty($type[$database['default']['driver']])) {
     dd_goto(f('install.php?setup=1'));
   }
+  
   require_once './includes/database/install.'.$database['default']['driver'].'.inc';
   
   $form = '<input type="hidden" name="driver" value="'.$database['default']['driver'].'" />';
@@ -181,7 +195,7 @@ function dida_setup_data_form() {
       if (cache_system_set_file('setting.php', 'database[\'default\']', $_POST, $conf_dir)) {
         dd_goto(f('install.php?setup=3'));
       } else {
-        $error[] = '保存失败，请删除 '.$setting_file;
+        $error[] = '保存失败，请删除 ' . $setting_file;
       }
     } else {
       $database['default'] = $_POST;
@@ -267,27 +281,28 @@ function dida_setup_data_test() {
   	$error[] = '连接数据库失败，请检查配置，或<a href="install.php?setup=1&clear=1">重新开始安装</a>';
   }
   
-  if (!$error) {
+  if (empty($error)) {
     dd_goto(f('install.php?setup=4'));
   }
 }
 
 function dida_setup() {
   global $base_path, $error, $setting_file;
+  
   if ($_POST) {
-    if (!$_POST['admin']) {
+    if (empty($_POST['admin'])) {
       $error[] = '管理员帐号不能为空。';
-    } else if (!$_POST['mail']) {
+    } else if (empty($_POST['mail'])) {
       $error[] = '邮箱不能为空。';
-    } else if (!$_POST['adminpass']) {
+    } else if (empty($_POST['adminpass'])) {
       $error[] = '管理员帐号密码不能为空。';
     } else if ($_POST['adminpass'] != $_POST['adminpass2']) {
       $error[] = '两次输入的密码不一致。';
-    } else if (!$_POST['site_name']) {
+    } else if (empty($_POST['site_name'])) {
       $error[] = '网站名称不能为空。';
-    } else if (!$_POST['site_mail']) {
+    } else if (empty($_POST['site_mail'])) {
       $error[] = '站长邮箱不能为空。';
-    } else if (!$_POST['status']) {
+    } else if (empty($_POST['status'])) {
       $error[] = '请设置网站访问状态。';
     } else if (db_connect('default')) {
       
@@ -397,9 +412,9 @@ function _install_bootstrap() {
 
 function _install_setting_chmod() {
   global $database, $conf_dir, $setting_file;
+  
   $text[] = '$database[\'default\'] = ' . var_export($database['default'], true).";\n\n";
   $text[] = '$installed = true; // 不允许运行 install.php ';
-  //$text[] = 'define(\'DD_CACHE_FILE\', \'includes/cache.inc\'); // 缓存文件 ';
   $text[] = 'define(\'DD_ADMIN_PATH\', \'admin\'); // 管理路径 ';
   $text[] = 'ini_set(\'arg_separator.output\', "&amp;");';
   $text[] = 'ini_set(\'magic_quotes_runtime\', 0);';

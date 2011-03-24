@@ -712,7 +712,7 @@ function _dd_form_element(&$form, $field, $value, $error) {
 
 //字段错误信息
 function dd_form_error($field) {
-  if ($field['#error'][0]) {
+  if (!empty($field['#error'][0])) {
     return '<span class="form_error">'.implode('<br>', $field['#error'])."</span>\n";
   }
 }
@@ -991,7 +991,10 @@ function dd_form_label($field) {
     if ($field['#required']) $t .= '<span class="form_required" title="此项不能为空。">*</span>';
     $t .= "</label>\n";
   }
-  $t .= $field['#field_prefix'];
+  
+  if (!empty($field['#field_prefix'])) {
+    $t .= $field['#field_prefix'];
+  }
   return $t;
 }
 
