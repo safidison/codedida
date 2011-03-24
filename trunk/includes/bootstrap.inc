@@ -1178,8 +1178,13 @@ function conf_init() {
     $session_name = $cookie_domain;
   }
   
-  session_name('DIDA'. md5($session_name));
-
+  $session_name = 'DIDA' . md5($session_name);
+  
+  session_name($session_name);
+  if (!empty($_COOKIE[$session_name])) {
+    session_id($_COOKIE[$session_name]);
+  }
+  
   session_start();
 }
 

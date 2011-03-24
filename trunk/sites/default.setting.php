@@ -15,8 +15,20 @@
  * 安装状态
  * 若为 true，将无法访问安装文件(install.php)
  */
-
 $installed = false;
+
+/**
+ * cookie 作用域名，建议由系统自动判断
+ */
+// $cookie_domain = '.mysite.com';
+
+/**
+ * 有时候某个模块升级，代码的更改导致无法通过正常途径登录后台运行升级
+ * 这种情况下可通过 custom.php?module=system&op=install&bootstrap=full 运行升级
+ * 默认需要 uid 为 1 的用户输入密码
+ * 设为 true 后，允许匿名输入任何字符即可运行升级
+ */
+$free_update = false;
 
 // 默认数据库连接，安装时按提示输入，或直接在此填写
 
