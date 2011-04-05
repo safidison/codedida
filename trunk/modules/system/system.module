@@ -1015,7 +1015,7 @@ function system_setting_form($form) {
   return $form;
 }
 
-function system_setting_form_submit($form, $value) {
+function system_setting_form_submit($form, &$value) {
   if (is_array($value)) {
     foreach ($value as $key => $val) {
       if (!in_array($form['fields'][$key]['#type'], array('hidden', 'submit', 'button', 'file', 'captcha'))) {

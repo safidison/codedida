@@ -609,8 +609,10 @@ function file_save_validate(&$file, $validate) {
           }
       }
     }
-    
-    if (!empty($validate['watermark']) && strpos($file->filemime, 'image/') !== false) {
+
+    if ((!empty($validate['watermark']) || (!isset($validate['watermark']) 
+      && var_get_key('file_image_watermark', 'default', 0))) 
+      && strpos($file->filemime, 'image/') !== false) {
       image_gd_mark($file->filepath);
     }
     
