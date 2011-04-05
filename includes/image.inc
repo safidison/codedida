@@ -46,6 +46,12 @@ function image_get_thumb($fid, $filepath, $size, $style = 'scale') {
   return $files[$fid][$size][$style];
 }
 
+/**
+ * 获取图片信息 
+ * @param (string) $file 
+ *  图片路径，php 须有读写权限
+ * @return (array)
+ */
 function image_get_info($file) {
   $details = false;
   $data = @getimagesize($file);
@@ -63,6 +69,21 @@ function image_get_info($file) {
   return $details;
 }
 
+/**
+ * 剪裁图片，在保证尺寸的前提下，最大限度保持比例
+ * @param string $source 
+ *  待剪裁的图片路径
+ * @param string $destination 
+ *  剪裁后图片的保存位置
+ * @param int $width 
+ *  剪裁后的图片宽度
+ * @param int $height 
+ *  剪裁后的图片高度
+ * @param bool $mark 
+ *  是否添加水印，若不设置，则使用全局设置
+ * @access public
+ * @return bool
+ */
 function image_scale_resize($source, $destination, $width, $height, $mark = NULL) {
   $info = image_get_info($source);
   $aspect = $info['height'] / $info['width'];
@@ -95,6 +116,21 @@ function image_scale_resize($source, $destination, $width, $height, $mark = NULL
   }
 }
 
+/**
+ * 剪裁图片，保证图片尺寸，也保持原图比例，若比例不一致，则进行二次剪裁
+ * @param string $source 
+ *  待剪裁的图片路径
+ * @param string $destination 
+ *  剪裁后图片的保存位置
+ * @param int $width 
+ *  剪裁后的图片宽度
+ * @param int $height 
+ *  剪裁后的图片高度
+ * @param bool $mark 
+ *  是否添加水印，若不设置，则使用全局设置
+ * @access public
+ * @return bool
+ */
 function image_scale_and_crop($source, $destination, $width, $height, $mark = NULL) {
   $info = image_get_info($source);
 
@@ -108,6 +144,21 @@ function image_scale_and_crop($source, $destination, $width, $height, $mark = NU
   return false;
 }
 
+/**
+ * 剪裁图片，保持图片比例
+ * @param string $source 
+ *  待剪裁的图片路径
+ * @param string $destination 
+ *  剪裁后图片的保存位置
+ * @param int $width 
+ *  剪裁后的图片宽度
+ * @param int $height 
+ *  剪裁后的图片高度
+ * @param bool $mark 
+ *  是否添加水印，若不设置，则使用全局设置
+ * @access public
+ * @return bool
+ */
 function image_scale($source, $destination, $width, $height, $mark = NULL) {
   $info = image_get_info($source);
   
@@ -126,14 +177,59 @@ function image_scale($source, $destination, $width, $height, $mark = NULL) {
   return image_gd_resize($source, $destination, $width, $height, $mark);
 }
 
+/**
+ * 剪裁图片，保证尺寸
+ * @param string $source 
+ *  待剪裁的图片路径
+ * @param string $destination 
+ *  剪裁后图片的保存位置
+ * @param int $width 
+ *  剪裁后的图片宽度
+ * @param int $height 
+ *  剪裁后的图片高度
+ * @param bool $mark 
+ *  是否添加水印，若不设置，则使用全局设置
+ * @access public
+ * @return bool
+ */
 function image_resize($source, $destination, $width, $height, $mark = NULL) {
   return image_gd_resize($source, $destination, $width, $height, $mark);
 }
 
-function image_rotate($source, $destination, $degrees, $background = 0x000000) {
+/**
+ * 旋转图片
+ * @param string $source 
+ *  待旋转的图片路径
+ * @param string $destination 
+ *  旋转后图片的保存位置
+ * @param bool $mark 
+ *  是否添加水印，若不设置，则使用全局设置
+ * @access public
+ * @return bool
+ */
+function image_rotate($source, $destination, $degrees, $background = 0x000000, $mark = NULLi) {
   return image_gd_rotate($source, $destination, $degrees, $background);
 }
 
+/**
+ * 按给定坐标剪裁图片
+ * @param string $source 
+ *  待剪裁的图片路径
+ * @param string $destination 
+ *  剪裁后图片的保存位置
+ * @param int $x
+ *  剪裁 x 坐标
+ * @param int $y
+ *  剪裁 y 坐标
+ * @param int $width 
+ *  剪裁后的图片宽度
+ * @param int $height 
+ *  剪裁后的图片高度
+ * @param bool $mark 
+ *  是否添加水印，若不设置，则使用全局设置
+ * @access public
+ * @return bool
+ */
 function image_crop($source, $destination, $x, $y, $width, $height, $mark = NULL) {
   return image_gd_crop($source, $destination, $x, $y, $width, $height, $mark);
 }
@@ -173,7 +269,7 @@ function image_to_type_data($source, $ext, $newext, $newsource) {
 /**
  * 裁剪，固定大小
  */
-function image_gd_resize($source, $destination, $width, $height, $mark = false) {
+function image_gd_resize($source, $destination, $width, $height, $mark = NULL) {
   if (!file_exists($source)) {
     return false;
   }
@@ -204,31 +300,12 @@ function image_gd_resize($source, $destination, $width, $height, $mark = false) 
     }
   }
   imagecopyresampled($res, $im, 0, 0, 0, 0, $width, $height, $info['width'], $info['height']);
-  /*
-  if (!$mark && $width > 149 && $height > 119) {
-    $watermark = imagecreatefrompng('misc/images/watermark-min.png');
-    
-    $i = $_width = 0;
-    $_width_row = rand(80, 150);
-    
-    while ($_width < $width) {
-      if ($i > 30) break;
-      $_height = rand(60, 100);
-      $_height_count = floor($height/$_height);
-      while ($_height_count--) {
-        imagecopy($res, $watermark, $_width, $_height*$_height_count, 0, 0, 100, 30);
-      }
-      $_width += $_width_row;
-      ++$i;
-    }
-    
-    imagedestroy($watermark);
-    
-    $watermark = imagecreatefrompng('misc/images/watermark.png');
-    imagecopy($res, $watermark, $width-130, $height-46, 0, 0, 120, 36);
-    imagedestroy($watermark);
+  
+  // 添加水印
+  if (!empty($mark) || (!isset($mark) && var_get_key('file_image_watermark', 'default', 0))) {
+    $res = image_gd_mark($source, array(), $res);
   }
-  */
+  
   $result = image_gd_close($res, $destination, $info['extension']);
 
   imagedestroy($res);
@@ -241,25 +318,54 @@ function image_gd_resize($source, $destination, $width, $height, $mark = false) 
  * 图片水印
  * @param (string) $filepath
  * 	文件路径，必须是 php 有权限读写操作的文件
- * @param (int) $min_width
- * 	最小宽度，小于此宽度不打水印
- * @param (int) $min_height
- * 	最小高度，小于此高度不打水印
- * @param (bool) $rand
- * 	是否随机打水印
- * @return (bool)
+ * @param (array) $args
+ *  水印设置，所有参数皆可为空，默认使用全局配置 var_get('file_image_watermark')
+ *  array(
+ *    'garble' => true|false, // 是否随机添加混淆水印
+ *    'min_width' => 150, // 最小宽度，小于此宽度的图片不添加水印
+ *    'min_height' => 150, // 最小高度，小于此高度的图片不添加水印
+ *    'file' => 'misc/test.png', // 主水印图片，必须是 png 格式且 php 有权限读写的文件
+ *    'garble_file' => 'misc/test.pnc', // 混淆水印图片，同上
+ *    'width' => 100, // 主水印图片宽度，若自定义水印图片，则应该提供此值
+ *    'height' => 100, // 主水印图片高度，同上
+ *    'garble_width' => 50, // 同上
+ *    'garble_height' => 50, // 同上
+ *  )
+ * @param (resource) $im
+ *  GD 图片数据，若 $filepath 已打开，可直接传递 GD 数据
+ * @return (bool|resource)
  */
-function image_gd_mark($filepath, $min_width = 149, $min_height = 119, $rand = true) {
+function image_gd_mark($filepath, array $args = array(), $im = NULL) {
+  static $files;
+
+  if (isset($files[$filepath])) {
+    return !empty($im) ? $im : $files[$filepath];
+  }
+
+  $files[$filepath] = false;
+
+  $opt = array_merge(var_get('file_image_watermark', array()), $args);
+
+  if (empty($opt['file'])) {
+    dd_set_message(t('system', '水印图片不存在'), 'error');
+    return false;
+  }
+
   $info = image_get_info($filepath);
-  if ($info['width'] > $min_width && $info['height'] > $min_height) {
-    
-    $im = image_gd_open($filepath, $info['extension']);
-    if (!$im) {
+  
+  if ($info['width'] > $opt['min_width'] && $info['height'] > $opt['min_height']) {
+    if (empty($im)) {
+      $_im = image_gd_open($filepath, $info['extension']);
+    } else {
+      $_im = $im;
+    }
+
+    if (!$_im) {
       return false;
     }
     
-    if ($rand) {
-      $watermark = imagecreatefrompng('misc/images/watermark-min.png');
+    if ($opt['garble'] && is_file($opt['garble_file'])) {
+      $watermark = imagecreatefrompng($opt['garble_file']);
       
       $i = $_width = 0;
       $_width_row = rand(80, 150);
@@ -269,7 +375,8 @@ function image_gd_mark($filepath, $min_width = 149, $min_height = 119, $rand = t
         $_height = rand(60, 100);
         $_height_count = floor($info['height']/$_height);
         while ($_height_count--) {
-          imagecopy($im, $watermark, $_width, $_height*$_height_count, 0, 0, 100, 30);
+          imagecopy($_im, $watermark, $_width, $_height*$_height_count, 0, 0, 
+            $opt['garble_width'], $opt['garble_height']);
         }
         $_width += $_width_row;
         ++$i;
@@ -278,12 +385,19 @@ function image_gd_mark($filepath, $min_width = 149, $min_height = 119, $rand = t
       imagedestroy($watermark);
     }
     
-    $watermark = imagecreatefrompng('misc/images/watermark.png');
-    imagecopy($im, $watermark, $info['width']-130, $info['height']-46, 0, 0, 120, 36);
-    imagedestroy($watermark);
+    $watermark = imagecreatefrompng($opt['file']);
     
-    $result = image_gd_close($im, $filepath, $info['extension']);
-    imagedestroy($im);
+    imagecopy($_im, $watermark, $info['width']-$opt['width']-5, 
+      $info['height']-$opt['height']-5, 0, 0, $opt['width'], $opt['height']);
+
+    imagedestroy($watermark);
+
+    if ($im) {
+      return $_im;
+    }
+
+    $files[$filepath] = $result = image_gd_close($_im, $filepath, $info['extension']);
+    imagedestroy($_im);
     
     return $result;
   }
@@ -291,7 +405,7 @@ function image_gd_mark($filepath, $min_width = 149, $min_height = 119, $rand = t
 /**
  * 旋转图像
  */
-function image_gd_rotate($source, $destination, $degrees, $background = 0xFFFFFF) {
+function image_gd_rotate($source, $destination, $degrees, $background = 0xFFFFFF, $mark = NULL) {
   if (!function_exists('imageRotate')) {
     return false;
   }

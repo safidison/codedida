@@ -227,14 +227,76 @@ function system_site_files() {
           '#default_value' => var_get('user_file_size_role_'.$rid, 0)
         );
         if ($i == 0) {
-          $form['fields']['user_file_size_role_'.$rid]['#fieldset_prefix'] = 'desc';
-          $form['fields']['user_file_size_role_'.$rid]['#fieldset_legend'] = t('system', '按角色设置');
+          $form['fields']['user_file_size_role_'.$rid]['#fieldset_prefix'] = 'asc';
+          $form['fields']['user_file_size_role_'.$rid]['#fieldset_legend'] = t('system', '按角色分配空间');
         }
         $i = $rid;
       }
     }
     $form['fields']['user_file_size_role_'.$i]['#fieldset_suffix'] = 1;
   }
+  
+  $form['fields']['file_image_watermark'] = array(
+    '#fieldset_suffix' => 1,
+    '#fieldset_prefix' => 'asc',
+    '#fieldset_legend' => t('system', '图片水印设置'),
+  );
+  
+  $form['fields']['file_image_watermark']['default'] = array(
+    '#type' => 'radio',
+    '#required' => 1,
+    '#title' => t('system', '开启水印'),
+    '#description' => t('system', '自动为所有图片添加水印'),
+    '#options' => array(t('system', '否'), t('system', '是')),
+    '#default_value' => var_get_key('file_image_watermark', 'default', 0)
+  );
+  
+  $form['fields']['file_image_watermark']['Ufile'] = array(
+    '#type' => 'file',
+    '#title' => t('system', '水印图片'),
+    '#description' => t('system', '只能是 png 格式，不宜过大'),
+  );
+
+  $form['fields']['file_image_watermark']['file'] = array(
+    '#type' => 'hidden',
+    '#default_value' => var_get_key('file_image_watermark', 'file', 0),
+  );
+
+  $form['fields']['file_image_watermark']['garble'] = array(
+    '#type' => 'radio',
+    '#required' => 1,
+    '#title' => t('system', '开启混淆'),
+    '#options' => array(t('system', '否'), t('system', '是')),
+    '#default_value' => var_get_key('file_image_watermark', 'garble', 0),
+    '#description' => t('system', '在图片上添加多个随机水印'),
+  );
+  
+  $form['fields']['file_image_watermark']['Ugarble_file'] = array(
+    '#type' => 'file',
+    '#title' => t('system', '混淆水印'),
+    '#description' => t('system', '只能是 png 格式，不宜过于清晰'),
+  );
+  
+  $form['fields']['file_image_watermark']['garble_file'] = array(
+    '#type' => 'hidden',
+    '#default_value' => var_get_key('file_image_watermark', 'garble_file', 0)
+  );
+
+  $form['fields']['file_image_watermark']['min_width'] = array(
+    '#type' => 'textfield',
+    '#required' => 1,
+    '#title' => t('system', '最小宽度'),
+    '#description' => t('system', '小于此宽度的图片不添加水印'),
+    '#default_value' => var_get_key('file_image_watermark', 'min_width', 150)
+  );
+  
+  $form['fields']['file_image_watermark']['min_height'] = array(
+    '#type' => 'textfield',
+    '#required' => 1,
+    '#title' => t('system', '最小高度'),
+    '#description' => t('system', '小于此高度的图片不添加水印'),
+    '#default_value' => var_get_key('file_image_watermark', 'min_height', 150)
+  );
   
   $type = 'form';
   
@@ -249,7 +311,46 @@ function system_site_files() {
   return system_setting_form($form);
 }
 
-function system_site_files_validate($form, $v) {
+function system_site_files_validate($form, &$v) {
+  
+  if ($files = file_get_array_data()) {
+    $validate = array(
+      'savepath' => 'watemark',
+      'image' => array('type' => array('png')),
+      'no_insert' => 1
+    );
+    
+    if (!empty($files['file_image_watermark_Ufile'])) {
+      if ($file = file_save_upload($files['file_image_watermark_Ufile'], $validate, 0)) {
+        if (!empty($v['file_image_watermark']['file'])) {
+          @unlink($v['file_image_watermark']['file']);
+        }
+        $v['file_image_watermark']['file'] = $file->filepath;
+      }
+    }
+
+    if (!empty($files['file_image_watermark_Ugarble_file'])) {
+      if ($file = file_save_upload($files['file_image_watermark_Ugarble_file'], $validate, 0)) {
+        if (!empty($v['file_image_watermark']['garble_file'])) {
+          @unlink($v['file_image_watermark']['garble_file']);
+        }
+        $v['file_image_watermark']['garble_file'] = $file->filepath;
+      }
+    }
+  }
+
+  // 获取水印图片尺寸
+  if (!empty($v['file_image_watermark']['file']) && $info = image_get_info($v['file_image_watermark']['file'])) {
+    $v['file_image_watermark']['width'] = $info['width'];
+    $v['file_image_watermark']['height'] = $info['height'];
+  }
+
+  if (!empty($v['file_image_watermark']['garble_file']) 
+    && $info = image_get_info($v['file_image_watermark']['garble_file'])) {
+    $v['file_image_watermark']['garble_width'] = $info['width'];
+    $v['file_image_watermark']['garble_height'] = $info['height'];
+  }
+
   return module_invoke_all('system_site_files', 'validate', $form, $v);
 }
 
