@@ -864,7 +864,7 @@ function user_default_validate_mail($mail) {
 function user_register_validate($form, &$value) {
   if (!$t = user_default_validate_name($value['name'])) {
     if (!$t = user_default_validate_mail($value['mail'])) {
-      if (!isset($value['pass']) || ($v['pass'] != $v['pass'])) {
+      if (!isset($value['pass']) || ($value['pass'] != $value['pass'])) {
         $t['pass2']['#error'][] = t('user', '两次输入的密码不一致');
       } else if (!$t = field_get_node_validate('user', 'field', $value['_dida_values'], NULL, $form)) {
         $t = module_invoke_all('user_validate', $value['_dida_values']);
