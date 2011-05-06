@@ -84,7 +84,7 @@ function cache_set($cid, $data, $table = 'cache', $expire = NULL, $replace = 1) 
   $cache['data'] = $data;
   
   if ($expire) {
-    $cache['expire'] += $_SERVER['REQUEST_TIME'];
+    $cache['expire'] = $expire+$_SERVER['REQUEST_TIME'];
   } else {
     $cache['expire'] = 0;
   }
