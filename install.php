@@ -325,8 +325,11 @@ function dida_setup() {
             
             $admin = check_plain($_POST['admin']);
             
+            $pass = user_get_salt_pass($_POST['adminpass']);
+
             //写入第一个用户
-            db_query('INSERT INTO {users} (name, pass, mail, created, status) VALUES(?, ?, ?, ?, 1)', array($admin, md5($_POST['adminpass']), $_POST['mail'], $_SERVER['REQUEST_TIME']));
+            db_query('INSERT INTO {users} (name, pass, salt, mail, created, status) VALUES(?, ?, ?, ?, 1)',
+            array($admin, $pass['pass'], $pass['salt'], $_POST['mail'], $_SERVER['REQUEST_TIME']));
             
             //写入匿名用户
             db_query('INSERT INTO {users} (name, created, status) VALUES(?, ?, 1)', array('匿名', $_SERVER['REQUEST_TIME']));
