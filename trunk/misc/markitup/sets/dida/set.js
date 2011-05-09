@@ -65,6 +65,7 @@ Dida.markitup.html = function(obj) {
 		code: {name: '插入代码', dropMenu: 
 			[
 				 {name: 'PHP', replaceWith: function(h) { return extSet.code(h, 'php');} },
+				 {name: 'HTML', replaceWith: function(h) { return extSet.code(h, 'html');} },
 				 {name: 'ActionScript3', replaceWith: function(h) { return extSet.code(h, 'as3');} },
 				 {name: 'Bash/shell', replaceWith: function(h) { return extSet.code(h, 'bash');} },
 				 //{name: 'ColdFusion', replaceWith: function(h) { return extSet.code(h, 'cf');} },
