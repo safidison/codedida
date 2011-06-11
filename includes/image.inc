@@ -138,7 +138,7 @@ function image_scale_and_crop($source, $destination, $width, $height, $mark = NU
   $x = round(($info['width'] * $scale - $width) / 2);
   $y = round(($info['height'] * $scale - $height) / 2);
 
-  if (image_gd_resize($source, $destination, $info['width'] * $scale, $info['height'] * $scale, 1)) {
+  if (image_gd_resize($source, $destination, $info['width'] * $scale, $info['height'] * $scale, $mark)) {
     return image_gd_crop($destination, $destination, $x, $y, $width, $height, $mark);
   }
   return false;
