@@ -489,7 +489,7 @@ function file_create_name(&$file, $validate = NULL, $rename = 1) {
   }
   
   if (empty($file->filepath)) {
-    if (var_get('file_upload_rename', 1)) {
+    if (var_get('file_upload_rename', 0)) {
       $file->filepath = $savepath .'/'. md5($file->filename) . '.' . $file->extension;
     } else {
       $file->filepath = $savepath .'/'. $file->filename;
@@ -498,7 +498,7 @@ function file_create_name(&$file, $validate = NULL, $rename = 1) {
   
   // 重命名浏览器可执行的文件
   
-  if (preg_match('/\.(php|pl|py|cgi|asp|js)$/i', $file->filename) && (substr($file->filename, -4) != '.txt')) {
+  if (preg_match('/\.(php|pl|py|cgi|asp|js|html)$/i', $file->filename) && (substr($file->filename, -4) != '.txt')) {
     $file->filemime = 'text/plain';
     $file->filepath .= '.txt';
     $file->filename .= '.txt';

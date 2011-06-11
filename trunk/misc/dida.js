@@ -785,9 +785,8 @@ $(function() {
       o.buttonImageOnly = true;
       
       if (o.start || o.end) {
-        o.onClose = function(text) { 
-          var instance = $(this).data("datepicker");
-          uidata_vali($(this), text, instance, instance.settings.start ? 'start' : 'end');
+        o.onClose = function(text, instance) { 
+          uidata_vali(text, instance, instance.settings.start ? 'start' : 'end');
         };
       }
       
@@ -812,7 +811,7 @@ $(function() {
     });
   };
   
-  function uidata_vali(obj, text, instance, type) {
+  function uidata_vali(text, instance, type) {
     var val_end, val_start;
     if (type == 'start') {
       val_start = text;
@@ -827,7 +826,7 @@ $(function() {
       val_end = val_end.replace(re, '');
       val_start = val_start.replace(re, '');
       if (val_end <= val_start) {
-        obj.val('');
+        $(instance.settings.dom).eq(0).val('');
         alert('结束日期必须大于开始日期');
       }
     }

@@ -187,8 +187,8 @@ function system_site_files() {
     '#required' => 1,
     '#title' => t('system', '重命名'),
     '#description' => t('system', '将上传文件以 md5 方式重命名，可兼容中文名称上传'),
-    '#options' => array(t('system', '是'), t('system', '否')),
-    '#default_value' => var_get('file_upload_rename', 1)
+    '#options' => array(t('system', '否'), t('system', '是')),
+    '#default_value' => var_get('file_upload_rename', 0)
   );
   $form['fields']['file_directory_path'] = array(
     '#type' => 'textfield',
