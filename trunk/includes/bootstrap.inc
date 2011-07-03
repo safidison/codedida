@@ -1176,6 +1176,7 @@ function conf_init() {
     }
   } else {
     $session_name = $cookie_domain;
+    ini_set('session.cookie_domain', $cookie_domain);
   }
   
   $session_name = 'DIDA' . md5($session_name);
@@ -3738,10 +3739,15 @@ function dd_rss_item($fields, $item = 'item', $args = array()) {
         if (strpos($val, '<') !== false) {
           $val = '<![CDATA[ '.$val.' ]]> ';
         }
-        $output .= " <$key>". $val ."</$key>\n";
+        $output .= "<$key>". $val ."</$key>\n";
       } else {
-        $val['key'] = $key;
-        $output .= dd_xml_elements($val);
+        if (!is_numeric($key)) {
+          $output .= "<$key>";
+          $output .= dd_xml_elements($val, $key);
+          $output .= "</$key>";
+        } else {
+          $output .= dd_xml_elements($val, $key);
+        }
       }
     }
   } else if ($fields) {
@@ -3758,29 +3764,32 @@ function dd_rss_item($fields, $item = 'item', $args = array()) {
  * 解析 xml 自定义属性
  * @param (array) $array
  *  待解析数组
+ * @param (string) $root
+ *  项目名称
  * @return (string)
  */
-function dd_xml_elements($array) {
+function dd_xml_elements($array, $root = '') {
   $output = '';
   foreach ($array as $key => $value) {
     if (is_numeric($key)) {
-      if ($value['key']) {
-        $output .= ' <'. $value['key'];
+      if ($root) {
+        $output .= ' <'. $root;
         if (isset($value['attributes']) && is_array($value['attributes'])) {
           $output .= dd_attributes($value['attributes']);
         }
         if ($value['value'] != '') {
-          $output .= '>'. (is_array($value['value']) ? dd_xml_elements($value['value']) : check_plain($value['value'])) .'</'. $value['key'] .">\n";
+          $output .= '>'. (is_array($value['value']) ? dd_xml_elements($value['value']) : check_plain($value['value'])) .'</'. $root .">\n";
         } else {
           $output .= " />\n";
         }
       }
-    } else {
-      $output .= ' <'. $key .'>'. (is_array($value) ? dd_xml_elements($value) : check_plain($value)) ."</$key>\n";
+    } else if (!is_numeric($key)) {
+      $output .= ' <'. $key .'>' . (is_array($value) ? dd_xml_elements($value) : check_plain($value)) ."</$key>\n";
     }
   }
   return $output;
 }
+
 
 /**
  * 默认 feed 输
