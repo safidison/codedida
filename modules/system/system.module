@@ -1407,7 +1407,8 @@ function system_status_update($op = NULL) {
     $result = dd_http_request('http://www.didaah.org/custom.php?module=dida_tools&op=update', $value);
     if ($result->code > 0 && $result->data) {
       if ($data = json_decode($result->data)) {
-        cache_set('system_status_update', $data, 'cache', 3600);
+        // 两次检查间隔至少 12 小时
+        cache_set('system_status_update', $data, 'cache', 43200);
       }
     }
   }
@@ -2008,7 +2009,8 @@ function system_theme() {
  * hook_cron
  */
 function system_cron($timestamp) {
-  system_status_update('cron'); // 检查更新
+  system_status_update('cron'); // 检查核心程序更新
+
   // 清除过期缓存
   db_exec('DELETE FROM {cache} WHERE expire != 0 AND expire < ?', array($_SERVER['REQUEST_TIME']));
   db_exec('DELETE FROM {cache_page} WHERE expire != 0 AND expire < ?', array($_SERVER['REQUEST_TIME']));

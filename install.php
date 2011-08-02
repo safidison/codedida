@@ -418,6 +418,7 @@ function _install_setting_chmod() {
   
   $text[] = '$database[\'default\'] = ' . var_export($database['default'], true).";\n\n";
   $text[] = '$installed = true; // 不允许运行 install.php ';
+  $text[] = '$free_update = false; // 不允许匿名或普通用户执行升级';
   $text[] = 'define(\'DD_ADMIN_PATH\', \'admin\'); // 管理路径 ';
   $text[] = 'ini_set(\'arg_separator.output\', "&amp;");';
   $text[] = 'ini_set(\'magic_quotes_runtime\', 0);';
