@@ -3620,10 +3620,8 @@ function field_get_node_delete($module, $type, $node) {
       if ($data->field_module == 'field') {
         switch ($data->field_type) {
           case 'radio': case 'select': case 'checkbox': case 'selects': case 'tags':
-            db_exec('DELETE fields_term_node FROM {fields_term_node} 
-            INNER JOIN {fields_term} ON fields_term_node.tid = fields_term.tid 
-            WHERE fields_term_node.nid = ? AND fields_term.field_id = ?', 
-            array($node->nid, $data->field_id));
+            db_exec('DELETE FROM {fields_term_node} WHERE nid = ? AND tid IN 
+            (SELECT tid FROM {fields_term} WHERE field_id = ?)', array($node->nid, $data->field_id));
           break;
           
           case 'textfield':
