@@ -165,6 +165,7 @@ function dd_get_form($form_id) {
   $fields = dd_form_sort(dd_form_field($form, $form_values, $error));
   
   $output .= '<form '.dd_attributes($form['#args']).'>';
+
   if ($form['settings']['#title']) {
     $output .= '<h3>'.$form['settings']['#title'].'</h3>';
   }
@@ -172,7 +173,23 @@ function dd_get_form($form_id) {
     $output .= '<div class="description form_description form_setting_description">'.$form['settings']['#description'].'</div>';
   }
   
-  $output .= dd_form_html($form, $fields);
+  $tpl = DIDA_ROOT . '/' . $conf['themes'][$base_theme_name]['path'] . '/form/' . $form['#form_id'] . '.tpl.php';
+  
+  if (is_file($tpl)) {
+    /**
+     * 使用指定 tpl 输出表单 html
+     * 在该 tpl 中，可自由布局，但必须保证 name 值不变
+     * 注意：html 结构的更改，可能导致一些 js 功能失效，需要根据不同表单特别处理
+     * 示例参考 themes/default/form/user_page_pass.tpl.php
+     */
+    ob_start();
+    include $tpl;
+    $output .= ob_get_contents();
+    ob_end_clean();
+  } else {
+    $output .= dd_form_html($form, $fields);
+  }
+
   $output .= dd_form_hidden(array('#name' => 'form_id', '#value' => $form_id));
   $output .= dd_form_hidden(array('#name' => 'form_token', '#value' => $form_token));
   $output .= '</form>';

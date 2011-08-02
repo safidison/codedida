@@ -1,7 +1,7 @@
 <?php
 // $Id$
 
-define('DIDA_VERSION', '1.0 alpha 2');
+define('DIDA_VERSION', '1.0 alpha 3');
 
 /**
  * 系统初始化
