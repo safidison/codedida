@@ -1320,7 +1320,6 @@ function field_save(&$field) {
  */
 function field_load($field_id, $clear = NULL) {
   static $fields;
-  $lists = field_get_call_lists();
   if (!isset($fields[$field_id])) {
     $fields[$field_id] = field_get_cache_field($field_id, $clear);
   }
