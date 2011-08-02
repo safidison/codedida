@@ -1475,9 +1475,11 @@ function user_login($user) {
  */
 function user_session_reg(&$ac) {
   global $cookie_domain;
+
   $ac->prevhost = $ac->host;
   $ac->prevlogin = $ac->login;
   $ac->host = ip_address();
+  $ac->old_session = $ac->session;
   
   session_unset();
   unset($ac->pass);

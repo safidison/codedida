@@ -1373,7 +1373,7 @@ function dd_php_error($errno, $message, $filename, $line = NULL, $context = NULL
     text_log('php_error', dd_error_msg($msg));
 
     if (empty($GLOBALS['conf']['debug'])) return;
-    if ($GLOBALS['conf']['debug'] == 2 && $GLOBALS['user']->uid != 1) return;
+    if ($GLOBALS['conf']['debug'] == 2 && (empty($GLOBALS['user']) || $GLOBALS['user']->uid != 1)) return;
 
     dd_set_message($msg, 'error');
   }
@@ -3304,9 +3304,21 @@ function dd_is_front() {
  * 获取跳转地址
  * @param (string) $url
  * @return (string)
+ *
+ * 注：将废除，请使用 dd_get_redirect()
  */
 function dd_redirect($url = NULL) {
   return array('query' => 'redirect='. ($url ? $url : url($_GET['q'])));
+}
+
+/**
+ * 获取跳转地址，用于 url()
+ * @param (string) $url
+ *  指定地址，默认为 $_GET['q']
+ * @return (string)
+ */
+function dd_get_redirect($url = NULL) {
+  return array('query' => 'redirect='. urlencode(($url ? $url : url($_GET['q']))));
 }
 
 /**
