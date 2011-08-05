@@ -2480,25 +2480,40 @@ function dd_get_html_head() {
 }
 
 /**
- * 添加 css 文
+ * 向页面添加 css 或文件
  * @param (string) $path
- *  css 文件路径
+ *  css 或 css 文件路径
  * @param (string) $type
- *  添加类型，该类型决定加载顺序：core -> module -> them
+ *  添加类型，该类型决定加载顺序：core -> module -> theme
+ *  特殊类型 inline，直接输出一段 css
  * @param (string) $media
  *  media 类型
  * @param (bool) $cached
  *  是否缓存
  * @return (array)
  */
-function dd_add_css($path = NULL, $type = 'module', $media = 'all', $cached = true) {
-  static $css = array();
-  if (isset($path)) {
-    if (!isset($css[$media])) {
-      $css[$media] = array('core' => array(), 'module' => array(), 'theme' => array());
+function dd_add_css($data = NULL, $type = 'module', $media = 'all', $cached = true) {
+  static $css = array(), $weight = array();
+
+  if (isset($data)) {
+
+    if (empty($css)) {
+      $css[$media] = array('__inline' => '', 'files' => array());
+      $weight = array('core' => 0, 'module' => 100, 'theme' => 1000);
     }
-    $css[$media][$type][$path] = array('path' => $path, 'cached' => $cached);
+
+    if ($type != 'inline') {
+      $css['files'][$data] = array(
+        'cached' => $cached, 
+        'type' => $type, 
+        'media' => $media, 
+        'weight' => $weight[$type]++
+      );
+    } else {
+      $css['__inline'] .= $data;
+    }
   }
+
   return $css;
 }
 
@@ -2509,66 +2524,78 @@ function dd_add_css($path = NULL, $type = 'module', $media = 'all', $cached = tr
  * @return (string) css html 标记
  */
 function dd_get_css($css = NULL) {
-  global $base_path, $conf;
+  global $base_path, $conf, $base_theme_name;
 
   if (!isset($css)) {
     $css = dd_add_css();
   }
 
-  $gets = array('core', 'module', 'theme');
-  $css_path = array();
+  $output = '';
 
-  foreach ($css as $media => $types) {
-    foreach ($types as $type => $files) {
-      if (count($files)) {
-        foreach ($types[$type] as $file) {
-          if (strpos($file['path'], 'http://') === false && strpos($file['path'], 'https://') === false) {
+  /**
+   * 在主题 template.php 中，可实现 hook_alter_css 来覆写加载的 css 文件，如：
+   * function default_alter_css(&$css) {
+   *   unset($css['modules/system/system.css']);
+   * }
+   * 
+   */
+  module_alter($base_theme_name, 'alter_css', $css);
 
-            if ($GLOBALS['conf']['cache_css_and_js'] && $file['cached']) {
-              // 只缓存内部 css
-              $css_path[$type][] = $file['path'];
-              $filename .= $file['path'];
-              continue;
+  if (!empty($css['files'])) {
+    $filename = '';
+    $css_path = array();
+    uasort($css['files'], 'dd_sort_cmp');
+
+    foreach ($css['files'] as $path => $info) {
+      // 只缓存站内 css 文件
+      if (strpos($path, 'http://') === false && strpos($path, 'https://') === false) {
+        if ($GLOBALS['conf']['cache_css_and_js'] && $info['cached']) {
+          $css_path[$info['type']][] = $path;
+          $filename .= $path;
+          continue;
+        }
+        $path = $base_path . $path;
+      }
+
+      if (strpos($path, '?') === false) {
+        $path .= '?'.$conf['cache_css_and_js_timestamp'];
+      } else {
+        $path .= '&'.$conf['cache_css_and_js_timestamp'];
+      }
+
+      $output .= '<link type="text/css" rel="stylesheet" media="' 
+        . $info['media'] .'" href="'. $path.'" />'."\n";
+    }
+
+    if ($css_path && $filename) {
+      $filepath = file_directory_path() . '/cache/css_js/' 
+        . md5($filename.$conf['cache_css_and_js_timestamp']) . '.css';
+
+      if (!is_file($filepath)) {
+        require_once DIDA_ROOT . '/includes/css_js_min.inc';
+        foreach (array('core', 'module', 'theme') as $key) {
+          if ($css_path[$key]) {
+            foreach ($css_path[$key] as $path) {
+              $data = file_get_contents($path);
+              $base = $base_path . dirname($path) .'/';
+              _dd_build_css_path(NULL, $base);
+              $contents .= preg_replace_callback('/url\([\'"]?(?![a-z]+:|\/+)([^\'")]+)[\'"]?\)/i', '_dd_build_css_path', $data);
             }
-
-            $file['path'] = $base_path . $file['path'];
-
           }
-
-          if (strpos($file['path'], '?') === false) {
-            $file['path'] .= '?'.$conf['cache_css_and_js_timestamp'];
-          } else {
-            $file['path'] .= '&'.$conf['cache_css_and_js_timestamp'];
-          }
-
-          $gets[$type] .= '<link type="text/css" rel="stylesheet" media="'. $media .'" href="'. $file['path'].'" />'."\n";
-
         }
+        _file_save_data(cssmin::minify($contents), $filepath);
       }
+
+      $output .= '<link type="text/css" rel="stylesheet" media="all" href="'. $base_path . $filepath.'" />'."\n";
     }
   }
 
-  if ($css_path && $filename) {
 
-    $filepath = file_directory_path() . '/cache/css_js/' . md5($filename.$conf['cache_css_and_js_timestamp']) . '.css';
-    if (!is_file($filepath)) {
-      require_once DIDA_ROOT . '/includes/css_js_min.inc';
-      foreach (array('core', 'module', 'theme') as $key) {
-        if ($css_path[$key]) {
-          foreach ($css_path[$key] as $path) {
-            $data = file_get_contents($path);
-            $base = $base_path . dirname($path) .'/';
-            _dd_build_css_path(NULL, $base);
-            $contents .= preg_replace_callback('/url\([\'"]?(?![a-z]+:|\/+)([^\'")]+)[\'"]?\)/i', '_dd_build_css_path', $data);
-          }
-        }
-      }
-      _file_save_data(cssmin::minify($contents), $filepath);
-    }
-
-    $gets['module'] .= '<link type="text/css" rel="stylesheet" media="all" href="'. $base_path . $filepath.'" />'."\n";
+  if (!empty($css['__inline'])) {
+    $output .= "<style>\n" . $css['__inline'] . "\n</style>\n";
   }
-  return $gets['core'] . $gets['module'] . $gets['theme'];
+
+  return $output;
 }
 
 /**
@@ -2735,114 +2762,121 @@ function dd_get_sort_link($sort, $path = NULL, $exclude = NULL) {
  * @param (bool) $defer
  *  defer 模式
  */
-function dd_add_js($data = NULL, $type = 'module', $cache = true, $scope = 'header', $defer = false) {
-  static $javascript = array();
+function dd_add_js($data = NULL, $type = 'module', $cached = true, $scope = 'header', $defer = false) {
+  static $js = array(), $weight = array();
+
   if (isset($data)) {
-    if (isset($scope) && !isset($javascript[$scope])) {
-      $javascript[$scope] = array('core' => array(), 'module' => array(), 'theme' => array(), 'inline' => array());
+
+    if (empty($js)) {
+      $js = array('header' => array(), 'footer' => array(), '__inline' => '');
+      // 设置权重，保证加载顺序为 croe -> module -> theme
+      $weight = array('croe' => 0, 'module' => 100, 'theme' => 1000);
     }
-    if (isset($type) && isset($scope) && !isset($javascript[$scope][$type])) {
-      $javascript[$scope][$type] = array();
-    }
+
     switch ($type) {
-      case 'inline': case 'inline_nojq':
-        $javascript[$scope][$type][] = array('code' => $data, 'defer' => $defer);
-        break;
+      case 'inline':
+        $data =  '$(function() {' . $data . '})';
+      case 'inline_nojq':
+        $js[$scope]['__inline'] .= $data . ";\n";
+      break;
       case 'setting':
-        $javascript[$scope][$type][] = $data;
+        $js[$scope][$type][] = $data;
         break;
       default:
-        $javascript[$scope][$type][$data] = array('defer' => $defer, 'cache' => $cache);
+        $js[$scope]['files'][$data] = array(
+          'defer' => $defer,
+          'cached' => $cached,
+          'type' => $type,
+          'weight' => $weight[$type]++
+        );
     }
   }
-  if (isset($scope)) {
-    if (isset($javascript[$scope])) {
-      return $javascript[$scope];
-    } else {
-      return array();
-    }
-  } else {
-    return $javascript;
-  }
+
+  return !empty($scope) ? $js[$scope] : $js;
 }
 
 /**
  * 获取当前页面加载的 js
  * @param (string) $scope
  *  位置，header 或 footer
- * @param (array) $javascript
+ * @param (array) $js
  *  js 文件
  * @return (string)
  */
-function dd_get_js($scope = 'header', $javascript = NULL) {
-  global $conf, $base_path;
+function dd_get_js($scope = 'header', $js = NULL) {
+  global $conf, $base_path, $base_theme_name;
   static $init;
-  if (!$init) {
-    $js = array(
+
+  if (!empty($init)) {
+    dd_add_js(array(
       'cache_css_and_js_timestamp' => $conf['cache_css_and_js_timestamp'],
       'base_theme' => $conf['base_theme'],
       'base_path' => $base_path,
       'clean_url' => $conf['clean_url'] ? true : false,
       'user_is_login' => !empty($GLOBALS['user']->uid)
-    );
-    dd_add_js($js, 'setting');
+    ), 'setting');
   }
 
-  if (!isset($javascript)) {
-    $javascript = dd_add_js(NULL, NULL, NULL, $scope);
+  if (!isset($js)) {
+    $js = dd_add_js(NULL, NULL, NULL, $scope);
   }
 
   $init = 1;
 
-  if (empty($javascript)) return '';
-  foreach ($javascript as $type => $data) {
-    if (!$data) continue;
-    switch ($type) {
-      case 'setting':
-        $settings = 'var settings = ' . dd_to_js(call_user_func_array('array_merge_recursive', $data)) . ';';
-        break;
-      case 'inline':
-        $code_js = '';
-        foreach ($data as $info) {
-          $code_js .= $info['code'].';';
-        }
-        $output['inline'] .= '$(function() {'. $code_js . '});';
-        break;
-      case 'inline_nojq':
-        $code_js = '';
-        foreach ($data as $info) {
-          $code_js .= $info['code'].';';
-        }
-        $output['inline_nojq'] .= $code_js;
-        break;
-      default:
-        foreach ($data as $path => $info) {
-          if ($path) {
-            if ($conf['cache_css_and_js'] && $info['cache']) {
-              $js_path[] = $path;
-              $filename .= $path;
-              continue;
-            }
+  /**
+   * 在主题 template.php 中，可实现 hook_alter_js 来覆写加载的 js 文件，如：
+   * function default_alter_js(&$css) {
+   *   unset($css['modules/system/system.js']);
+   * }
+   */
+  module_alter($base_theme_name, 'alter_js', $js);
 
-            if (strpos($path, 'http://') === false && strpos($path, 'https://') === false) {
-              $path = $base_path .$path;
-            }
+  $js_path = array();
+  $output = '';
 
-            if (strpos($path, '?') === false) {
-              $path .= '?'.$conf['cache_css_and_js_timestamp'];
-            } else {
-              $path .= '&'.$conf['cache_css_and_js_timestamp'];
-            }
+  if (!empty($js['setting'])) {
+    $output = "<script type=\"text/javascript\">\n<!--//--><![CDATA[//><!--\n" 
+      . 'var settings = ' . dd_to_js(call_user_func_array('array_merge_recursive', $js['setting']))
+      . "\n//--><!]]>\n</script>\n";
+  }
+  
+  if (empty($js['files'])) {
+    return $output;
+  }
 
-            $preprocess .= '<script type="text/javascript"'. ($info['defer'] ? ' defer="defer"' : '') .' src="'. $path."\"></script>\n";
+  $filename = '';
 
-          }
-        }
+  // 按 weight 排序
+  uasort($js['files'], 'dd_sort_cmp');
+
+  foreach ($js['files'] as $path => $info) {
+
+    if ($conf['cache_css_and_js'] && $info['cached']) {
+      $js_path[] = $path;
+      $filename .= $path;
+      continue;
     }
+
+    if (strpos($path, 'http://') === false && strpos($path, 'https://') === false) {
+      $path = $base_path .$path;
+    }
+
+    if (strpos($path, '?') === false) {
+      $path .= '?'.$conf['cache_css_and_js_timestamp'];
+    } else {
+      $path .= '&'.$conf['cache_css_and_js_timestamp'];
+    }
+
+    $output .= '<script type="text/javascript"'. ($info['defer'] ? ' defer="defer"' : '') 
+      .' src="'. $path."\"></script>\n";
+
   }
 
   if ($js_path && $filename) {
-    $filepath = file_mkdir(file_directory_path() . '/cache/css_js') . '/' . md5($filename.$conf['cache_css_and_js_timestamp']) . '.js';
+
+    $filepath = file_mkdir(file_directory_path() . '/cache/css_js') . '/' 
+      . md5($filename.$conf['cache_css_and_js_timestamp']) . '.js';
+
     if (!is_file($filepath)) {
       require_once DIDA_ROOT . '/includes/css_js_min.inc';
       foreach ($js_path as $path) {
@@ -2850,18 +2884,16 @@ function dd_get_js($scope = 'header', $javascript = NULL) {
       }
       _file_save_data(JSMin::minify($contents), $filepath);
     }
-    $preprocess .= '<script type="text/javascript" src="'. $base_path .$filepath .'"></script>'."\n";
+
+    $output .= '<script type="text/javascript" src="'. $base_path .$filepath .'"></script>'."\n";
   }
 
-  if ($output) {
-    $output = "<script type=\"text/javascript\">\n<!--//--><![CDATA[//><!--\n" . $output['inline'] . $output['inline_nojq'] . "\n//--><!]]>\n</script>";
+  if ($js['__inline']) {
+    $output .= "<script type=\"text/javascript\">\n<!--//--><![CDATA[//><!--\n" 
+      . $js['__inline'] . "\n//--><!]]>\n</script>";
   }
 
-  if ($settings) {
-    $settings = "<script type=\"text/javascript\">\n<!--//--><![CDATA[//><!--\n" . $settings . "\n//--><!]]>\n</script>\n";
-  }
-
-  return $settings . $preprocess . $output;
+  return $output;
 }
 
 /**
