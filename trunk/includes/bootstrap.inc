@@ -1800,8 +1800,9 @@ function dd_set_mail($mails, $subject, $message, $headers = NULL, $html = 1, $at
   // mb_language('utf-8');
   mb_language('uni');
 
-  if (!$headers['From']) {
-    $header .= 'From: '.mb_encode_mimeheader($GLOBALS['conf']['site_global']['name'], 'utf-8', 'Q').' <'.var_get_key('site_global', 'mail', 'admin@'.$_SERVER['HTTP_HOST']).">\r\n";
+  // 发件人
+  if (empty($headers['From'])) {
+    $header .= 'From: '.mb_encode_mimeheader($GLOBALS['conf']['site_global']['name'], 'utf-8', 'Q').' <'.var_get_key('site_global', 'send_mail', 'admin@'.$_SERVER['HTTP_HOST']).">\r\n";
   }
   
   if (mb_send_mail($to, $subject, $message, $header)) {

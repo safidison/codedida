@@ -411,6 +411,13 @@ function system_site_global() {
     '#required' => true,
     '#default_value' => var_get_key('site_global', 'mail'),
   );
+  $form['fields']['send_mail'] = array(
+    '#type' => 'textfield',
+    '#title' => t('system', '发件邮箱'),
+    '#required' => true,
+    '#default_value' => var_get_key('site_global', 'send_mail'),
+    '#description' => t('system', '系统发出的信件上所显示的发件人')
+  );
   $form['fields']['slogan'] = array(
     '#type' => 'textfield',
     '#title' => t('system', '站点口号'),
