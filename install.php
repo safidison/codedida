@@ -122,9 +122,14 @@ function dida_is_setup() {
     	$error[] = $conf_file . ' 必须有读写权限';
     }
   } else {
-    if (!is_dir($conf_dir.'/cache') && !mkdir($conf_dir.'/cache', 0750)) {
-      $error[] = '无法创建目录 '.$conf_dir.'/cache，请手动创建，并将权限设置为可读写。';
+    if (!is_dir($conf_dir.'/cache') && !mkdir($conf_dir.'/cache', 0777)) {
+      $error[] = '无法创建目录 '.$conf_dir.'/cache，请手动创建，并将权限设置为可读写';
+    } else if (!is_dir($conf_dir . '/files') && !mkdir($conf_dir . '/files', 0777)) {
+      $error[] = '无法创建目录' . $conf_dir . '/files，请手动创建，并将权限设置为可读写';
+    } else if (!is_dir($conf_dir . '/logs') && !mkdir($conf_dir . '/logs', 0777)) {
+      $error[] = '无法创建目录' . $conf_dir . '/logs，请手动创建，并将权限设置为可读写';
     }
+
     if (is_file('sites/cache/default.conf.php')) {
       file_put_contents($conf_file, file_get_contents('sites/cache/default.conf.php'));
       chmod($conf_file, 0777);
@@ -287,7 +292,7 @@ function dida_setup_data_test() {
 }
 
 function dida_setup() {
-  global $base_path, $error, $setting_file;
+  global $base_path, $error, $setting_file, $conf_dir;
   
   if ($_POST) {
     if (empty($_POST['admin'])) {
@@ -382,9 +387,20 @@ function dida_setup() {
             foreach ($messages as $mmessage) {
               dd_set_message($message);
             }
+
+            /**
+             * 基本安装完成后，可继续执行自定义安装
+             * 自定义安装文件名称为：install.custom.php
+             * 入口函数：install_custom
+             * 文件目录结构如下（按优先级）：
+             * $conf_dir/install/install.custom.php
+             * install/install.custom.php
+             */
             
-            if (is_file('./install/install.custom.php') && function_exists('install_custom')) {
-              call_user_func('install_custom');
+            if (is_file(DIDA_ROOI . '/' . $conf_dir . '/install/install.custom.php') && function_exists('install_custom')) {
+              install_custom();
+            } else if (is_file(DIDA_ROOT . '/install/install.custom.php') && function_exists('install_custom')) {
+              install_custom();
             }
             
             user_login(user_load(1));
