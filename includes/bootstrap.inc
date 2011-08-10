@@ -2766,10 +2766,10 @@ function dd_get_sort_link($sort, $path = NULL, $exclude = NULL) {
 function dd_add_js($data = NULL, $type = 'module', $cached = true, $scope = 'header', $defer = false) {
   static $js = array(), $weight = array();
 
-  if (isset($data)) {
+  if (!empty($data)) {
 
     if (empty($js)) {
-      $js = array('header' => array(), 'footer' => array(), '__inline' => '');
+      $js = array('header' => array('__inline' => ''), 'footer' => array('__inline' => ''));
       // 设置权重，保证加载顺序为 croe -> module -> theme
       $weight = array('croe' => 0, 'module' => 100, 'theme' => 1000);
     }
@@ -2778,7 +2778,7 @@ function dd_add_js($data = NULL, $type = 'module', $cached = true, $scope = 'hea
       case 'inline':
         $data =  '$(function() {' . $data . '})';
       case 'inline_nojq':
-        $js[$scope]['__inline'] .= $data . ";\n";
+        $js[$scope]['__inline'] .=  $data . ";\n";
       break;
       case 'setting':
         $js[$scope][$type][] = $data;
@@ -2807,7 +2807,7 @@ function dd_add_js($data = NULL, $type = 'module', $cached = true, $scope = 'hea
 function dd_get_js($scope = 'header', $js = NULL) {
   global $conf, $base_path, $base_theme_name;
   static $init;
-
+  
   if (!empty($init)) {
     dd_add_js(array(
       'cache_css_and_js_timestamp' => $conf['cache_css_and_js_timestamp'],
@@ -2833,16 +2833,21 @@ function dd_get_js($scope = 'header', $js = NULL) {
   module_alter($base_theme_name, 'alter_js', $js);
 
   $js_path = array();
-  $output = '';
+  $output = $inline = '';
 
   if (!empty($js['setting'])) {
     $output = "<script type=\"text/javascript\">\n<!--//--><![CDATA[//><!--\n" 
       . 'var settings = ' . dd_to_js(call_user_func_array('array_merge_recursive', $js['setting']))
       . "\n//--><!]]>\n</script>\n";
   }
-  
+
+  if ($js['__inline']) {
+    $inline = "<script type=\"text/javascript\">\n<!--//--><![CDATA[//><!--\n" 
+      . $js['__inline'] . "\n//--><!]]>\n</script>";
+  }
+
   if (empty($js['files'])) {
-    return $output;
+    return $output . $inline;
   }
 
   $filename = '';
@@ -2889,12 +2894,7 @@ function dd_get_js($scope = 'header', $js = NULL) {
     $output .= '<script type="text/javascript" src="'. $base_path .$filepath .'"></script>'."\n";
   }
 
-  if ($js['__inline']) {
-    $output .= "<script type=\"text/javascript\">\n<!--//--><![CDATA[//><!--\n" 
-      . $js['__inline'] . "\n//--><!]]>\n</script>";
-  }
-
-  return $output;
+  return $output . $inline;
 }
 
 /**
