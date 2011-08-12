@@ -125,13 +125,6 @@ function system_menu() {
     'page_arguments' => array('system_cache_settings'),
     'file' => 'system.admin.inc'
   );
-  $items['admin/cache/clearpage'] = array(
-    'title' => '页面缓存清除',
-    'access_arguments' => array('system admin cache'),
-    'page_callback' => 'dd_get_form',
-    'page_arguments' => array('system_cache_clearpage'),
-    'file' => 'system.admin.inc'
-  );
   $items['admin/lang'] = array(
     'title' => '语言设置',
     'access_arguments' => array('system admin lang'),

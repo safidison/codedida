@@ -477,7 +477,6 @@ function db_write_record($table, &$o, $wheres = array(), array $opt = array()) {
   $o['_db_write_record_is_update'] = count($wheres);
   
   foreach ($tables['fields'] as $field => $info) {
-    
     // 自增字段且处于 insert 状态，跳过
     if ($info['type'] == 'serial' && !$o['_db_write_record_is_update']) {
       $insert_id = $field;
