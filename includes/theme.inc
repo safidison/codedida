@@ -297,113 +297,14 @@ function template_preprocess_page(&$var, $args) {
  *  theme 名称
  */
 function theme_render_tpl($tpl, $var, $hook = NULL) {
-  $__cached = $hook == 'page' && !$var['messages'] && !$_POST && ($GLOBALS['conf']['dd_cache_page'] == 2
-  || ($GLOBALS['conf']['dd_cache_page'] == 1 && $GLOBALS['user']->uid == 0));
   
   extract($var, EXTR_SKIP);
-  
-  $__cached_path = false;
-  
-  if ($__cached) {
-    global $conf, $current_menu_data;
-    
-    $__getall = false;
-    
-    foreach ($_GET as $__key => $_v) {
-      if ($__key != 'q') {
-        $__getall = true;
-        break;
-      }
-    }
-    
-    // 若有其它 get 参数则不缓存
-    
-    if (!$__getall) {
-    
-      if (dd_is_front()) {
-        
-        unset($messages);
-        $__cached_path = '[front]';
-        $__cached_expire = var_get('dd_cache_page_expire', 3600);
-        
-      } else if ($current_menu_data['systemUrl']) {
-          /**
-           * 默认过期时间，执行 hook_cache_page_disable、hook_cache_page_enabled 时引用传递
-           * 模块若需修改默认缓存时间，请设置此值
-           */
-          $__cached_expire = var_get('dd_cache_page_expire', 3600);
-          $__cached_path = $current_menu_data['systemUrl'];
-          $__ac_type = var_get('dd_cache_page_type', 'enabled');
-          
-          foreach ($conf['modules'] as $__module => $__info) {
-            if (!$GLOBALS['user']->uid && $__ac_type == 'disable') {
-              
-              /**
-               * 仅针对匿名用户
-               * 执行 hook_cache_page_disable()
-               * 如果没有模块申明禁止，则生成缓存
-               */
-              $function = $__module .'_cache_page_'. $__ac_type;
-              
-              if (function_exists($function)) {
-                $disable = $function($current_menu_data['systemUrl'], $__cached_expire);
-                if (isset($disable)) {
-                  if ($disable) {
-                    $__cached_path = false;
-                  }
-                  break;
-                }
-              }
-              
-            } else {
-              /**
-               * 对于登录用户，执行 hook_cache_page_enabled()
-               * 如果没有模块申明允许，则不生成缓存
-               */
-              $function = $__module .'_cache_page_enabled';
-              if (function_exists($function)) {
-                
-                $enabled = $function($current_menu_data['systemUrl'], $__cached_expire);
-                /**
-                 * 只要有返回值(不包括 NULL)，则中断，不再执行
-                 * 模块若认为当前路径必需保持实时更新，则返回 false，避免继续执行 hook
-                 */
-                if (isset($enabled)) {
-                  
-                  // 若返回值不是 false，则需要缓存
-                  
-                  if ($enabled) {
-                    $__cached_path = $current_menu_data['systemUrl'];
-                  } else {
-                    $__cached_path = false;
-                  }
-                  
-                  break;
-                  
-                } else {
-                  $__cached_path = false;
-                }
-                
-              } 
-            }
-            
-          }
-       }
-       
-       if ($__cached_path) unset($messages, $debug);
-       
-    }
-  }
-  
+
   ob_start();
   include $tpl;
   $contents = ob_get_contents();
   ob_end_clean();
-  
-  if ($__cached_path) {
-    cache_set_page($__cached_path, $contents, $__cached_expire);
-  }
-  
+ 
   return $contents;
 }
 
