@@ -1186,3 +1186,37 @@ function dd_get_form_meta($sort = 'desc', $value = array(), $title = array()) {
   
   return $form;
 }
+
+/**
+ * 便捷搜索表单
+ * @param (string) $name
+ *  关键词字段名称
+ */
+function form_admin_search($name = 'keyword'){
+  $form['settings']['#validate'][] = 'form_admin_search_validate';
+  
+  $form['fields'][$name] = array(
+    '#default_value' => !empty($_GET[$name]) ? urldecode($_GET[$name]) : '',
+    '#type' => 'textfield',
+    '#title' => '搜索',
+    '#required' => true,
+    '#prefix' => '<div class="form_admin_search">'
+  );
+  
+  $form['fields']['__field'] = array(
+    '#type' => 'hidden',
+    '#default_value' => $name,
+    '#constant' => 1
+  );
+  
+  $form['fields']['submit'] = array(
+    '#type' => 'submit',
+    '#suffix' => '</div>'
+  );
+  
+  return $form;
+}
+
+function form_admin_search_validate(&$form, &$value){
+  dd_goto($_GET['q'], dd_query_string_encode($_REQUEST, array_merge(array('q', 'page', 'submit', 'form_id', 'form_token'), array_keys($_COOKIE))));
+}

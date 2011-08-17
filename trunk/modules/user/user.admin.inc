@@ -14,7 +14,8 @@ function _user_admin_tabs() {
 
 function user_admin_default() {
   _user_admin_tabs();
-  $hr = array(
+
+  $header = array(
     t('user', '帐号'),
     array('data' => t('user', '昵称'), 'field' => 'name'),
     array('data' => t('user', '登录次数'), 'field' => 'count'),
@@ -23,7 +24,18 @@ function user_admin_default() {
     array('data' => t('user', '最近活动'), 'field' => 'active'),
     t('user', '操作')
   );
-  if ($fetch = pager_query('SELECT uid, name, mail, count, online, created, active, status FROM {users} WHERE uid > 0'. table_sql($hr), 20)) {
+
+  $query = 'SELECT uid, name, mail, count, online, created, active, status FROM {users} WHERE uid > 0';
+  
+  if (!empty($_GET['keyword'])) {
+    $keyword = '%' . urldecode($_GET['keyword']) . '%';
+    $args = array($keyword, $keyword);
+    $query .= ' AND (name LIKE ? OR mail LIKE ?)';
+  } else {
+    $args = NULL;
+  }
+  
+  if ($fetch = pager_query($query. table_sql($header), 20, 0, NULL, $args)) {
     foreach ($fetch as $o) {
     	$items = array(l(t('user', '编辑'), 'admin/users/view/'.$o->uid.'/edit'));
     	
@@ -43,9 +55,29 @@ function user_admin_default() {
       );
     }
   }
-  $output = theme('table', $hr, $table);
+
+  $output = dd_get_form('form_admin_search');
+  $output .= theme('table', $header, $table);
   $output .= pager_view();
   return $output;
+}
+
+/**
+ * 管理员编辑用户
+ * @param object $ac
+ *  用户对象
+ */
+function user_admin_edit_form($ac) {
+  $form = user_edit_form($ac, 'admin');
+  
+  if (!empty($form['fields']['fields'])) {
+    foreach ($form['fields']['fields'] as $key => $field) {
+      unset($field['#required']);
+      $form['fields']['fields'][$key] = $field;
+    }
+  }
+
+  return $form;
 }
 
 // 用户资料
@@ -57,7 +89,7 @@ function user_admin_view($ac) {
         l(t('user', '%string 的资料编辑', array('%string' => $ac->name)), 'admin/users/view/'.$ac->uid.'/edit'),
         l(t('user', '密码修改'), 'admin/users/view/'.$ac->uid.'/newpass')
 			));
-		return dd_get_form('user_edit_form', $ac, 'admin');
+		return dd_get_form('user_admin_edit_form', $ac);
 		case 'newpass':
       _user_admin_tabs();
       dd_set_sub_tabs(array(
