@@ -914,6 +914,17 @@ function user_set_roles($uid, $rid) {
 }
 
 /**
+ * 统计各角色用户总数
+ */
+function user_set_role_count() {
+  if ($fetch = db_query('SELECT COUNT(rid) AS c, rid FROM {user_roles} GROUP BY rid')) {
+    foreach ($fetch as $o) {
+      db_exec('UPDATE {role} SET count = ? WHERE rid = ?', array($o->c, $o->rid));
+    }
+  }
+}
+
+/**
  * 添加或更新角色
  * @param (array) $role
  */
@@ -1907,4 +1918,11 @@ function user_theme() {
       'args' => array('account'),
     ),
   );
+}
+
+/**
+ * @Implement of hook_cron()
+ */
+function user_cron($last_timestramp) {
+  user_set_role_count();
 }

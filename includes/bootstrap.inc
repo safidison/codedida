@@ -2741,7 +2741,10 @@ function dd_add_js($data = NULL, $type = 'module', $cached = true, $scope = 'hea
   if (!empty($data)) {
 
     if (empty($js)) {
-      $js = array('header' => array('__inline' => ''), 'footer' => array('__inline' => ''));
+      $js = array(
+        'header' => array('__inline' => '', 'setting' => array()),
+        'footer' => array('__inline' => '', 'setting' => array()),
+      );
       // 设置权重，保证加载顺序为 croe -> module -> theme
       $weight = array('croe' => 0, 'module' => 100, 'theme' => 1000);
     }
@@ -2753,8 +2756,8 @@ function dd_add_js($data = NULL, $type = 'module', $cached = true, $scope = 'hea
         $js[$scope]['__inline'] .=  $data . ";\n";
       break;
       case 'setting':
-        $js[$scope][$type][] = $data;
-        break;
+        $js[$scope]['setting'][] = $data;
+      break;
       default:
         $js[$scope]['files'][$data] = array(
           'defer' => $defer,
@@ -2780,7 +2783,7 @@ function dd_get_js($scope = 'header', $js = NULL) {
   global $conf, $base_path, $base_theme_name;
   static $init;
   
-  if (!empty($init)) {
+  if (empty($init)) {
     dd_add_js(array(
       'cache_css_and_js_timestamp' => $conf['cache_css_and_js_timestamp'],
       'base_theme' => $conf['base_theme'],

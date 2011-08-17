@@ -2468,8 +2468,14 @@ function field_get_cache_field_id($module, $type, $field_id) {
 
 /**
  * 按类型获取节点下所有字段数据
- * @param (string) $type
+ * @param int $nid
+ *  节点 id
+ * @param string $type
  *  term：分类，textfield：单行文本，textarea：多行文本，file：上传字段
+ * @param bool $clear
+ *  是否直接从数据库查询
+ *
+ * 本函数获取的 nid 数据，包括所有对应的字段，请不要直接通过本函数来获取节点对应的字段数据
  */
 function field_get_node_data($nid, $type = 'term', $clear = NULL) {
   static $data;
