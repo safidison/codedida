@@ -297,7 +297,24 @@ function template_preprocess_page(&$var, $args) {
  *  theme 名称
  */
 function theme_render_tpl($tpl, $var, $hook = NULL) {
-  
+  /**
+   * php 执行信息，当前有执行时间，占用内存
+   */
+  if ($hook == 'page' && !empty($GLOBALS['conf']['php_info'])) {
+    if ($GLOBALS['conf']['php_info'] == 1 || $GLOBALS['user']->uid == 1) {
+      // 向所有用户或 uid 为 1 的用户显示
+      $var['debug'] .= '<p class="debug_php_info">';
+      $var['debug'] .= '执行时间：' . (microtime(true)-DIDA_START_TIME) . ' 秒，';
+      $size = memory_get_usage();
+      $var['debug'] .= t('system', '占用内存 %size bytes，约为 %m MB', array(
+        '%size' => $size,
+        '%m' => round($size/1024/1024, 5)
+      ));
+
+      $var['debug'] .= '</p>';
+    }
+  }
+
   extract($var, EXTR_SKIP);
 
   ob_start();
