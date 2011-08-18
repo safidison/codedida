@@ -2,6 +2,11 @@
 // $Id$
 
 /**
+ * 脚本开始运行时间
+ */
+define('DIDA_START_TIME', microtime(true));
+
+/**
  * 工作目录
  * 建议包含文件，使用绝对路径。
  */

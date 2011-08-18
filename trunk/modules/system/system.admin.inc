@@ -496,6 +496,7 @@ function system_site_settings() {
     '#default_value' => var_get('default_language', 'zh-CN'),
     '#options' => $conf['languages'],
   );
+
   $form['fields']['clean_url'] = array(
     '#type' => 'radio',
     '#title' => t('system', '简洁链接'),
@@ -506,13 +507,23 @@ function system_site_settings() {
       t('system', '开启'),
     ),
   );
+
   $form['fields']['sql_info'] = array(
     '#type' => 'radio',
     '#title' => t('system', 'SQL执行语句'),
     '#required' => true,
-    '#default_value' => var_get('sql_info', 1),
+    '#default_value' => var_get('sql_info', 0),
     '#options' => array(t('system', '不显示'), t('system', '显示'), t('system', '仅向超级管理员显示')),
   );
+
+  $form['fields']['php_info'] = array(
+    '#type' => 'radio',
+    '#title' => t('system', 'PHP执行信息'),
+    '#required' => true,
+    '#default_value' => var_get('php_info', 0),
+    '#options' => array(t('system', '不显示'), t('system', '显示'), t('system', '仅向超级管理员显示')),
+  );
+
   $form['fields']['history_enabled'] = array(
     '#type' => 'radio',
     '#title' => t('system', '访问记录'),
