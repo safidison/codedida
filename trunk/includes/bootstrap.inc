@@ -15,7 +15,9 @@ function bootstrap($op, $inc = NULL) {
 
   if ($called) return;
 
-  global $cookie_domain, $user, $database, $dbc, $db, $conf, $conf_dir, $installed, $free_update;
+  global $cookie_domain, $user, $database, $dbc, $db, $conf, $conf_dir, $log_dir, $installed, $free_update;
+
+  $log_dir = DIDA_ROOT . '/sites/logs';
 
   if (is_file(DIDA_ROOT . '/sites/config.php')) {
     require_once DIDA_ROOT . '/sites/config.php';

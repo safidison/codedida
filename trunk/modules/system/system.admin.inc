@@ -607,7 +607,7 @@ function system_site_settings() {
     '#default_value' => var_get('crypt_default_key', $GLOBALS['cookie_domain']),
     '#description' => t('system', '用于特定内容简单加密，如：cookie'),
   );
-  $form['fields']['custom_view'] = array(
+  $form['fields']['front_view_type'] = array(
     '#type' => 'select',
     '#title' => t('user', '网站首页'),
     '#required' => 1,
@@ -897,7 +897,6 @@ function system_system_cache_clear($op = 'list', $v = NULL) {
       'cache_menu' => t('system', '清除cache_menu缓存表，当旧的 url 权限变动时应选择此项'),
       'admin_menus' => t('system', '清除管理菜单缓存表，当有新的管理菜单注册时应选择此项'),
       'cache_css_and_js' => t('system', '清除js和css缓存'),
-      'front_cache' => t('system', '清除首页缓存，仅当开启了页面缓存才需要此操作'),
     	'cache_hook' => t('system', '清除 hook 缓存，当有模块变动时应选择此项'),
       'cache_filter' => t('system', '清除 filter 缓存，当有输入法或过滤器有变动时应选择此项'),
     );
@@ -974,9 +973,6 @@ function system_cache_clear_submit($form, $value) {
   if ($value['value']['admin_menus']) {
     cache_del('*', 'admin_menus_');
     dd_set_message(t('system', '管理菜单缓存清除成功'));
-  }
-  if ($value['value']['front_cache']) {
-    cache_clear_page('[front]');
   }
   
   _system_cache_htaccess();
