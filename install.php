@@ -57,14 +57,19 @@ require_once './includes/cache.inc';
 
 conf_init();
 
+$log_dir = DIDA_ROOT . '/sites/logs';
+
 if (is_file('./install/install.php') && function_exists('install')) {
   call_user_func('install');
   exit;
 }
 
 $title = '检查安装环境';
+$is_env_ok = false;
 
 if (!$error = dida_is_setup()) { // 检查安装环境
+  $is_env_ok = true; // 安装环境检查结束
+
   if (empty($_GET['setup'])) {
     dd_goto(f('install.php?setup=1'));
   } else {
@@ -92,6 +97,8 @@ if (!$error = dida_is_setup()) { // 检查安装环境
 }
 
 function dida_is_setup() {
+  global $conf, $conf_dir, $conf_file, $setting_file, $log_dir;
+
   $error = NULL;
   
   if (version_compare(PHP_VERSION, '5.2.0', '<')) {
@@ -109,38 +116,34 @@ function dida_is_setup() {
   if (!function_exists('gd_info')) {
     $error[] = '请开启 GD 扩展';
   }
-  if (!is_writable('./sites/logs')) {
-    $error[] = ' 日志目录(sites/logs)必须有读取权限 ';
+  if (!is_writable($log_dir)) {
+    $error[] = $log_dir . '目录必须有读写权限 ';
   }
   
-  if (!empty($error)) return $error;
+  if (!is_dir($conf_dir.'/cache') && !mkdir($conf_dir.'/cache', 0777)) {
+    $error[] = '无法创建目录 '.$conf_dir.'/cache，请手动创建，并将权限设置为可读写';
+  } else if (is_file($conf_file) && !is_writable($conf_file)) {
+    $error[] = $conf_file . '必须有读写权限';
+  }
   
-  global $conf, $conf_dir, $conf_file, $setting_file;
-  
-  if (is_file($conf_file)) {
-  	if (!is_writable($conf_file)) {
-    	$error[] = $conf_file . ' 必须有读写权限';
-    }
-  } else {
-    if (!is_dir($conf_dir.'/cache') && !mkdir($conf_dir.'/cache', 0777)) {
-      $error[] = '无法创建目录 '.$conf_dir.'/cache，请手动创建，并将权限设置为可读写';
-    } else if (!is_dir($conf_dir . '/files') && !mkdir($conf_dir . '/files', 0777)) {
-      $error[] = '无法创建目录' . $conf_dir . '/files，请手动创建，并将权限设置为可读写';
-    } else if (!is_dir($conf_dir . '/logs') && !mkdir($conf_dir . '/logs', 0777)) {
-      $error[] = '无法创建目录' . $conf_dir . '/logs，请手动创建，并将权限设置为可读写';
-    }
+  if (!is_dir($conf_dir . '/files') && !mkdir($conf_dir . '/files', 0777)) {
+    $error[] = '无法创建目录' . $conf_dir . '/files，请手动创建，并将权限设置为可读写';
+  }
 
-    if (is_file('sites/cache/default.conf.php')) {
+  if (is_file('sites/cache/default.conf.php')) {
+    if (is_writable($conf_dir)) {
       file_put_contents($conf_file, file_get_contents('sites/cache/default.conf.php'));
       chmod($conf_file, 0777);
     } else {
-      $error[] = '请不要删除 sites/cache/default.conf.php';
+      $error[] = $conf_file . '文件必须有读写权限';
     }
+  } else {
+    $error[] = '请不要删除 sites/cache/default.conf.php';
   }
   
   if (is_file($setting_file)) {
   	if (!is_writable($setting_file)) {
-    	$error[] = $setting_file . ' 必须有读写权限';
+    	$error[] = $setting_file . '必须有读写权限';
     }
   } else if (!$handle = fopen($setting_file, "wb")) {
     $error[] = '配置文件('.$setting_file.')不存在且无法自动创建，请复制 sites/default.setting.php 并重命名为 setting.php。';
@@ -518,6 +521,7 @@ function _install_setting_chmod() {
   <?php if ($error) : ?>
     <div id="error"><?php print implode('<br />', $error); ?><?php echo dd_get_message(); ?></div>
   <?php endif; ?>
+  <?php if ($is_env_ok) : ?>
   <form accept-charset="UTF-8" id="install_form" action="" method="post">
     <?php if ($_GET['setup'] == 1) { ?>
       <div class="form_item">
@@ -579,5 +583,6 @@ function _install_setting_chmod() {
       </div>
     <?php }; ?>
   </form>
+  <?php endif; ?>
 </body>
 </html>
