@@ -2547,7 +2547,6 @@ function dd_get_css($css = NULL) {
         . md5($base_theme_name . $filename.$conf['cache_css_and_js_timestamp']) . '.css';
 
       if (!is_file($filepath)) {
-        require_once DIDA_ROOT . '/includes/css_js_min.inc';
         foreach (array('core', 'module', 'theme') as $key) {
           if ($css_path[$key]) {
             foreach ($css_path[$key] as $path) {
@@ -2861,7 +2860,6 @@ function dd_get_js($scope = 'header', $js = NULL) {
       . md5($base_theme_name . $filename . $conf['cache_css_and_js_timestamp']) . '.js';
 
     if (!is_file($filepath)) {
-      require_once DIDA_ROOT . '/includes/css_js_min.inc';
       foreach ($js_path as $path) {
         $contents .= file_get_contents($path).';';
       }
