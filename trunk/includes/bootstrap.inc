@@ -2124,11 +2124,11 @@ function dd_dialog_att($height = 400, $width = 600, $iframe = true, $inlineId = 
  * @param (string) $message
  *  信息内容
  * @param (string) $type
- *  信息类型，可自定义，常用：status、error
+ *  信息类型，可自定义，常用：notice、error
  * @param (bool) $repeat
  *  是否替换旧的相同类型的提示信息
  */
-function dd_set_message($message = NULL, $type = 'status', $repeat = true) {
+function dd_set_message($message = NULL, $type = 'notice', $repeat = true) {
   if ($message) {
     if (is_array($message)) $message = dd_array_to_string($message);
     
@@ -2544,7 +2544,7 @@ function dd_get_css($css = NULL) {
 
     if ($css_path && $filename) {
       $filepath = file_directory_path() . '/cache/css_js/' 
-        . md5($filename.$conf['cache_css_and_js_timestamp']) . '.css';
+        . md5($base_theme_name . $filename.$conf['cache_css_and_js_timestamp']) . '.css';
 
       if (!is_file($filepath)) {
         require_once DIDA_ROOT . '/includes/css_js_min.inc';
@@ -2558,7 +2558,7 @@ function dd_get_css($css = NULL) {
             }
           }
         }
-        _file_save_data(cssmin::minify($contents), $filepath);
+        _file_save_data($contents, $filepath);
       }
 
       $output .= '<link type="text/css" rel="stylesheet" media="all" href="'. $base_path . $filepath.'" />'."\n";
@@ -2858,14 +2858,14 @@ function dd_get_js($scope = 'header', $js = NULL) {
   if ($js_path && $filename) {
 
     $filepath = file_mkdir(file_directory_path() . '/cache/css_js') . '/' 
-      . md5($filename.$conf['cache_css_and_js_timestamp']) . '.js';
+      . md5($base_theme_name . $filename . $conf['cache_css_and_js_timestamp']) . '.js';
 
     if (!is_file($filepath)) {
       require_once DIDA_ROOT . '/includes/css_js_min.inc';
       foreach ($js_path as $path) {
         $contents .= file_get_contents($path).';';
       }
-      _file_save_data(JSMin::minify($contents), $filepath);
+      _file_save_data($contents, $filepath);
     }
 
     $output .= '<script type="text/javascript" src="'. $base_path .$filepath .'"></script>'."\n";

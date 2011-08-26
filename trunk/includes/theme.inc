@@ -222,13 +222,6 @@ function template_preprocess_page(&$var, $args) {
     foreach ($block as $reg => $lists) {
       $var[$reg] = $lists;
     }
-    if ($var['left'] && $var['right']) {
-    	$var['sidebars_class'] = ' class="sidebars"';
-    } else if ($var['left']) {
-    	$var['sidebars_class'] = ' class="sidebar-left"';
-    } else if ($var['right']) {
-    	$var['sidebars_class'] = ' class="sidebar-right"';
-    }
   }
   
   $var['menu'] = dd_get_menu();

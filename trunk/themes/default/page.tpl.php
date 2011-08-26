@@ -5,44 +5,55 @@
   <title><?php echo $head_title; ?></title>
   <?php echo $heads; ?>
   <?php echo $styles; ?>
+  <link rel="stylesheet" href="<?php echo $base_theme; ?>/css/print.css" type="text/css" media="print">
+  <!--[if lt IE 8]>
+    <link rel="stylesheet" href="<?php echo $base_theme; ?>/css/ie.css" type="text/css" media="screen, projection">
+  <![endif]-->
   <?php echo $scripts; ?>
 </head>
-<body<?php echo $sidebars_class;?>>
-	<div id="wrapper"><div class="<?php echo $args_id;?>">
+<body>
+	<div id="wrapper" class="container"><div class="<?php echo $args_id;?>">
 		<div id="header">
       <div class="menu"><?php echo $menu; ?></div>
       <a href="<?php echo $base_path?>" title="回到 <?php echo $site_global->name; ?> 首页" class="logo" alt="<?php echo $site_global->name; ?>">
         <img src="<?php echo $site_global->logo; ?>" />
       </a>
     </div>
-		<div id="main"> 
-		 <?php if ($sidebars_class) : ?><div id="content"><?php endif; ?>
-				<div id="center">
-					<div class="column">
-            <?php echo $breadcrumb; ?>
-            <?php echo $tabs; ?>
-            <?php echo $sub_tabs; ?>
-            <?php echo $messages; ?>
-            <?php echo $help; ?>
-            <?php echo $content; ?>
-					</div>
-				</div>
-				<?php if ($right) : ?>
-					<div id="sidebar-right" class="sidebar">
-						<div class="column">
-							<?php echo $right; ?>
-						</div>
-					</div>
-				<?php endif; ?>
-			<?php if ($sidebars_class) : ?></div><?php endif; ?>
-			
-			<?php if ($left) : ?>
-				<div id="sidebar-left" class="sidebar">
-					<div class="column">
-						<?php echo $left; ?>
-					</div>
-				</div>
+    
+    <div id="main" class="container"> 
+      <?php if ($left) : ?>
+				<div id="sidebar-left" class="sidebar span-5">
+          <?php echo $left; ?>
+        </div>
 			<?php endif; ?>
+
+      <?php
+        if ($left && $right) {
+          $content_class = 'span-14';
+        } else if ($left) {
+          $content_class = 'span-19 last';
+        } else if ($right) {
+          $content_class = 'span-19';
+        } else {
+          $content_class = '';
+        }
+      ?>
+      
+      <div id="content" class="<?php echo $content_class;?>">
+        <?php echo $breadcrumb; ?>
+        <?php echo $tabs; ?>
+        <?php echo $sub_tabs; ?>
+        <?php echo $messages; ?>
+        <?php echo $help; ?>
+        <?php echo $content; ?>
+      </div>
+      
+      <?php if ($right) : ?>
+        <div id="sidebar-right" class="sidebar span-5 last">
+          <?php echo $right; ?>
+        </div>
+      <?php endif; ?>
+			
 		</div>
 		<div id="footer"><?php echo $site_global->footer; ?><?php echo $footer; ?><?php echo $debug; ?></div>
 	</div></div>
