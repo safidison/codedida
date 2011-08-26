@@ -108,6 +108,7 @@ function block_box_load($bid) {
  */
 function block_cache_lists($theme = NULL) {
   global $conf;
+
   if (!$theme) {
   	$theme = $conf['default_theme'];
   }
@@ -133,6 +134,9 @@ function block_cache_lists($theme = NULL) {
             if ($b['custom']) {
             	$b['settings']['custom'] = $b['custom'];
             }
+           
+            module_alter_all('block_list_alter', $theme, $module, $delta, $b);
+
             if ($insert = block_set_info($b)) {
               $blocks[$module.'_'.$insert->delta] = $insert;
             }
@@ -154,6 +158,27 @@ function block_cache_lists($theme = NULL) {
     return $blocks;
   }
 }
+
+/**
+ * @Implement of hook_block_list_alter()
+ * 更新区块列表时，对区块进行重写
+ * @param string $theme
+ *  主题系统名称，区块列表对应的主题
+ * @param string $module
+ *  模块系统名称，区块所属模块
+ * @param strint $delta
+ *  区块在所属模块的内部编号
+ * @param array &$block
+ *  当前区块设置
+ */
+
+/*
+function block_block_list_alter($theme, $module, $delta, &$block) {
+  if ($module == 'user' && $delta == 'login') {
+    $block['visibility'] = '';
+  }
+}
+ */
 
 /**
  * 获取指定主题的区块列表

@@ -87,6 +87,9 @@ function block_settings_form($theme, $block) {
     	$config['settings']['custom'] = array(
     		'custom' => $config->custom
     	);
+      
+      if (empty($config['region'])) $config['region'] = '';
+
       if (block_update_info($block->bid, $config)) {
       	var_del('theme_'.$theme.'_view');
       	dd_set_message(t('block', '已恢复默认值'));
