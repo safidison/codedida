@@ -2349,10 +2349,13 @@ function dd_get_breadcrumb() {
 
 /**
  * 获取下拉导航，触发 hook_site_menu()
- * @param (array) $menus
+ * @param array $menus
+ *  导航菜单，若无，则执行 hook_site_menu
+ * @param bool $fisrt
+ *  第一次调用，添加 js 代码，以实现下拉效果
  * @return (string)
  */
-function dd_get_menu($menus = NULL) {
+function dd_get_menu($menus = NULL, $fisrt = true) {
   if (!isset($menus)) {
     $menus = array();
     module_alter_all('site_menu', $menus);
@@ -2363,16 +2366,16 @@ function dd_get_menu($menus = NULL) {
 
   if ($menus) {
     static $i;
-    if ($i == 0) {
-      dd_add_js('$(\'.site_menu\').menuLevel();', 'inline');
-    }
+    
+    if ($fisrt) dd_add_js('$(\'.site_menu\').menuLevel();', 'inline');
+
     foreach ($menus as $key => $lists) {
       if (is_array($lists)) {
         if ($lists['#data']) {
           $data = '';
           $data .= $lists['#data'];
           if ($lists['#childrens']) {
-            $data .= dd_get_menu($lists['#childrens']);
+            $data .= dd_get_menu($lists['#childrens'], 0);
           }
           $items[] = array(
             '#data' => array('data' => $data, 'class' => 'site_menu_list site_menu_list_'.$key),
@@ -2385,7 +2388,7 @@ function dd_get_menu($menus = NULL) {
                 $data = '';
                 $data .= $child['#data'];
                 if ($child['#childrens']) {
-                  $data .= dd_get_menu($child['#childrens']);
+                  $data .= dd_get_menu($child['#childrens'], 0);
                 }
                 $items[] = array(
                   '#data' => array('data' => $data, 'class' => 'site_menu_list site_menu_list_'.$k),
