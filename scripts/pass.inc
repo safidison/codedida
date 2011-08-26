@@ -30,10 +30,10 @@ if (!empty($_args['pass'])) {
     array($pass['pass'], $pass['salt'], $_args['name']));
   } else if (!empty($_args['uid'])) {
     $ok = db_exec('UPDATE {users} SET pass = ?, salt = ? WHERE uid = ?',
-    array($pass['pass'], $pass['salt'], $_args['name']));
+    array($pass['pass'], $pass['salt'], $_args['uid']));
   }
 
-  echo $ok ? '修改成功' : '修改失败';
+  echo $ok ? '修改成功 - success' : '修改失败 - failure';
   echo "\n";
   exit();
 }

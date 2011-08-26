@@ -20,7 +20,7 @@
       </a>
     </div>
     
-    <div id="main" class="container"> 
+    <div id="main"> 
       <?php if ($left) : ?>
 				<div id="sidebar-left" class="sidebar span-5">
           <?php echo $left; ?>
