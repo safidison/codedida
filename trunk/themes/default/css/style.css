@@ -64,8 +64,15 @@ li {
   margin: 5px 0;
 }
 
+#wrapper {
+  width: 960px;
+}
+
 #main {
   margin: 10px auto;
+  clear: both;
+  padding: 0 5px;
+  overflow: hidden;
 }
 
 #header {
@@ -488,7 +495,7 @@ span.ja_loading {
 }
 
 .tabs a:hover, .tabs a.active{
-  background: #D3E8FA;
+  background: #eee;
   text-decoration:none;
 }
 
