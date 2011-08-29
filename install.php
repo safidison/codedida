@@ -116,21 +116,22 @@ function dida_is_setup() {
   if (!function_exists('gd_info')) {
     $error[] = '请开启 GD 扩展';
   }
+
+  // 检查日志目录读取权限，站点日志目录共享，位于 sites/logs
   if (!is_writable($log_dir)) {
     $error[] = $log_dir . '目录必须有读写权限 ';
   }
-  
-  if (!is_dir($conf_dir.'/cache') && !mkdir($conf_dir.'/cache', 0777)) {
-    $error[] = '无法创建目录 '.$conf_dir.'/cache，请手动创建，并将权限设置为可读写';
-  } else if (is_file($conf_file) && !is_writable($conf_file)) {
-    $error[] = $conf_file . '必须有读写权限';
-  }
-  
-  if (!is_dir($conf_dir . '/files') && !mkdir($conf_dir . '/files', 0777)) {
-    $error[] = '无法创建目录' . $conf_dir . '/files，请手动创建，并将权限设置为可读写';
-  }
 
-  if (is_file('sites/cache/default.conf.php')) {
+  // 检查缓存目录读写权限，生成系统变量缓存文件 conf.php
+  if (!is_dir($conf_dir . '/cache') && !mkdir($conf_dir . '/cache', 0777)) {
+    $error[] = '无法创建目录 '.$conf_dir.'/cache，请手动创建，并将权限设置为可读写';
+  } else if (!is_writable($conf_dir . '/cache')) {
+    $error[] = $conf_dir . '/cache必须有读写权限';
+  } else if (is_file($conf_file)) {
+    if (!is_writable($conf_file)) {
+      $error[] = $conf_file . '必须有读写权限';
+    }
+  } else if (is_file('sites/cache/default.conf.php')) {
     if (is_writable($conf_dir)) {
       file_put_contents($conf_file, file_get_contents('sites/cache/default.conf.php'));
       chmod($conf_file, 0777);
@@ -140,16 +141,24 @@ function dida_is_setup() {
   } else {
     $error[] = '请不要删除 sites/cache/default.conf.php';
   }
-  
+ 
+
+  // 检查默认文件目录读写权限，该路径可在管理中修改
+  if (!is_dir($conf_dir . '/files') && !mkdir($conf_dir . '/files', 0777)) {
+    $error[] = '无法创建目录' . $conf_dir . '/files，请手动创建，并将权限设置为可读写';
+  } else if (!is_writable($conf_dir . '/files')) {
+    $error[] = $conf_dir . '/files 必须有读写权限';
+  }
+
   if (is_file($setting_file)) {
   	if (!is_writable($setting_file)) {
     	$error[] = $setting_file . '必须有读写权限';
     }
-  } else if (!$handle = fopen($setting_file, "wb")) {
-    $error[] = '配置文件('.$setting_file.')不存在且无法自动创建，请复制 sites/default.setting.php 并重命名为 setting.php。';
-  } else {
+  } else if ($handle = fopen($setting_file, "wb")) {
     chmod($setting_file, 0777);
     fclose($handle);
+  } else {
+    $error[] = $setting_file.'不存在且无法自动创建，请复制 sites/default.setting.php 并重命名为 setting.php';
   }
   
   return $error;
