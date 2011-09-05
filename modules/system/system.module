@@ -1999,7 +1999,14 @@ function system_theme() {
 }
 
 /**
- * hook_cron
+ * @Implement of hook_module_core_module()
+ */
+function system_module_core_module() {
+  return array('system', 'user', 'block', 'field');
+}
+
+/**
+ * @Implement of hook_cron()
  */
 function system_cron($timestamp) {
   system_status_update('cron'); // 检查核心程序更新

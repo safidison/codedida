@@ -448,25 +448,36 @@ function menu_set_item() {
   $modules = $GLOBALS['conf']['modules'];
   foreach ($modules as $module => $info) {
     $function = $module .'_menu';
-    if (function_exists($function)) {
-      $result = call_user_func($function);
-      if (is_array($result)) {
+    if (function_exists($function) && $result = call_user_func($function)) {
+      if (!empty($result) && is_array($result)) {
         foreach ($result as $path => $menu) {
+          /**
+           * 重写 menu 的定义
+           * hook_menu_alter($path, $menu)
+           */
+          module_alter_all('menu_alter', $path, $menu);
+
           $t = array();
           $fit = 0;
           $path = trim($path);
-          if (!$path) {
-            dd_set_message("$module 模块定义了一个空路径，这是不允许的，请修正。", 'debug');
-            return false;
+
+          if (empty($path)) {
+            dd_set_message(t('system', '%module 模块定义了一个空路径，跳过', array('%module' => $module)), 'warning');
+            continue;
           }
+
           $arg = explode('/', $path, 10);
+
           if ($arg[0] == '%') {
-            dd_set_message("$module 模块定义的路径 $path 出现错误，不允许在url第一层使用通配符。", 'debug');
-            return false;
+            dd_set_message(t('system', '%module 模块定义的路径 %path 出现错误，不允许在 url 第一级使用通配符，跳过',
+            array('%module' => $module, '%path' => $path)), 'warning');
+            continue;
           }
+
           if (!$menu['page_callback']) {
-            dd_set_message("$module 模块定义的路径 $path 没有提供回调函数，无法启用。", 'debug');
-            return false;
+            dd_set_message(t('system', '%module 模块定义的路径 %path 没有提供回调函数，跳过',
+            array('%module' => $module, '%path' => $path)), 'warning');
+            continue;
           }
           
           $number_parts = count($arg);
@@ -476,40 +487,48 @@ function menu_set_item() {
               $fit |=  1 << ($slashes - $k);
             }
           }
+
           if (!$fit) {
             $fit = (1 << $number_parts) - 1;
           }
+
           $masks[$fit] = 1;
           $sort[$path] = $number_parts;
           
           $menu['fit'] = $fit ? $fit : 0;
           $menu['module'] = $module;
-          if ($menu['load_functions']) {
+
+          if (!empty($menu['load_functions'])) {
             $menu['load_functions'] = serialize($menu['load_functions']);
           }
-          if ($menu['file']) {
+
+          if (!empty($menu['file'])) {
             $menu['file'] = $modules[$module]['path'].'/'.$menu['file'];
           }
-          if ($menu['title_arguments']) {
+
+          if (!empty($menu['title_arguments'])) {
             $menu['title_arguments'] = serialize($menu['title_arguments']);
           }
-          if ($menu['access_arguments']) {
+
+          if (!empty($menu['access_arguments'])) {
             $menu['access_arguments'] = serialize($menu['access_arguments']);
           }
-          if ($menu['page_arguments']) {
+
+          if (!empty($menu['page_arguments'])) {
             $menu['page_arguments'] = serialize($menu['page_arguments']);
           }
-          $menu['access_callback'] = $menu['access_callback'] ? $menu['access_callback'] : 'user_access';
+
+          $menu['access_callback'] = !empty($menu['access_callback']) ? $menu['access_callback'] : 'user_access';
           
-          if (!$menu['weight']) {
+          if (empty($menu['weight'])) {
             $menu['weight'] = 0;
           }
           
-          if (!$menu['title_callback']) {
+          if (empty($menu['title_callback'])) {
             $menu['title_callback'] = '';
           }
           
-          if (!$menu['description']) {
+          if (empty($menu['description'])) {
             $menu['description'] = '';
           }
           

@@ -96,6 +96,9 @@ if (!$error = dida_is_setup()) { // 检查安装环境
   }
 }
 
+/**
+ * 检查安装环境
+ */
 function dida_is_setup() {
   global $conf, $conf_dir, $conf_file, $setting_file, $log_dir;
 
@@ -132,8 +135,7 @@ function dida_is_setup() {
       $error[] = $conf_file . '必须有读写权限';
     }
   } else if (is_file('sites/cache/default.conf.php')) {
-    if (is_writable($conf_dir)) {
-      file_put_contents($conf_file, file_get_contents('sites/cache/default.conf.php'));
+    if (file_put_contents($conf_file, file_get_contents('sites/cache/default.conf.php'))) {
       chmod($conf_file, 0777);
     } else {
       $error[] = $conf_file . '文件必须有读写权限';

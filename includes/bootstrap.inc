@@ -933,7 +933,7 @@ function dd_user_validate() {
         //每600秒验证一次用户session
         if (!db_query('SELECT uid FROM {users} WHERE uid = ? AND session = ?',
         array($user->uid, $_COOKIE[session_name()]), array('return' => 'column'))) {
-          $user = user_logout();  // 游客
+          user_logout();  // 游客
           dd_set_message('登录超时，请重新登录', 'error');
         } else {
           $user->active = $time;
@@ -942,9 +942,11 @@ function dd_user_validate() {
     }
   }
 
+  // 默认时区
   if (!$user->timezone) {
     $user->timezone = 'Asia/Chongqing';
   }
+
   if (!$user->uid) {
     $user = user_anonymous();  // 游客
   }

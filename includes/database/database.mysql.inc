@@ -15,7 +15,16 @@ function mysql_db_info() {
  *  一组数据库连接信息，该信息由接口文件在 install.{type}.inc 中自行定义
  */
 function db_mysql_connect($dbc, & $error) {
-  $dsn = $dbc['driver'] .':host='. $dbc['host'].';port='.$dbc['port'].';dbname='.$dbc['dbname'];
+  $dsn = $dbc['driver'] .':host='. $dbc['host'].';port='.$dbc['port'];
+
+  /**
+   * 提供了数据库名，才选择数据库
+   * @todo 在安装程序时，判断用户选择的数据库是否存在，不存在则创建。需要帐号有创建数据库权限，待完善
+   */
+  if (!empty($dbc['dbname'])) {
+    $dsn .= ';dbname=' . $dbc['dbname'];
+  }
+  
   try {
     $db = new PDO($dsn, $dbc['dbuser'], $dbc['dbpass'], array(
       PDO::MYSQL_ATTR_USE_BUFFERED_QUERY => true,
@@ -222,7 +231,7 @@ function db_mysql_exec($sql, $args = array(), $opt = array()) {
         }
         
         if (!db_error($smt->errorCode(), $smt->errorInfo())) {
-          $rowCount + $smt->rowCount();
+          $rowCount += $smt->rowCount();
         } else if ($opt['transaction']) {
           $db[$opt['target']]->rollBack();
         }
@@ -287,6 +296,7 @@ function db_mysql_get_version($target) {
 function db_mysql_is_table($table, $target) {
   return (bool) db_query("SHOW TABLES LIKE '{".$table."}'", NULL, array('target' => $target, 'return' => 'one'));
 }
+
 
 /**
  * @Implement of db_is_field
@@ -672,7 +682,72 @@ function db_mysql_type_map() {
   return $map;
 }
 
+/**
+ * 数据库注释文字解析 
+ * @param string $comment 
+ *  注释文字
+ * @param string $target 
+ *  连接名称
+ * @access public
+ * @return string
+ */
 function db_mysql_get_comment($comment, $target) {
   $comment = str_replace("'", '’', $comment);
   return $GLOBALS['db'][$target]->quote($comment);
+}
+
+/**
+ * @Implement of db_is_database
+ * 连接数据库帐号须拥有全局 show databases 权限，才能正确判断是否存在
+ */
+function db_mysql_is_database($database, $target) {
+  return (bool) db_query('SHOW DATABASES LIKE ?', array($database), array('target' => $target, 'return' => 'column'));
+}
+
+/**
+ * @Implement of db_create_database()
+ * 连接帐号必须拥有创建数据库权限  
+ */
+function db_mysql_create_database($database, $target) {
+  return (bool) db_exec('CREATE DATABASE IF NOT EXISTS ' . $database, NULL, array('target' => $target));
+}
+
+/**
+ * @Implement of db_drop_database
+ * 连接帐号必须拥有删除数据库的权限
+ */
+function db_mysql_drop_database($database, $target) {
+  return (bool) db_exec('DROP DATABASE IF EXISTS ' . $database, NULL, array('target' => $target));
+}
+
+/**
+ * @Implement of db_is_user()
+ * 连接帐号必须拥有 mysql 表查询权限
+ */
+function db_mysql_is_user($username, $target) {
+  return (bool) db_query('SELECT COUNT(*) FROM `mysql`.`user` WHERE User = ?',
+  array($username), array('target' => $target, 'return' => 'column'));
+}
+
+/**
+ * @Implement of db_create_user()
+ * 连接帐号必须要全局插入权限
+ */
+function db_mysql_create_user($username, $password, $database, $host, $target) {
+  db_query('GRANT ALL PRIVILEGES ON ' . $database . '.* TO ' . $username . "@'" . $host 
+  . "' IDENTIFIED BY '" . $password . "'", NULL, array('target' => $target));
+  return db_is_user($username);
+}
+
+/**
+ * @Implement of db_drop_user
+ * 连接帐号必须拥有全局删除用户的权限
+ */
+function db_mysql_drop_user($username, $target) {
+  db_exec('DROP USER ' . $username, NULL, array('target' => $target));
+  if (!db_is_user($username)) {
+    // 刷新权限
+    db_query('FLUSH PRIVILEGES', NULL, array('target' => $target));
+    return true;
+  }
 }

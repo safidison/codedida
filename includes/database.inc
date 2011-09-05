@@ -142,6 +142,13 @@ function db_replace($table, $args, array $opt = array()) {
 
 /**
  * 检查表是否存在
+ * @param string $table
+ *  表名
+ * @param string $target
+ *  连接名称
+ * @global $dbc
+ * @access public
+ * @return bool
  */
 function db_is_table($table, $target = 'default') {
   global $dbc;
@@ -229,13 +236,14 @@ function db_error($code, $info) {
   }
 }
 
+
 /**
  * 创建表
- * @param (string)$name
+ * @param string $name
  *  数据表名称
- * @param (array)$table
+ * @param string $table
  *  字段名称
- *
+ * @return string|false
  */
 function db_create_table($name, $table, $target = 'default') {
   global $dbc, $db;
@@ -283,7 +291,14 @@ function db_rename_table($name, $new_name, $target = 'default') {
 }
 
 /**
- * 删除表
+ * 删除数据表 
+ * @param string $table 
+ *  表名
+ * @param string $target 
+ *  连接名称
+ * @global $dbc
+ * @access public
+ * @return bool
  */
 function db_drop_table($table, $target = 'default') {
   global $dbc;
@@ -661,3 +676,159 @@ function db_debug($time) {
     }
   }
 }
+
+/**
+ * 数据库与数据库用户的相关操作，可能需要连接贴拥有较高权限，如创建数据库、删除数据库等
+ * 若实现这些接口，在安装时可提供更好的用户体验，非必须实现，若无法实现，可为接口返回 false，如：
+ *  function mysql_db_drop_database($database, $target) {
+ *    return false;
+ *  }
+ */
+
+/**
+ * 检查数据库是否存在
+ * @param string $database 
+ *  数据库名称
+ * @param string $target 
+ *  连接名称
+ * @global $dbc
+ * @access public
+ * @return bool
+ */
+function db_is_database($database, $target = 'default') {
+  global $dbc;
+  
+  if (empty($dbc[$target])) db_connect($target);
+  
+  return call_user_func('db_' . $dbc[$target]['driver'].'_is_database', $database, $target);
+}
+
+/**
+ * 创建一个数据库 
+ * @param string $database 
+ *  数据库名称
+ * @param string $target 
+ *  连接名称
+ * @global $dbc
+ * @access public
+ * @return bool
+ */
+function db_create_database($database, $target = 'default') {
+  global $dbc;
+  
+  if (empty($dbc[$target])) db_connect($target);
+
+  if (!db_is_database($database, $target)) {
+    if (call_user_func('db_' . $dbc[$target]['driver'].'_create_database', $database, $target)) {
+      dd_set_message(t('system', '@database 创建成功', array('@database' => $database)));
+      return true;
+    } else {
+      dd_set_message(t('system', '@database 创建失败', array('@database' => $database)), 'error');
+    }
+  } else {
+    dd_set_message(t('system', '@database 已存在', array('@database' => $database)), 'error');
+  }
+}
+
+/**
+ * 删除一个数据库
+ * @param string $database
+ *  表名
+ * @param string $target 
+ *  连接名称
+ * @global $dbc
+ * @access public
+ * @return bool
+ */
+function db_drop_database($database, $target = 'default') {
+  global $dbc;
+  
+  if (empty($dbc[$target])) db_connect($target);
+
+  if (db_is_database($database, $target)) {
+    if (call_user_func('db_' . $dbc[$target]['driver'].'_drop_database', $database, $target)) {
+      dd_set_message(t('system', '@database 删除成功', array('@database' => $database)));
+      return true;
+    } else {
+      dd_set_message(t('system', '@database 删除失败', array('@database' => $database)), 'error');
+    }
+  } else {
+    dd_set_message(t('system', '@database 不存在', array('@database' => $database)), 'error');
+  }
+}
+
+/**
+ * 检查数据库用户是否存在 
+ * @param string $username 
+ * @param string $target 
+ * @access public
+ * @return bool
+ */
+function db_is_user($username, $target = 'default') {
+  global $dbc;
+  
+  if (empty($dbc[$target])) db_connect($target);
+  
+  return call_user_func('db_' . $dbc[$target]['driver'].'_is_user', $username, $target);
+}
+
+/**
+ * 创建一个数据库用户，并分配一个数据库全部权限 
+ * @param string $username
+ *  用户名
+ * @param string $password
+ *  密码
+ * @param string $target
+ *  连接名称
+ * @param  string $database
+ *  赋予指定数据库的全部权限
+ * @param string $host
+ *  允许的来源主机，默认为所有主机
+ * @access public
+ * @return bool
+ */
+function db_create_user($username, $password, $database, $host = '%', $target = 'default') {
+  global $dbc;
+  
+  if (empty($dbc[$target])) db_connect($target);
+
+  if (db_is_user($username, $target)) {
+    dd_set_message(t('system', '数据库用户 @username 已经存在', array('@username' => $username)), 'error');
+  } else if (!db_is_database($database, $target)) {
+    dd_set_message(t('system', '数据库 @database 不存在', array('@database' => $database)), 'error');
+  } else if (call_user_func('db_' . $dbc[$target]['driver'].'_create_user', $username, $password, $database, $host, $target)) {
+    dd_set_message(t('system', '@username 权限分配成功', array('@username' => $username)));
+    return true;
+  } else {
+    dd_set_message(t('system', '@username 权限分配失败', array('@username' => $username)), 'error');
+  }
+
+}
+
+/**
+ * 取消用户所有权限，并删除其帐号 
+ * @param string $username 
+ *  用户名
+ * @param string $target 
+ *  连接名称
+ * @access public
+ * @return bool
+ */
+function db_drop_user($username, $target = 'default') {
+  global $dbc;
+  
+  if (empty($dbc[$target])) db_connect($target);
+
+  if (db_is_user($username, $target)) {
+    if (call_user_func('db_' . $dbc[$target]['driver'].'_drop_user', $username, $target)) {
+      dd_set_message(t('system', '@username 删除成功', array('@username' => $username)));
+      return true;
+    } else {
+      dd_set_message(t('system', '@username 删除失败', array('@username' => $username)), 'error');
+    }
+  } else {
+    dd_set_message(t('system', '@username 不存在', array('@username' => $username)), 'error');
+  }
+
+}
+
