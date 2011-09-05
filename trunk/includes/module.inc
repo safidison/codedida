@@ -278,7 +278,7 @@ function module_get_info($module, $filepath) {
  * 系统必需的模块
  */
 function module_core_module() {
-  return array('system', 'user', 'block', 'field');
+  return module_invoke_all('module_core_module');
 }
 
 /**

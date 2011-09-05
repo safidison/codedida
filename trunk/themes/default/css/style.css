@@ -71,7 +71,7 @@ li {
 #main {
   margin: 10px auto;
   clear: both;
-  padding: 0 5px;
+  padding: 5px;
   overflow: hidden;
 }
 
@@ -99,6 +99,9 @@ li {
   float: right;
 }
 
+.site_menu_children li {
+  width: 100px;
+}
 /* logo */
 #header .logo {
   display:block;
