@@ -21,21 +21,22 @@ function db_mysql_connect($dbc, & $error) {
    * 提供了数据库名，才选择数据库
    * @todo 在安装程序时，判断用户选择的数据库是否存在，不存在则创建。需要帐号有创建数据库权限，待完善
    */
+
+  $attributes = array(PDO::MYSQL_ATTR_USE_BUFFERED_QUERY => true);
+
   if (!empty($dbc['dbname'])) {
     $dsn .= ';dbname=' . $dbc['dbname'];
+    $attributes = array(PDO::ATTR_PERSISTENT => true);
   }
   
   try {
-    $db = new PDO($dsn, $dbc['dbuser'], $dbc['dbpass'], array(
-      PDO::MYSQL_ATTR_USE_BUFFERED_QUERY => true,
-      PDO::ATTR_PERSISTENT => true, // 持久连接
-      // PDO::ATTR_CASE => PDO::CASE_LOWER // 列名强制小写
-    ));
+    $db = new PDO($dsn, $dbc['dbuser'], $dbc['dbpass'], $attributes);
 	  $db->exec('SET NAMES "utf8"');
 	  $db->exec("SET sql_mode='ANSI,TRADITIONAL'");
   } catch (PDOException $e) {
   	$error = $e->getMessage();
   }
+
   return $db;
 }
 
@@ -736,7 +737,7 @@ function db_mysql_is_user($username, $target) {
 function db_mysql_create_user($username, $password, $database, $host, $target) {
   db_query('GRANT ALL PRIVILEGES ON ' . $database . '.* TO ' . $username . "@'" . $host 
   . "' IDENTIFIED BY '" . $password . "'", NULL, array('target' => $target));
-  return db_is_user($username);
+  return db_is_user($username, $target);
 }
 
 /**
@@ -745,7 +746,7 @@ function db_mysql_create_user($username, $password, $database, $host, $target) {
  */
 function db_mysql_drop_user($username, $target) {
   db_exec('DROP USER ' . $username, NULL, array('target' => $target));
-  if (!db_is_user($username)) {
+  if (!db_is_user($username, $target)) {
     // 刷新权限
     db_query('FLUSH PRIVILEGES', NULL, array('target' => $target));
     return true;

@@ -220,6 +220,10 @@ form {
   color: #f00;
 }
 
+.form_item .error {
+  padding: 1px 0;
+}
+
 .form_description {
   color: #7E8186;
   padding: 0 4px;
