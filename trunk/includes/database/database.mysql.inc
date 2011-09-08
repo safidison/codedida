@@ -22,11 +22,13 @@ function db_mysql_connect($dbc, & $error) {
    * @todo 在安装程序时，判断用户选择的数据库是否存在，不存在则创建。需要帐号有创建数据库权限，待完善
    */
 
-  $attributes = array(PDO::MYSQL_ATTR_USE_BUFFERED_QUERY => true);
+  $attributes = array(
+    PDO::MYSQL_ATTR_USE_BUFFERED_QUERY => true,
+    PDO::ATTR_PERSISTENT => true
+  );
 
   if (!empty($dbc['dbname'])) {
     $dsn .= ';dbname=' . $dbc['dbname'];
-    $attributes = array(PDO::ATTR_PERSISTENT => true);
   }
   
   try {
