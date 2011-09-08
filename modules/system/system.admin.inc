@@ -520,7 +520,7 @@ function system_site_settings() {
     '#type' => 'radio',
     '#title' => t('system', 'PHP执行信息'),
     '#required' => true,
-    '#default_value' => var_get('php_info', 0),
+    '#default_value' => var_get('php_info', 1),
     '#options' => array(t('system', '不显示'), t('system', '显示'), t('system', '仅向超级管理员显示')),
   );
 

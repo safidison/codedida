@@ -3,6 +3,57 @@
 
 /**
  * @Implement of hook_update_x()
+ *  filters.delta 字段类型修改
+ */
+function system_update_7(){
+  // 将 delta 由 int 改为 varchar，便于编码
+
+  if ($ret = db_change_field('filters', 'delta', 'delta', array(
+    'type' => 'varchar',
+    'length' => 12,
+    'not null' => TRUE,
+    'default' => '',
+    'description' => '过滤器在模块内部编号',
+  ))) {
+
+    // html 标签过滤器 delta 由 0 更改为 html
+    db_exec('UPDATE {filters} SET delta = ? WHERE module = ? AND delta = 0',
+    array('html', 'system'));
+
+    // 换行符转换为 br 过滤器 delta 由 1 更改为 br
+    db_exec('UPDATE {filters} SET delta = ? WHERE module = ? AND delta = 1',
+    array('br', 'system'));
+
+    // php 代码解析过滤器 delta 由 2 更改为 php
+    db_exec('UPDATE {filters} SET delta = ? WHERE module = ? AND delta = 2',
+    array('php', 'system'));
+
+    // 代码高亮过滤器 delta 由 3 更改为 highlighter
+    db_exec('UPDATE {filters} SET delta = ? WHERE module = ? AND delta = 3',
+    array('highlighter', 'system'));
+
+    // 表情解析过滤器 delta 由 4 更改为 smiley
+    db_exec('UPDATE {filters} SET delta = ? WHERE module = ? AND delta = 4',
+    array('smiley', 'system'));
+
+  }
+
+  if ($ret = db_change_field('filter_tags', 'delta', 'delta', array(
+    'type' => 'varchar',
+    'length' => 12,
+    'not null' => TRUE,
+    'default' => '',
+    'description' => '基于的过滤规则在其模块内部编号',
+  ))) {
+    // delta 修改为 fid
+    db_exec('UPDATE {filter_tags} SET delta = fid WHERE module = ?', array('system'));
+  }
+  
+  return $ret;
+}
+
+/**
+ * @Implement of hook_update_x()
  *  增加表 cache_filte，用于输入格式缓存
  */
 function system_update_6(){
@@ -784,18 +835,18 @@ function system_schema() {
         'description' => '过滤器 id'
       ),
       'delta' => array(
-        'type' => 'int',
-        'unsigned' => TRUE,
+        'type' => 'varchar',
+        'length' => 12,
         'not null' => TRUE,
-        'default' => 0,
-        'description' => '输入法模块内部编号',
+        'default' => '',
+        'description' => '过滤器模块内部编号',
       ),
       'module' => array(
         'type' => 'varchar',
         'length' => 64,
         'not null' => TRUE,
         'default' => '',
-    		'description' => '模块名称',
+    		'description' => '定义过滤器的模块名称',
       ),
       'weight' => array(
         'type' => 'int',
@@ -818,7 +869,7 @@ function system_schema() {
     'primary key' => array('fid'),
   );
   $schema['filter_tags'] = array(
-    'description' => '基于 html 标签和指定词语的过滤格式',
+    'description' => '管理员手动添加的过滤器',
     'fields' => array(
     	'fid' => array(
         'type' => 'serial',
@@ -837,17 +888,18 @@ function system_schema() {
         'description' => '内容，由模块控制'
       ),
       'delta' => array(
-        'type' => 'int',
+        'type' => 'varchar',
+        'length' => 12,
         'not null' => TRUE,
-        'default' => 0,
-        'description' => '过滤器在模块内的类型编号',
+        'default' => '',
+        'description' => '基于的过滤规则在其模块内部编号',
       ),
       'module' => array(
         'type' => 'varchar',
         'length' => 64,
         'not null' => TRUE,
         'default' => '',
-    		'description' => '定义此过滤器的模块名称',
+    		'description' => '定义过滤规则的模块名称',
       ),
       'description' => array(
         'type' => 'varchar',
@@ -968,41 +1020,31 @@ function _system_install(){
  * 写入默认输入法
  */
 function _system_install_format(){
-	$formats = array(
-		'placeholder' => array(':name', ':des', ':cache'),
-		'values' => array(
-			array('纯文本', '不允许任何 HTML 标签，仅将换行符转换为 <br />', 1),
-			array('完整 HTML', '允许任何 HTML 标签', 1),
-			array('PHP 代码', '将内容解析为 PHP 代码', 0)
-		)
-	);
-	
-  db_exec('INSERT INTO {filter_format} (name, description, cache) VALUES (:name, :des, :cache)', $formats);
-  
-  if($lists = system_filter('list')){
-    foreach($lists as $delta => $filter){
-      if($delta > 2) continue;
-      $weight = 0;
-      switch($delta){
-        case 0:
-          $weight = -10;
-        case 1:
-          $format = 1;
-        break;
-        case 2:
-          $format = 3;
-      }
-      db_exec('INSERT INTO {filters} (format, delta, module, weight) VALUES (?, ?, ?, ?)', array($format, $delta, 'system', $weight));
-    }
-  }
-  
-  if($fetch = db_query('SELECT f.format, f.name, f.description, t.delta, t.module FROM {filters} t INNER JOIN {filter_format} f ON t.format = f.format ORDER BY t.weight ASC, t.fid DESC', NULL, array('fetch' => 'array'))){
+
+  // 添加一个纯文本输入法
+  db_exec('INSERT INTO {filter_format} (name, description, cache) VALUES (?, ?, ?)', 
+  array('纯文本', '不允许任何 HTML 标签，仅将换行符置换为 <br />', 1));
+
+  // 将换行符过滤器加入输入法
+  db_exec('INSERT INTO {filters} (format, delta, module, weight) VALUES (?, ?, ?, ?)', array(1, 'br', 'system', 0));
+
+  $settings = array();
+
+  if($fetch = db_query('SELECT f.format, f.name, f.description, t.delta, t.module 
+  FROM {filters} t INNER JOIN {filter_format} f ON t.format = f.format 
+  ORDER BY t.weight ASC, t.fid DESC', NULL, array('fetch' => 'array'))){
   	foreach($fetch as $o){
     	$settings[$o->format][] = $o;
     }
   }
   
-  db_exec('INSERT INTO {variable} (name, value) VALUES (:name, :value)', array('placeholder' => array(':name', ':value'), 'values' => array(array('format', serialize($settings)), array('default_format', serialize(1)))));
+  db_exec('INSERT INTO {variable} (name, value) VALUES (:name, :value)', array(
+    'placeholder' => array(':name', ':value'),
+    'values' => array(
+      array('format', serialize($settings)), 
+      array('default_format', serialize(1))
+    )
+  ));
   
 }
 

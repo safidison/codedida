@@ -125,23 +125,28 @@ function block_settings_form($theme, $block) {
 	    '#options' => array(
 	      1 => t('block', '在下列页面显示'),
 	      2 => t('block', '除下列页面外的其它页面显示'),
-	      3 => t('block', '当 PHP 代码返回 TRUE 时显示')
 	    )
 	  );
-	  
+
+    $description = array(
+      t('block', '根据系统路径设置区块显示，可使用以下三种匹配模式：'),
+      t('block', '普通模式：一行一个。斜杠(/)代表整个路径。如：user 匹配单个页面，而 user/ 匹配以 user 下的所有页面。&lt;front&gt; 代表首页'),
+      t('block', '正则模式：符合PHP标准的正则表达式，只允许一个，以斜杠开始，如 /^user.*/i，匹配以 user 开头的所有页面'),
+    );
+
+    if ($GLOBALS['_filter_is_php_code'] == true) {
+      $form['fields']['settings']['display']['type']['#options'][3] = t('block', '当 PHP 代码返回 TRUE 时显示');
+      $description[] = t('block', 'PHP模式：如：if ($GLOBALS[\'user\']->uid == 1) return true;不能包含 PHP 标签。必须用 return 而不是 echo');
+    }
+
 	  $form['fields']['settings']['display']['body'] = array(
 	    '#type' => 'textarea',
 	    '#fieldset_suffix' => 1,
 	    '#default_value' =>$block->settings['display'] ? $block->settings['display']['body'] : NULL,
 	    '#attributes' => array('rows' => 6, 'cols' => 60),
-	    '#description' => theme('item_list', array(
-	    		t('block', '根据系统路径设置区块显示，可使用以下三种匹配模式：'),
-	    		t('block', '普通模式：一行一个。斜杠(/)代表整个路径。如：user 匹配单个页面，而 user/ 匹配以 user 下的所有页面。&lt;front&gt; 代表首页'),
-	    		t('block', '正则模式：符合PHP标准的正则表达式，只允许一个，以斜杠开始，如 /^user.*/i，匹配以 user 开头的所有页面'),
-	    		t('block', 'PHP模式：如：if ($GLOBALS[\'user\']->uid == 1) return true;不能包含 PHP 标签。必须用 return 而不是 echo')
-	    	)
-      )
-	  );
+	    '#description' => theme('item_list', $description)
+    );
+
     $function = $block->module.'_block_setting';
     if (function_exists($function) && $custom = $function($theme, $block)) {
 			if (is_array($custom)) {
