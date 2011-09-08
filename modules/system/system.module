@@ -275,6 +275,19 @@ function system_call_custom($v) {
     break;
     case 'install':
       return theme('print', dd_get_form('_system_call_custom_form', 'install'));
+    break;
+    case 'first_cache':
+      // 首次清除缓存、导入模块、主题相关数据，仅在超级管理员从未登录的情况适用
+      if (db_query('SELECT uid FROM {users} WHERE uid = 1 AND count > 0', 
+      NULL, array('return' => 'column'))) {
+        module_set_list('module', 'modules');
+        module_enabled_variable('module');
+        module_set_list('theme', 'themes');
+        module_enabled_variable('theme');
+        module_hook_set_cache();
+        theme_get_cache();     
+      }
+
   }
 }
 
@@ -787,6 +800,10 @@ function system_filter($op, $delta = NULL, $format = NULL, $value = NULL, $filte
             'description' => $o->description
           );
         }
+      }
+
+      if ($_filter_is_php_code != true) {
+        unset($lists['php']);
       }
     return $lists;
 

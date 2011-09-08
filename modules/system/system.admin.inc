@@ -842,7 +842,7 @@ function _system_cache_htaccess() {
     $h .= "\nOrder allow,deny\n";
     $h .= '</FilesMatch>';
     @file_put_contents($filepath, $h);
-    chmod($filepath, 0644);
+    @chmod($filepath, 0644);
   }
 }
 
