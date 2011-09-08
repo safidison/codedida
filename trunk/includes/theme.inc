@@ -293,8 +293,8 @@ function theme_render_tpl($tpl, $var, $hook = NULL) {
   /**
    * php 执行信息，当前有执行时间，占用内存
    */
-  if ($hook == 'page' && !empty($GLOBALS['conf']['php_info'])) {
-    if ($GLOBALS['conf']['php_info'] == 1 || $GLOBALS['user']->uid == 1) {
+  if ($hook == 'page' && var_get('php_info', 1)) {
+    if (var_get('php_info', 1) == 1 || $GLOBALS['user']->uid == 1) {
       // 向所有用户或 uid 为 1 的用户显示
       $var['debug'] .= '<p class="debug_php_info">';
       $var['debug'] .= '执行时间：' . (microtime(true)-DIDA_START_TIME) . ' 秒，';

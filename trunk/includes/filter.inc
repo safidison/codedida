@@ -14,6 +14,7 @@
  */
 function filter_view($text, $format = NULL, $type = NULL, $id = NULL) {
   global $conf;
+
   if (!isset($format) || !$conf['formats'][$format]) {
     $format = $conf['default_format'];
   }
@@ -30,7 +31,7 @@ function filter_view($text, $format = NULL, $type = NULL, $id = NULL) {
       if ($cached = cache_get($cache_id, 'cache_filter')) {
         
         // 代码高亮，加载 js
-        if (filter_is_filter($format, 'system', 3)) {
+        if (filter_is_filter($format, 'system', 'highlighter')) {
           dd_get_highlighter();
         }
         
@@ -59,8 +60,13 @@ function filter_view($text, $format = NULL, $type = NULL, $id = NULL) {
  * PHP 解析
  */
 function filter_tags_php($text) {
-  if (strpos($text, '<?php') !== false) {
-    return preg_replace_callback('/<\?php(.*?)\?>$/ms', '_filter_tags_php', $text);
+  if ($GLOBALS['_filter_is_php_code'] == true) {
+    // 全局启用 php code
+    if (strpos($text, '<?php') !== false) {
+      return preg_replace_callback('/<\?php(.*?)\?>$/ms', '_filter_tags_php', $text);
+    }
+  } else {
+    return $text;
   }
 }
 
@@ -181,7 +187,7 @@ function filter_set_cache() {
  * 检查输入法中是否含有 php 过滤器
  */
 function filter_is_php($format) {
-  return filter_is_filter($format, 'system', 2);
+  return filter_is_filter($format, 'system', 'php');
 }
 
 /**

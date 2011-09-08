@@ -29,7 +29,7 @@ function bootstrap($op, $inc = NULL) {
   }
 
   if (!$conf_dir) {
-    if (is_dir('sites/'.$_SERVER['HTTP_HOST'])) {
+    if (is_dir(DIDA_ROOT . '/sites/'.$_SERVER['HTTP_HOST'])) {
       $conf_dir = 'sites/'.$_SERVER['HTTP_HOST'];
     } else {
       $conf_dir = 'sites';
@@ -1683,7 +1683,7 @@ function dd_error_msg($msg) {
   $error = array(
     '错误信息：'. $msg,
     '发生时间：'. format_date(time()),
-    '当前用户：'.($GLOBALS['user'] ? $GLOBALS['user']->name : '游客'),
+    '当前用户：'.(!empty($GLOBALS['user']) ? $GLOBALS['user']->name : '游客'),
     '用户主机：'. ip_address(),
     '当前页面：'. isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '未知'
   );

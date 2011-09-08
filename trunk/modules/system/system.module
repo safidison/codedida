@@ -229,7 +229,10 @@ function system_perm() {
  * @Implement of hook_init()
  */
 function system_init() {
-  global $is_admin;
+  global $is_admin, $_filter_is_php_code;
+
+  // 全局允许 php code 输入格式
+  $_filter_is_php_code = true;
   
   if (arg(0) == 'admin') {
     system_is_admin();
@@ -649,79 +652,73 @@ function _system_filter_code_nl2br($mat) {
  * @return *
  */
 function system_filter($op, $delta = NULL, $format = NULL, $value = NULL, $filter_id = NULL, $node_type = NULL, $node_nid = NULL) {
+  global $_filter_is_php_code;
+
   switch ($op) {
     case 'view':
-      if ($delta < 100) {
-        switch ($delta) {
-          case 0:
-            
-            $value = check_plain($value);
-            
-          break;
-          case 1:
-            
-            // 换行符前是 html 标签，则不替换
-            $value = preg_replace_callback(
-              "/(.*?)\n/",
-              '_system_filter_code_nl2br',
-              str_replace(array("\r\n", ">\n"), array("\n", '>'), $value)
-            );
-          break;
-          case 2:
-            // 执行 php 代码
-            $value = filter_tags_php($value);
-          break;
-          case 3: // 代码高亮
-            
-            if (strpos($value, '[code=') === false) {
-              /**
-               * 直接通过 <pre> 标签添加的高亮代码
-               * 将换行符过滤器转换为 \n
-               */
-              if (strpos($value, '<pre class="brush') !== false) {
-                $value = preg_replace_callback('/<pre class="brush(.*?)>(.*?)<\/pre>/ims', '_system_filter_code_pre_higth', $value);
-                dd_get_highlighter();
-              }
-              
-              return $value;
+      switch ($delta) {
+        case 'html':
+          
+          $value = check_plain($value);
+          
+        break;
+
+        case 'br':
+          
+          // 换行符前是 html 标签，则不替换
+          $value = preg_replace_callback(
+            "/(.*?)\n/",
+            '_system_filter_code_nl2br',
+            str_replace(array("\r\n", ">\n"), array("\n", '>'), $value)
+          );
+        break;
+
+        case 'php':
+          // 已全局禁用 php 输入格式
+          if ($_filter_is_php_code != true) {
+            return $value;
+          }
+          // 执行 php 代码
+          $value = filter_tags_php($value);
+        break;
+
+        case 'highlighter': // 代码高亮
+          
+          if (strpos($value, '[code=') === false) {
+            /**
+             * 直接通过 <pre> 标签添加的高亮代码
+             * 将换行符过滤器转换为 \n
+             */
+            if (strpos($value, '<pre class="brush') !== false) {
+              $value = preg_replace_callback('/<pre class="brush(.*?)>(.*?)<\/pre>/ims', '_system_filter_code_pre_higth', $value);
+              dd_get_highlighter();
             }
             
-            dd_get_highlighter();
-            $value = preg_replace_callback('/\[code=([^\/]*?)\](.*?)\[\/code\]/ims', '_system_filter_code_higth', $value);
-          break;
-          case 4: // 表情转换
-            $dir = $GLOBALS['base_path'] . 'misc/markitup/sets/dida/face/';
-            $value = preg_replace('/\[smiley\](.*?)\[\/smiley\]/ims', "<img src='$dir\${1}' />", $value);
-            
-        }
-      } else if ($filter_id) {
-        if ($filter = filter_get_filters($filter_id)) {
-          if ($filter->delta < 2) {
-            if ($filter->tags) {
-              $filter_tags_type = var_get('filter_system_type_'.$filter->fid);
-              if ($filter->delta == 0) {
-                // 被允许的标签
-                if (!$filter_tags_type) {
-                  
-                  preg_match_all('/<([\/|\s]*)([0-9a-z]*).*?>/ims', $value, $matches);
-                  
-                  if ($matches) {
-                    foreach ($matches[2] as $key => $matche) {
-                      if (!$filter->tags[mb_strtolower($matche)]) {
-                        $value = str_replace($matches[0][$key], check_plain($matches[0][$key]), $value);
-                        
-                      }
-                    }
-                  }
-                } else {
-                  $value = strip_tags($value, $filter->strip_tags);
-                }
-              } else {
-                // 不被允许的标签
-                
+            return $value;
+          }
+          
+          dd_get_highlighter();
+          $value = preg_replace_callback('/\[code=([^\/]*?)\](.*?)\[\/code\]/ims', '_system_filter_code_higth', $value);
+        break;
+
+        case 'smiley': // 表情转换
+          $dir = $GLOBALS['base_path'] . 'misc/markitup/sets/dida/face/';
+          $value = preg_replace('/\[smiley\](.*?)\[\/smiley\]/ims', "<img src='$dir\${1}' />", $value);
+        break;
+
+        default: // 其它手动添加的过滤器
+          if ($filter = filter_get_filters($filter_id)) {
+            switch ($filter->dalta) {
+              case 'keyword':
+                // 词语过滤、替换
+                $value = strtr($value, $filter->tags);
+              break;
+
+              case 'html_disabled':
+                // 去除不被允许的 html 标签
                 preg_match_all('/<([\/|\s]*)([0-9a-z]*).*?>/ims', $value, $matches);
-                
                 if ($matches) {
+                  $filter_tags_type = var_get('filter_system_type_'.$filter->fid);
                   foreach ($matches[2] as $key => $matche) {
                     if ($filter->tags[mb_strtolower($matche)]) {
                       if (!$filter_tags_type) {
@@ -732,73 +729,86 @@ function system_filter($op, $delta = NULL, $format = NULL, $value = NULL, $filte
                     }
                   }
                 }
-              }
+              break;
+
+              case 'html_enabled':
+                // 只保留允许的标签
+                if (!var_get('filter_system_type_'.$filter->fid)) {
+                  preg_match_all('/<([\/|\s]*)([0-9a-z]*).*?>/ims', $value, $matches);
+                  if ($matches) {
+                    foreach ($matches[2] as $key => $matche) {
+                      if (!$filter->tags[mb_strtolower($matche)]) {
+                        $value = str_replace($matches[0][$key], check_plain($matches[0][$key]), $value);
+                      }
+                    }
+                  }
+                } else {
+                  $value = strip_tags($value, $filter->strip_tags);
+                }
+              break;
             }
-          } else {
-            // 词语过滤、替换
-            $value = strtr($value, $filter->tags);
           }
-        }
       }
     return $value;
     
     case 'list':
+      // 注册过滤器列表
       $lists = array(
-        array(
+        'html' => array(
           'title' => 'HTML 过滤',
           'description' => '将内容做为纯文本，不解析 HTML 标签',
         ),
-        array(
+        'br' => array(
           'title' => '换行符转换',
           'description' => '将换行符转换为 <br />',
         ),
-        array(
+        'php' => array(
           'title' => 'PHP 解析',
           'description' => '将 <?php ?> 内的代码解析为 PHP',
         ),
-        array(
+        'highlighter' => array(
           'title' => '代码高亮',
           'weight' => 10,
           'description' => '将 [code={type}][/code] 之间的代码做高亮处理，权重应低于换行符转换。若 HTML 过滤器同时启用，且设置为去除标签，代码高亮权重应高于 HTML 过滤器，同时过滤器中允许 pre 标签',
         ),
-        array(
+        'smiley' => array(
           'title' => '表情解析',
           'description' => '将 [smiley][/smiley] 转换为表情图片，与文本编辑器配合',
         ),
       );
+
       if ($fetch = db_query('SELECT * FROM {filter_tags}')) {
-        $i = 100;
         foreach ($fetch as $o) {
-          $lists[$i] = array(
+          $lists[$o->fid] = array(
             'title' => $o->title,
             'filter_id' => $o->fid,
             'update' => 1,
             'delete' => 1,
             'description' => $o->description
           );
-          
-          ++$i;
         }
       }
     return $lists;
+
     case 'add':
+      // 注册供手动添加的过滤器规则
     return array(
-        array(
+        'html_enabled' => array(
           'title' => t('system', 'HTML 标签过滤器'),
           'description' => t('system', '设置被允许的 HTML 标签')
         ),
-        array(
+        'html_disabled' => array(
           'title' => t('system', 'HTML 标签过滤器'),
           'description' => t('system', '设置不允许的 HTML 标签')
         ),
-        array(
+        'keyword' => array(
           'title' => t('system', '词语过滤器'),
           'description' => t('system', '设置需过滤或替换的词语')
         ),
       );
     case 'form':
       switch ($delta) {
-        case 2:
+        case 'keyword':
           $form['body'] = array(
             '#type' => 'textarea',
             '#title' => t('system', '词语列表'),
@@ -808,7 +818,7 @@ function system_filter($op, $delta = NULL, $format = NULL, $value = NULL, $filte
             '#attributes' => array('rows' => 12, 'cols' => 80),
           );
         break;
-        case 1:
+        case 'html_enabled':
           $form['body'] = array(
             '#type' => 'textfield',
             '#title' => t('system', '不允许的标签'),

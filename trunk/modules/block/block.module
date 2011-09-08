@@ -449,8 +449,11 @@ function block_path_display($type, $text) {
 			}
 		break;
 		case 3:
-			// PHP 模式
-			return eval($text);
+      /**
+       * PHP 模式
+       * 若全局禁用了 php 输入格式，则返回 false
+       */
+      return $GLOBALS['_filter_is_php_code'] == true ? eval($text) : false;
 	}
 	return $return;
 }
