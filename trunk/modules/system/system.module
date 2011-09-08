@@ -278,7 +278,7 @@ function system_call_custom($v) {
     break;
     case 'first_cache':
       // 首次清除缓存、导入模块、主题相关数据，仅在超级管理员从未登录的情况适用
-      if (db_query('SELECT uid FROM {users} WHERE uid = 1 AND count > 0', 
+      if (db_query('SELECT uid FROM {users} WHERE uid = 1 AND count < 1', 
       NULL, array('return' => 'column'))) {
         module_set_list('module', 'modules');
         module_enabled_variable('module');
