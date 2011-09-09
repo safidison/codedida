@@ -23,7 +23,7 @@
 */
 
 function dd_get_form($form_id) {
-  global $conf, $user, $form_tokens;
+  global $conf, $user, $form_tokens, $base_theme_name;
   dd_add_js('misc/form.js');
   
   $args = func_get_args();
@@ -162,6 +162,14 @@ function dd_get_form($form_id) {
   	dd_set_form_cache($form);
   }
   
+  if (empty($form['settings']['#prefix'])) {
+    $form['settings']['#prefix'] = '<div class="' . $form_id . '">';
+  }
+
+  if (empty($form['settings']['#suffix'])) {
+    $form['settings']['#suffix'] = '</div>';
+  }
+
   $fields = dd_form_sort(dd_form_field($form, $form_values, $error));
   
   $output .= '<form '.dd_attributes($form['#args']).'>';
@@ -193,7 +201,7 @@ function dd_get_form($form_id) {
   $output .= dd_form_hidden(array('#name' => 'form_id', '#value' => $form_id));
   $output .= dd_form_hidden(array('#name' => 'form_token', '#value' => $form_token));
   $output .= '</form>';
-  return '<div class="'.$form_id.'">' .$output. '</div>';
+  return $form['settings']['#prefix'] . $output . $form['settings']['#suffix'];
 }
 
 /**
