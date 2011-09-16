@@ -213,7 +213,7 @@ function system_perm() {
     //'system admin cron' => t('system', '计划任务'),
     'system admin settings captcha' => t('system', '验证码设置'),
     'system admin settings files' => t('system', '文件设置'),
-    'system admin filter' => t('system', '式化管理'),
+    'system admin filter' => t('system', '输入法管理'),
     'system admin lang' => t('system', '界面翻译'),
     'file upload' => t('system', '上传文件'),
     'file all view' => t('system', '浏览所有文件'),
@@ -285,7 +285,8 @@ function system_call_custom($v) {
         module_set_list('theme', 'themes');
         module_enabled_variable('theme');
         module_hook_set_cache();
-        theme_get_cache();     
+        theme_get_cache(); 
+        module_invoke_all('first_cache');
       }
 
   }
@@ -546,14 +547,17 @@ function system_del_custom_block_links($id, $uid = NULL) {
  * 获取管理区块自定义快捷方式
  */
 function system_get_custom_block_links($uid) {
-  $item = array();
-  
-  if ($fetch = db_query('SELECT data, id FROM {storage} WHERE ext_type = ? AND ext_type2 = ? AND ext_id = ? 
+  static $item;
+
+  if (!isset($item)) {
+    $item = array();
+    if ($fetch = db_query('SELECT data, id FROM {storage} WHERE ext_type = ? AND ext_type2 = ? AND ext_id = ? 
     ORDER BY weight ASC, timestamp DESC', array('system_custom', 'block_links', $uid))){
-    foreach ($fetch as $o) {
-      $data = unserialize($o->data);
-      if ($data['title'] && $data['path']) {
-        $item[] = array($data['title'], $data['path'], array('attributes' => array('alt' => $o->id)));
+      foreach ($fetch as $o) {
+        $data = unserialize($o->data);
+        if ($data['title'] && $data['path']) {
+          $item[] = array($data['title'], $data['path'], array('attributes' => array('alt' => $o->id)));
+        }
       }
     }
   }
@@ -890,7 +894,7 @@ function system_filter($op, $delta = NULL, $format = NULL, $value = NULL, $filte
 /**
  * @Implement of hook_block_view()
  */
-function system_block_view($theme, $config = object) {
+function system_block_view($theme, $config = NULL) {
   
   if (!user_access('system view admin')) return false;
   
@@ -908,8 +912,8 @@ function system_block_view($theme, $config = object) {
       
         $content['didaSystemCustom'] = array(
           system_get_custom_block_links($user->uid),
-          t('sytem', '快捷方式'),
-          '#weight' => $table->data ? $table->data[$module] : -100
+          t('system', '快捷方式'),
+          '#weight' => $table->data ? $table->data['didaSystemCostom'] : -100
         );
         
       }
