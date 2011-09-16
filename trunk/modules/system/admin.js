@@ -49,7 +49,7 @@ $(function() {
 			$('#block_system_adminLink .dida_sorttable_button').hide(300);
 		});
 		
-		$("#block_system_adminLink > .block_content").disableSelection();
+		//$("#block_system_adminLink > .block_content").disableSelection();
 	});
   
 });

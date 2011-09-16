@@ -503,7 +503,10 @@ function menu_set_item() {
           }
 
           if (!empty($menu['file'])) {
-            $menu['file'] = $modules[$module]['path'].'/'.$menu['file'];
+            // 如果不是绝对路径
+            if (!is_file($menu['file'])) {
+              $menu['file'] = $modules[$module]['path'] . '/' . $menu['file'];
+            }
           }
 
           if (!empty($menu['title_arguments'])) {

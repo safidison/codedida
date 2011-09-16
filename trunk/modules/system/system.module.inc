@@ -136,7 +136,7 @@ function system_modules_validate($form, $value) {
 function system_modules_theme($form, $fields) {
   $header = array(t('system', '启用'), t('system', '模块信息'), t('system', '说明'), t('system', '操作'));
   
-  $rows = array();
+  $rows = $table = array();
   foreach ($fields['modules'] as $module) {
     $item = array(
       '<strong>'.t('system', '名称：').'</strong>' . $module['name']['#value'],

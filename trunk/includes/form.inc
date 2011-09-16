@@ -711,12 +711,20 @@ function _dd_form_element(&$form, $field, $value, $error) {
   }
   
   if (function_exists('dd_form_'.$field['#type'])) {
-    if ($field['#type'] == 'file' && !$form['#args']['enctype']) {
+    if ($field['#type'] == 'file' && empty($form['#args']['enctype'])) {
       $form['#args']['enctype'] = 'multipart/form-data';
     }
-    if (!$field['#attributes']['id']) {
+    
+    if (empty($field['#attributes']['id'])) {
       $field['#attributes']['id'] = $field['#form_id'].'_type_'.$field['__name'];
     }
+    
+    if (empty($field['#attributes']['class'])) {
+      $field['#attributes']['class'] = 'form_value_' . $field['#type'];
+    } else {
+      $field['#attributes']['class'] .= ' form_value_' . $field['#type'];
+    }
+
     $element = call_user_func('dd_form_'.$field['#type'], $field, $form). $field['#field_suffix'];
   } else if ($field['#value']) {
     $form['#type'] = 'value';

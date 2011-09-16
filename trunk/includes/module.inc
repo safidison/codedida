@@ -79,14 +79,20 @@ function module_enabled_variable($op = 'all') {
  * 模块、主题列表，实时读取数据库
  */
 function module_list($type = 'module', $status = 'all') {
+  
+  $query = 'SELECT * FROM {system} WHERE type = ?';
+
   switch ($status) {
-    case 'enabled'://启用的模块
-      $where = ' AND status != 0';
+    case 'enabled':// 启用的模块
+      $query .= ' AND status != 0';
     break;
-    case 'disabled'://禁用的模块
-      $where = ' AND status = 0';
+    case 'disabled':// 禁用的模块
+      $query .= ' AND status = 0';
   }
-  if ($fetch = db_query('SELECT * FROM {system} WHERE type = :type' . $where . ' ORDER BY weight DESC, filename DESC', array(':type' => $type), array('fetch' => 'array'))) {
+  
+  $query .= ' ORDER BY weight DESC, filename DESC';
+
+  if ($fetch = db_query($query, array($type), array('fetch' => 'array'))) {
     foreach ($fetch as $module) {
       $module['info'] = unserialize($module['info']);
       $modules[$module['filename']] = $module;
