@@ -277,22 +277,35 @@ function system_themes_page() {
       $form['fields']['themes'][$theme['filename']]['thumb']['#value'] = t('system', '无');
     }
   }
+  
   $form['settings'] = array(
     '#validate' => array('system_themes_validate'),
     '#theme' => 'system_themes_theme'
   );
+
   $form['fields']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('system', '确认操作'),
   );
+
   return $form;
 }
 
 function system_themes_theme($form, $fields) {
+  if (!empty($_GET['name']) && $_GET['op'] == 'install') {
+    // 启用主题
+    if (db_exec('UPDATE {system} SET status = 1 WHERE filename = ? AND type = ?',
+    array($_GET['name'], 'theme'))) {
+      dd_set_message(t('system', '启用成功'));
+      module_enabled_variable('theme');
+      dd_goto($_GET['q']);
+    }
+  }
+
   $header = array(
     t('system', '预览'), t('system', '名称'), t('system', '启用'),
     t('system', '路径'), t('system', '版本'), t('system', '说明'),
-    t('system', '设置'),
+    t('system', '操作'),
   );
   
   foreach ($fields['themes'] as $theme) {
@@ -300,7 +313,8 @@ function system_themes_theme($form, $fields) {
       $theme['thumb']['#value'], $theme['name']['#value'],
       $theme['check']['#html'], $theme['path']['#value'],
       $theme['ver']['#value'], $theme['des']['#value'],
-      l(t('system', '设置'), 'admin/themes/setting/'.$theme['filename']['#value'])
+      (!empty($theme['check']['#value']) ? l(t('system', '设置'), 'admin/themes/setting/' . $theme['filename']['#value']) 
+      : l(t('system', '启用'), $_GET['q'], array('query' => 'op=install&name=' . $theme['filename']['#value'])))
     );
   }
   
