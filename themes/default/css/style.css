@@ -216,7 +216,7 @@ form {
   margin: 3px 0;
 }
 
-.red, a.red, .form_error, .error, .form_required {
+.label_required, .red, a.red, .form_error, .error, .form_required {
   color: #f00;
 }
 
