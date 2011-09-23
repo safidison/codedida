@@ -222,7 +222,7 @@ function dd_get_form($form_id) {
 function form_save_submit(&$form, &$value) {
   foreach ($form['fields'] as $key => $field) {
     if (strpos($key, '#') === false) {
-      if (($field['#type'] == 'submit') && $value[$key]) {
+      if (($field['#type'] == 'submit' || $field['#type'] == 'image') && $value[$key]) {
         if ($function = $field['#submit']) {
           return $function($form, $value);
         }
@@ -236,7 +236,7 @@ function form_save_submit(&$form, &$value) {
 function _form_save_submit($fields, $subvalue, &$value) {
   foreach ($fields as $key => $field) {
     if (strpos($key, '#') === false) {
-      if (($field['#type'] == 'submit') && $subvalue[$key]) {
+      if (($field['#type'] == 'submit' || $field['#type'] == 'image') && $subvalue[$key]) {
         if ($function = $field['#submit']) {
           return $function($form, $value);
         }
