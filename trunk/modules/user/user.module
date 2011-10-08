@@ -1476,9 +1476,18 @@ function user_login($user) {
    */
   module_alter_all('user_login', $user);
   
-  dd_log('user_login', t('system', '用户登录'), 0, dd_get_referer($_SERVER['HTTP_REFERER']), 0, $user->uid);
+  dd_log('user_login', $user->name . '-' . $user->uid, 0, dd_get_referer($_SERVER['HTTP_REFERER']), 0, $user->uid);
   
   return $user;
+}
+
+/**
+ * @Implement of hook_logs_info()
+ */
+function user_logs_info() {
+  return array(
+    'user_login' => t('user', '用户登录'),
+  );
 }
 
 /**

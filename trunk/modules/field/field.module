@@ -2033,6 +2033,8 @@ function field_term_form_validate($form, $v) {
  * 保存分类数据，若存在则更新
  */
 function field_term_save(&$field, $term, $batch = 0) {
+  if (!isset($field->pid)) $field->pid = 0;
+
   if ($error = module_invoke_all('field_call_term_validate', $field, $term)) {
     dd_set_message(implode('<br />', dd_array2_to('value', $error)), 'error');
     return false;
@@ -2054,7 +2056,8 @@ function field_term_save(&$field, $term, $batch = 0) {
   if (!$term->field_id) $term->field_id = $field->field_id;
   
   if ($term->tid) {
-    if (!db_query('SELECT tid FROM {fields_term} WHERE field_id = ? AND name = ? AND tid != ?', array($field->field_id, $term->name, $term->tid), array('return' => 'column'))) {
+    if (!db_query('SELECT tid FROM {fields_term} WHERE field_id = ? AND name = ? AND tid != ? AND pid = ?',
+    array($field->field_id, $term->name, $term->tid, $term->pid), array('return' => 'column'))) {
       $newterm = field_term_update($term);
     } else {
       dd_set_message(t('field', '%string 已经存在', array('%string' => $term->name)), 'error');
@@ -2076,7 +2079,8 @@ function field_term_save(&$field, $term, $batch = 0) {
     } else {
       $newterm = field_term_insert($term);
     }
-  } else if (!db_query('SELECT tid FROM {fields_term} WHERE field_id = ? AND name = ?', array($field->field_id, $term->name), array('return' => 'column'))) {
+  } else if (!db_query('SELECT tid FROM {fields_term} WHERE field_id = ? AND name = ? AND pid = ?',
+  array($field->field_id, $term->name, $term->pid), array('return' => 'column'))) {
     $newterm = field_term_insert($term);
   } else {
     dd_set_message(t('field', '%string 已经存在', array('%string' => $term->name)), 'error');

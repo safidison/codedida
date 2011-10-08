@@ -466,7 +466,7 @@ function dd_attributes($attributes) {
   if (is_array($attributes)) {
     $t = '';
     foreach ($attributes as $key => $value) {
-      if ($value) $t .= " $key=".'"'. check_plain($value) .'"';
+      if (isset($value)) $t .= " $key=".'"'. check_plain($value) .'"';
     }
     return $t;
   }
@@ -951,7 +951,7 @@ function dd_user_validate() {
     $user = user_anonymous();  // 游客
   }
 
-  date_default_timezone_set(var_get('default_timezone', 'Asia/Taipei'));
+  date_default_timezone_set(var_get('default_timezone', 'Asia/Chongqing'));
 
   // 管理员强制要求某个用户退出
   if ($user->uid && $GLOBALS['conf']['dida_user_enforce_logout']) {
