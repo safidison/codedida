@@ -744,6 +744,9 @@ function file_validate_image(&$file, $val) {
           }
       }
     }
+  } else {
+    dd_set_message(t('system', '%string 不是合法的图片文件', array('%string' => $file->filename)), 'error');
+    return false;
   }
   return true;
 }
