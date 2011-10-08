@@ -110,11 +110,24 @@ function system_admin_logs(){
     array('data' => t('system', '路径'), 'field' => 'l.url'),
   );
   
+  $breadcrumb = array(l(t('system', '系统管理'), 'admin'));
+
   $types = module_invoke_all('logs_info');
   $status = dd_logs_get_status();
-  
-  if($fetch = pager_query('SELECT l.*, u.name FROM {logs} l LEFT JOIN {users} u ON l.uid = u.uid'.
-  table_sql($header), 50)){
+
+  $query = 'SELECT l.*, u.name FROM {logs} l LEFT JOIN {users} u ON l.uid = u.uid';
+  $args = NULL;
+
+  if (arg(2) && !empty($types[arg(2)])) {
+    $query .= ' WHERE l.type = ?';
+    $args = array(arg(2));
+    $breadcrumb[] = l(t('system', '系统日志'), 'admin/logs');
+    $breadcrumb[] = $types[arg(2)];
+  } else {
+    $breadcrumb[] = t('system', '系统日志');
+  }
+
+  if($fetch = pager_query($query . table_sql($header), 50, 0, NULL, $args)){
     foreach($fetch as $o){
       $table[] = array(
         theme('username', $o),
@@ -126,18 +139,24 @@ function system_admin_logs(){
       );
       $table[][] = array(
         'data' => dd_get_strong(t('system', '说明')).$o->value,
-        'colspan' => 5
+        'colspan' => 6
       );
     }
-    
+
+    $item = array(l(t('system', '所有日志'), 'admin/logs'));
+    foreach ($types as $key => $name) {
+      $item[] = l($name, 'admin/logs/' . $key);
+    }
+
     $output = dd_get_form('system_admin_logs_delete_form');
+    $output .= '<p>' . dd_get_strong(t('system', '按日志类型查看')) . dd_imp($item) . '</p>';
     $output .= theme('table', $header, $table);
     $output .= pager_view();
   } else {
     $output = system_no_content();
   }
   
-  dd_set_breadcrumb(array(l(t('system', '系统管理'), 'admin'), t('system', '系统日志')));
+  dd_set_breadcrumb($breadcrumb);
   return $output;
 }
 
@@ -149,13 +168,15 @@ function system_admin_logs_delete_form() {
     '#type' => 'checkbox',
     '#title' => t('system', '清空全部日志'),
   );
-  
-  $form['fields']['query'] = array(
-    '#type' => 'textfield',
-    '#title' => t('system', '或自定义删除条件'),
-    '#field_prefix' => 'DELETE FROM `logs` WHERE ',
-    '#description' => t('system', '请补充 sql语句，如：sid < 1000。注意，错误的 SQL 将有未知风险')
-  );
+
+  if ($GLOBALS['_filter_is_php_code'])  {
+    $form['fields']['query'] = array(
+      '#type' => 'textfield',
+      '#title' => t('system', '或自定义删除条件'),
+      '#field_prefix' => 'DELETE FROM `logs` WHERE ',
+      '#description' => t('system', '请补充 sql语句，如：sid < 1000。注意，错误的 SQL 将有未知风险')
+    );
+  }
   
   $form['fields']['botton']['#type'] = 'submit';
   
@@ -169,9 +190,8 @@ function system_admin_logs_delete_form() {
 function system_admin_logs_delete_form_validate($form, $v) {
   
   if ($v['all']) {
-    
     db_exec('TRUNCATE TABLE {logs}');
-  } else if ($v['query']) {
+  } else if ($v['query'] && $GLOBALS['_filter_is_php_code']) {
     db_exec('DELETE FROM {logs} WHERE ' . $v['query']);
   }
   

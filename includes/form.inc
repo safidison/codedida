@@ -22,13 +22,21 @@
   );
 */
 
+/**
+ * 调用一个表单
+ * @param string $form_id 
+ *  定义表单的函数
+ * @access public
+ * @return string
+ */
 function dd_get_form($form_id) {
   global $conf, $user, $form_tokens, $base_theme_name;
   dd_add_js('misc/form.js');
   
   $args = func_get_args();
   array_shift($args);
-  
+
+  // 同一页面，同一表单，只能调用一次
   if ($_POST['form_id'] == $form_id) {
   	$form_token = $_POST['form_token'];
   } else {
@@ -36,7 +44,8 @@ function dd_get_form($form_id) {
   }
   
   $form_tokens[$form_id] = $form_token;
-  
+
+  // 调用定义表单的函数，获得表单原始数据
   $form = call_user_func_array($form_id, $args);
   
   if (!is_array($form['fields'])) {
@@ -48,7 +57,8 @@ function dd_get_form($form_id) {
   }
   
   $form['__args'] = $args;
-  
+
+  // 执行 hook_form_alter()，可以在此 hook 中实施覆写
 	module_alter_all('form_alter', $form_id, $form_token, $form);
   
   $form['#args'] = array(
@@ -57,14 +67,16 @@ function dd_get_form($form_id) {
   	'id' => $form_id,
   	'accept-charset' => 'UTF-8',
   );
-  
+
+  // 表单属性
   if ($form['settings'] && is_array($form['settings']['#attributes'])) {
   	$form['#args'] = array_merge($form['#args'], $form['settings']['#attributes']);
   }
   
   $form['#form_id'] = $form_id;
   $form['#form_token'] = $form_token;
-  
+
+  // 表单提交成功后重定向路径
   if (!$form['settings']['#redirect'] && $form['#args']['#action']) {
   	$form['settings']['#redirect'] = $form['#args']['#action'];
   }
@@ -112,9 +124,11 @@ function dd_get_form($form_id) {
   // 处理当前提交的表单
   if ($_POST['form_id'] == $form_id) {
     $form_values = &$_POST;
-    if ($form['settings']['#values_object']) {
+
+    // 不再需要在表单指定创建一个 object
+    //if ($form['settings']['#values_object']) {
       $form_values['_dida_values'] = (object) $_POST;
-    }
+    //}
     
   	// 基本验证：必填字段，选项字段数据是否被修改
     if ((!$error = dd_form_required($form, $form_values)) && (!$error = file_form_validate($form, false))) {
@@ -202,6 +216,93 @@ function dd_get_form($form_id) {
   $output .= dd_form_hidden(array('#name' => 'form_token', '#value' => $form_token));
   $output .= '</form>';
   return $form['settings']['#prefix'] . $output . $form['settings']['#suffix'];
+}
+
+/**
+ * 获取表单字段类型，可使用 hook_form_type_info() 来扩展字段类型，示例：
+ *  mymodule_form_type_info(&$types) {
+ *      $types['mytype'] = array(
+ *        'name' => '我的自定义类型',
+ *        'callback' => 'mymodule_form_type_mytype',
+ *      );
+ *  }
+ * @access public
+ * @return void
+ */
+function form_get_type_info() {
+  static $info;
+
+  if (!empty($info)) return $info;
+
+  $types = array(
+    'textfield' => array(
+      'name' => t('system', '单行文本'), // 类型名称
+      'callback' => 'dd_form_textfield', // 回调函数，该类型将用此函数处理，必需
+      'description' => '单行文本字段，最长 255 个字符', // 类型描述
+    ),
+    'password' => array(
+      'name' => t('system', '密码'),
+      'callback' => 'dd_form_password'
+    ),
+    'captcha' => array(
+      'name' => t('system', '验证码'),
+      'callback' => 'dd_form_captcha'
+    ),
+    'textarea' => array(
+      'name' => t('system', '多行文本'),
+      'callback' => 'dd_form_textarea',
+    ),
+    'radio' => array(
+      'name' => t('system', '单选按钮'),
+      'callback' => 'dd_form_radio'
+    ),
+    'checkbox' => array(
+      'name' => t('system', '复选框'),
+      'callback' => 'dd_form_checkbox',
+    ),
+    'select' => array(
+      'name' => t('system', '下拉单选框'),
+      'callback' => 'dd_form_select'
+    ),
+    'selects' => array(
+      'name' => t('system', '下拉复选框'),
+      'callback' => 'dd_form_selects'
+    ),
+    'weight' => array(
+      'name' => t('system', '权重'),
+      'callback' => 'dd_form_weight'
+    ),
+    'ahah' => array(
+      'name' => t('system', 'AJAX'),
+      'callback' => 'dd_form_ahah'
+    ),
+    'submit' => array(
+      'name' => t('system', '提交按钮'),
+      'callback' => 'dd_form_submit',
+    ),
+    'button' => array(
+      'name' => t('system', '按钮'),
+      'callback' => 'dd_form_button'
+    ),
+    'hidden' => array(
+      'name' => t('system', '隐藏字段'),
+      'callback' => 'dd_form_hidden',
+    ),
+    'image' => array(
+      'name' => t('system', '图像按钮'),
+      'callback' => 'dd_form_image'
+    ),
+    'file' => array(
+      'name' => t('system', '文件上传'),
+      'callback' => 'dd_form_file',
+    ),
+  );
+
+  module_alter_all('form_type_info', $types);
+
+  $info = $types;
+
+  return $info;
 }
 
 /**
@@ -660,6 +761,8 @@ function _dd_form_fieldset($field, $type) {
  * 解析字段
  */
 function _dd_form_element(&$form, $field, $value, $error) {
+  $types = form_get_type_info();
+
   $field['#weight'] = _dd_form_weight($form['#form_id'], $field['#weight']);
   $field['#parents'] = $field['#name'];
   $name = array_shift($field['#name']);
@@ -710,7 +813,7 @@ function _dd_form_element(&$form, $field, $value, $error) {
     $field['#fieldset_suffix_html'] = '</div></fieldset>';
   }
   
-  if (function_exists('dd_form_'.$field['#type'])) {
+  if (!empty($types[$field['#type']]) && function_exists($types[$field['#type']]['callback'])) {
     if ($field['#type'] == 'file' && empty($form['#args']['enctype'])) {
       $form['#args']['enctype'] = 'multipart/form-data';
     }
@@ -725,7 +828,7 @@ function _dd_form_element(&$form, $field, $value, $error) {
       $field['#attributes']['class'] .= ' form_value_' . $field['#type'];
     }
 
-    $element = call_user_func('dd_form_'.$field['#type'], $field, $form). $field['#field_suffix'];
+    $element = call_user_func($types[$field['#type']]['callback'], $field, $form). $field['#field_suffix'];
   } else if ($field['#value']) {
     $form['#type'] = 'value';
     $element = dd_form_label($field) . $field['#value'] . $field['#field_suffix'];
@@ -745,7 +848,7 @@ function _dd_form_element(&$form, $field, $value, $error) {
 
 //字段错误信息
 function dd_form_error($field) {
-  if (!empty($field['#error'][0])) {
+  if (is_array($field['#error']) && !empty($field['#error'][0])) {
     return '<span class="form_error">'.implode('<br>', $field['#error'])."</span>\n";
   }
 }

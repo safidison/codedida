@@ -1113,8 +1113,8 @@ function dd_get_editor($dom, $v = array()) {
 		$toolbar['medium'] = array(
 			array(
   			'Source', 'Maximize', 'AutoSave', '-', 'Strike',
-  			'Underline', 'Bold', 'Italic', 'TextColor','BGColor', '-',
-  			'Cut', 'Copy', 'Paste', 'PasteText','PasteFromWord', 'Undo', 'Redo', '-',
+        'Underline', 'Bold', 'Italic', 'TextColor','BGColor', '-',
+        'Cut', 'Copy', 'Paste', 'PasteText','PasteFromWord', 'Undo', 'Redo', '-',
   			'NumberedList', 'BulletedList', 'BodyBreak'
 			),
 			'/',
@@ -1155,7 +1155,7 @@ function dd_get_editor($dom, $v = array()) {
     }
 	}
   
-	if ($_COOKIE['editorColor']) $v['uiColor'] = $_COOKIE['editorColor'];
+	if (!empty($_COOKIE['editorColor'])) $v['uiColor'] = $_COOKIE['editorColor'];
 	
 	if ($v['upload_image']) {
 	  if (empty($v['filebrowserImageUploadUrl'])) {
@@ -1170,7 +1170,9 @@ function dd_get_editor($dom, $v = array()) {
   
   $v['instanceName'] = $dom;
   
-	switch ($v['toolbar']) {
+  if (empty($v['toolbar']))  $v['toolbar'] = 'medium';
+
+  switch ($v['toolbar']) {
 		case 'full':
 			$v['toolbar'] = ':::code:::toolbar.full';
 		break;
@@ -1190,7 +1192,7 @@ function dd_get_editor($dom, $v = array()) {
 		case 'medium': default:
 			$v['toolbar'] = ':::code:::toolbar.medium';
 	}
-	
+  
   $js = 'CKEDITOR.instances["'.$dom.'"].on("instanceReady", function(){this.document.on("keyup", function(){updateTextArea(\''.$dom.'\');});this.document.on("paste", function(){updateTextArea(\''.$dom.'\');});});';
 	
 	dd_add_js('CKEDITOR.replace(\''.$dom.'\', '.dd_to_js($v).');' . $js, 'inline_nojq', 0, 'footer');
