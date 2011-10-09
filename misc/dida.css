@@ -11,6 +11,7 @@ blockquote {
 
 a {
   text-decoration:none;
+  color: #0066CC;
 }
 
 a:hover, a:active, a.active {
@@ -320,12 +321,12 @@ span.option_label, span.form_radio_text{
 /* icon */
 .sort_active_desc{
 	padding-right: 14px;
-  background: url(../../../misc/images/arrow-desc.png) right 0 no-repeat;
+  background: url(images/arrow-desc.png) right 0 no-repeat;
 }
 
 .sort_active_asc {
 	padding-right: 16px;
-  background: url(../../../misc/images/arrow-asc.png) right 0 no-repeat;
+  background: url(images/arrow-asc.png) right 0 no-repeat;
 }
 
 /*fieldset*/
@@ -350,11 +351,11 @@ legend {
 }
 
 legend.desc {
-  background: url(../../../misc/images/arrow-desc.png) left 0 no-repeat;
+  background: url(images/arrow-desc.png) left 0 no-repeat;
 }
 
 legend.asc {
-  background: url(../../../misc/images/arrow-asc.png) left 0 no-repeat;
+  background: url(images/arrow-asc.png) left 0 no-repeat;
 }
 
 /*jquery ui*/
@@ -402,7 +403,7 @@ legend.asc {
 }
 
 .ja_loading {
-  background-image: url(../../../misc/images/throbber.gif);
+  background-image: url(images/throbber.gif);
   background-repeat: no-repeat;
   background-position:left -19px;
   padding-left: 15px;
@@ -647,7 +648,7 @@ span.ja_loading {
 }
 
 .loading_image {
-	background: url(../../../misc/images/loading.gif) no-repeat center center;
+	background: url(images/loading.gif) no-repeat center center;
 }
 
 .loading_size {

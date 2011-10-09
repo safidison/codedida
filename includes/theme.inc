@@ -15,6 +15,10 @@ function theme_init() {
   if (is_file(DIDA_ROOT .'/'. $base_theme_info['path'] . '/template.php')) {
     require_once DIDA_ROOT .'/'. $base_theme_info['path'] . '/template.php';
   }
+ 
+  if (empty($base_theme_info['styles_remove']) || empty($base_theme_info['styles_remove']['misc/dida.css'])) {
+    dd_add_css('misc/dida.css', 'theme');
+  }
   
   if (empty($base_theme_info['styles'])) {
     dd_add_css($base_theme_info['path'].'/css/style.css', 'theme');
@@ -30,10 +34,6 @@ function theme_init() {
     }
   }
 
-  if (empty($base_theme_info['styles_remove']) || empty($base_theme_info['styles_remove']['misc/dida.css'])) {
-    dd_add_css('misc/dida.css', 'core');
-  }
-  
   dd_add_js('misc/jquery.js', 'core');
   dd_add_js('misc/dida.js', 'core');
   dd_add_js('misc/jquery.dida.js', 'core');

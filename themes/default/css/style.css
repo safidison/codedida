@@ -3,15 +3,6 @@ body {
   font-family: "Microsoft YaHei","Microsoft JhengHei",Helvetica,Arial,sans-serif;
 }
 
-a {
-  text-decoration:none;
-}
-
-a:hover, a:active, a.active {
-  color:#CC6600;
-  text-decoration:underline;
-}
-
 #wrapper {
   width: 960px;
 }
