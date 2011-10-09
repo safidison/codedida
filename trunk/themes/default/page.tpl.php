@@ -5,9 +5,9 @@
   <title><?php echo $head_title; ?></title>
   <?php echo $heads; ?>
   <?php echo $styles; ?>
-  <link rel="stylesheet" href="<?php echo $base_theme; ?>/css/print.css" type="text/css" media="print">
+  <link rel="stylesheet" href="<?php echo $base_path; ?>misc/blueprint/print.css" type="text/css" media="print">
   <!--[if lt IE 8]>
-    <link rel="stylesheet" href="<?php echo $base_theme; ?>/css/ie.css" type="text/css" media="screen, projection">
+    <link rel="stylesheet" href="<?php echo $base_path; ?>misc/blueprint/ie.css" type="text/css" media="screen, projection">
   <![endif]-->
   <?php echo $scripts; ?>
 </head>

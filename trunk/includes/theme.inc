@@ -6,17 +6,21 @@ function theme_init() {
 
   $base_theme_name = !$GLOBALS['user']->theme ? $conf['default_theme'] : $GLOBALS['user']->theme;
   
-  $conf['base_theme'] = $base_path . $conf['themes'][$base_theme_name]['path'];
-  $conf['base_logo'] = $base_path . ($conf['themes'][$base_theme_name]['logo'] ? $conf['themes'][$base_theme_name]['logo'] : 'misc/images/logo.png');
-  $conf['base_favicon'] = $base_path . ($conf['themes'][$base_theme_name]['favicon'] ? $conf['themes'][$base_theme_name]['favicon'] : 'misc/images/favicon.ico');
-
   $base_theme_info = $conf['themes'][$base_theme_name];
+
+  $conf['base_theme'] = $base_path . $base_theme_info['path'];
+  $conf['base_logo'] = $base_path . ($base_theme_info['logo'] ? $base_theme_info['logo'] : 'misc/images/logo.png');
+  $conf['base_favicon'] = $base_path . ($base_theme_info['favicon'] ? $base_theme_info['favicon'] : 'misc/images/favicon.ico');
 
   if (is_file(DIDA_ROOT .'/'. $base_theme_info['path'] . '/template.php')) {
     require_once DIDA_ROOT .'/'. $base_theme_info['path'] . '/template.php';
   }
- 
-  if (empty($base_theme_info['styles_remove']) || empty($base_theme_info['styles_remove']['misc/dida.css'])) {
+
+  if (empty($base_theme_info['styles_remove']['misc/blueprint/screen.css'])) {
+    dd_add_css('misc/blueprint/screen.css', 'theme');
+  }
+  
+  if (empty($base_theme_info['styles_remove']['misc/dida.css'])) {
     dd_add_css('misc/dida.css', 'theme');
   }
   
