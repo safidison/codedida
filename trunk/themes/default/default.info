@@ -18,6 +18,9 @@ $info = array(
     'css/screen.css',
     'css/style.css'
   ),
+  'styles_remove' => array( // 指定要移除的系统 css，目前仅支持移除 misc/dida.css
+    'misc/dida.css' => true,
+  ),
   'scripts' => array( // 附加js，相对于主题文件夹，如：js/my.js
   )
 );

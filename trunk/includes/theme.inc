@@ -2,29 +2,36 @@
 // $Id$
 
 function theme_init() {
-  global $conf, $base_path, $base_theme_name;
+  global $conf, $base_path, $base_theme_name, $base_theme_info;
+
   $base_theme_name = !$GLOBALS['user']->theme ? $conf['default_theme'] : $GLOBALS['user']->theme;
   
   $conf['base_theme'] = $base_path . $conf['themes'][$base_theme_name]['path'];
   $conf['base_logo'] = $base_path . ($conf['themes'][$base_theme_name]['logo'] ? $conf['themes'][$base_theme_name]['logo'] : 'misc/images/logo.png');
   $conf['base_favicon'] = $base_path . ($conf['themes'][$base_theme_name]['favicon'] ? $conf['themes'][$base_theme_name]['favicon'] : 'misc/images/favicon.ico');
-  
-  if (is_file(DIDA_ROOT .'/'. $conf['themes'][$base_theme_name]['path'] . '/template.php')) {
-    require_once DIDA_ROOT .'/'. $conf['themes'][$base_theme_name]['path'] . '/template.php';
+
+  $base_theme_info = $conf['themes'][$base_theme_name];
+
+  if (is_file(DIDA_ROOT .'/'. $base_theme_info['path'] . '/template.php')) {
+    require_once DIDA_ROOT .'/'. $base_theme_info['path'] . '/template.php';
   }
   
-  if (!$conf['themes'][$base_theme_name]['styles']) {
-    dd_add_css($conf['themes'][$base_theme_name]['path'].'/css/style.css', 'theme');
+  if (empty($base_theme_info['styles'])) {
+    dd_add_css($base_theme_info['path'].'/css/style.css', 'theme');
   } else {
-    foreach ($conf['themes'][$base_theme_name]['styles'] as $style) {
-      dd_add_css($conf['themes'][$base_theme_name]['path'].'/'. $style, 'theme');
+    foreach ($base_theme_info['styles'] as $style) {
+      dd_add_css($base_theme_info['path'].'/'. $style, 'theme');
     }
   }
   
-  if ($conf['themes'][$base_theme_name]['scripts']) {
-    foreach ($conf['themes'][$base_theme_name]['scripts'] as $script) {
-      dd_add_js($conf['themes'][$base_theme_name]['path'].'/'. $script, 'theme');
+  if ($base_theme_info['scripts']) {
+    foreach ($base_theme_info['scripts'] as $script) {
+      dd_add_js($base_theme_info['path'].'/'. $script, 'theme');
     }
+  }
+
+  if (empty($base_theme_info['styles_remove']) || empty($base_theme_info['styles_remove']['misc/dida.css'])) {
+    dd_add_css('misc/dida.css', 'core');
   }
   
   dd_add_js('misc/jquery.js', 'core');
