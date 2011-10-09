@@ -15,11 +15,11 @@ $info = array(
   	'bottom' => '底部',
   ),
   'styles' => array( // 附加css，相对于主题文件夹，如：css/my.css。若无，则默认加载 css/style.css
-    'css/screen.css',
     'css/style.css'
   ),
-  'styles_remove' => array( // 指定要移除的系统 css，目前仅支持移除 misc/dida.css
-    'misc/dida.css' => true,
+  'styles_remove' => array( // 指定要移除的系统 css，支持移除的系统 css 如下
+    //'misc/dida.css' => true, // 通用 css
+    //'misc/blueprint/screen.css' => true, // blueprint 框架
   ),
   'scripts' => array( // 附加js，相对于主题文件夹，如：js/my.js
   )

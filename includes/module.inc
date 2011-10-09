@@ -47,6 +47,7 @@ function module_enabled_variable($op = 'all') {
         'styles' => $info['info']['styles'] ? $info['info']['styles'] : NULL,
         'scripts' => $info['info']['scripts'] ? $info['info']['scripts'] : NULL,
         'name' => ($info['info']['name'] ? $info['info']['name'] : $info['filename']),
+        'styles_remove' => (!empty($info['info']['styles_remove']) ? $info['info']['styles_remove'] : array()),
         'language' => $info['info']['language']
       );
       if ($info['info']['logo']) {
@@ -141,8 +142,10 @@ function module_set_list($type = 'module') {
             $info['uninstall'] = true;
           }
         }
-        
-        $info = array_merge($array2[$key]['info'], $info);
+
+        if (is_array($array2[$key]['info'])) {
+          $info = array_merge($array2[$key]['info'], $info);
+        }
         
         db_exec('UPDATE {system} SET weight = :weight, info = :info, type = :type, path = :path WHERE filename = :name',
         array(
