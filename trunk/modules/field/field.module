@@ -2339,7 +2339,7 @@ function field_get_cache_term_key($module, $type, $field_key) {
  * 获取（清除）所有字段缓存数据
  */
 function field_get_cache_field($field_id = NULL, $clear = 0) {
-  if ($clear || !$data = var_get('field_data', 0)) {
+  if ($clear || ($data = var_get('field_data', false)) === false) {
     $data = array();
     if ($fetch = db_query('SELECT * FROM {fields} ORDER BY weight ASC, field_id ASC')) {
       $lists = field_get_call_lists();
