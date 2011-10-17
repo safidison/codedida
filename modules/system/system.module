@@ -1766,7 +1766,7 @@ function dd_storage_admin($ext_type, $ext_type2 = NULL, $ext_id = NULL, $fetch =
       );
     }
     
-    $output = theme('table', array(t('system', '排序'), t('system', '操作'), t('system', '内容')), $table);
+    $output = theme('table', array(t('system', '内容'), t('system', '排序'), t('system', '操作')), $table);
     $output .= pager_view(array(), 10, 1);
     
   }

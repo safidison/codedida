@@ -38,9 +38,6 @@ body {
   float: right;
 }
 
-.site_menu_children li {
-  width: 100px;
-}
 /* logo */
 #header .logo {
   display:block;
