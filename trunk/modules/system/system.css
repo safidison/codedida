@@ -1,59 +1,5 @@
 /* $Id$ */
 
-/*site_menu*/
-.site_menu {
-  height:30px;
-  line-height:30px;
-}
-
-.site_menu li {
-  height: 30px;
-  float: left;
-  padding: 0;
-  margin: 0;
-  padding: 0 10px;
-  text-align: center;
-}
-
-.site_menu_children li {
-  background: #fff;
-  border: 1px solid #ccc;
-  border-bottom: none;
-  margin-bottom: 1px 0;
-  height: 22px;
-  line-height: 22px;
-  float: none;
-  display: block;
-}
-
-.site_menu_children li.last {
-  border-bottom: 1px solid #ccc;
-}
-
-.js_menu_level_parent .js_menu_level_one_a span {
-	padding-right: 12px;
-  background: url(../../../misc/images/spindown-open.gif) right center no-repeat;
-}
-
-.js_menu_level_children {
-  background: url(../../../misc/images/spindown-closed.gif) right center no-repeat;
-}
-
-.js_menu_level_parent .js_menu_level_one_a span {
-	padding-right: 12px;
-  background: url(../../../misc/images/spindown-open.gif) right center no-repeat;
-}
-
-.js_menu_level_children {
-  background: url(../../../misc/images/spindown-closed.gif) right center no-repeat;
-}
-
-
-h2.system_no_content {
-  text-align: center;
-  margin: 12px 0;
-}
-
 /*filter*/
 #system_admin_format_form label {
   display: block;

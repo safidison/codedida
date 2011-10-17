@@ -16,10 +16,6 @@ function theme_init() {
     require_once DIDA_ROOT .'/'. $base_theme_info['path'] . '/template.php';
   }
 
-  if (empty($base_theme_info['styles_remove']['misc/blueprint/screen.css'])) {
-    dd_add_css('misc/blueprint/screen.css', 'theme');
-  }
-  
   if (empty($base_theme_info['styles_remove']['misc/dida.css'])) {
     dd_add_css('misc/dida.css', 'theme');
   }
