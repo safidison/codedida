@@ -5,10 +5,6 @@
   <title><?php echo $head_title; ?></title>
   <?php echo $heads; ?>
   <?php echo $styles; ?>
-  <link rel="stylesheet" href="<?php echo $base_path; ?>misc/blueprint/print.css" type="text/css" media="print">
-  <!--[if lt IE 8]>
-    <link rel="stylesheet" href="<?php echo $base_path; ?>misc/blueprint/ie.css" type="text/css" media="screen, projection">
-  <![endif]-->
   <?php echo $scripts; ?>
 </head>
 <body>
