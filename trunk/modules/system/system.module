@@ -980,6 +980,9 @@ function system_block_view($theme, $config = NULL) {
     
     foreach ($content as $module => $m) {
       $items = array();
+      
+      if (!is_array($m[0])) continue;
+
       foreach ($m[0] as $k) {
         if (is_array($k)) {
           if (!$k[2]) {
