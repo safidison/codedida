@@ -48,6 +48,10 @@ thead img {
   border: none;
 }
 
+.odd {
+  background: #E8E8E8;
+}
+
 thead th {
   padding: 0 5px;
 }
