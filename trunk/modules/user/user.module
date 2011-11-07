@@ -147,10 +147,17 @@ function user_is_register() {
 }
 
 /**
+ * 超级管理员
+ */
+function user_is_root_user() {
+  return !empty($GLOBALS['user']->uid) && $GLOBALS['user']->uid == 1;
+}
+
+/**
  * 已登录
  */
 function user_is_login() {
-  return $GLOBALS['user']->uid;
+  return !empty($GLOBALS['user']->uid);
 }
 
 /**
