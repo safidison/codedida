@@ -224,7 +224,7 @@ function db_last_insert_id($target = 'default') {
  */
 function db_error($code, $info) {
   if ($code != '0000') {
-    $msg = 'Error('.$info[0].')：' . $info[2];
+    $msg = 'Error('.$info[0].')：' . dd_array_to_string($info);
     
     text_log('database_error', dd_error_msg($msg));
     
