@@ -287,7 +287,12 @@ function module_get_info($module, $filepath) {
  * 系统必需的模块
  */
 function module_core_module() {
-  return module_invoke_all('module_core_module');
+  // 安装时，没有 modules 列表
+  if (!empty($GLOBALS['conf']['modules'])) {
+    return module_invoke_all('module_core_module');
+  } else {
+    return array('system', 'block', 'user', 'field');
+  }
 }
 
 /**
