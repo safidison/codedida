@@ -773,10 +773,17 @@ $(function() {
     
   };
   
-  //时间控件
+  // @TODO 之前时间控件使用 settings.uidata，将更改为 uidate
   if (settings.uidata) {
+    settings.uidata = settings.uidate;
+  }
+
+  /**
+   * jquery ui 时间控件
+   */
+  if (settings.uidate) {
     $.datepicker.setDefaults($.datepicker.regional['zh-CN']);
-    var element = settings.uidata;
+    var element = settings.uidate;
     $(element).each(function(i) {
       var o = this;
       o.showStatus = true;
@@ -786,7 +793,7 @@ $(function() {
       
       if (o.start || o.end) {
         o.onClose = function(text, instance) { 
-          uidata_vali(text, instance, instance.settings.start ? 'start' : 'end');
+          uidate_vali(text, instance, (instance.settings.start == 'ok' ? 'start' : 'end'));
         };
       }
       
@@ -811,16 +818,17 @@ $(function() {
     });
   };
   
-  function uidata_vali(text, instance, type) {
+  function uidate_vali(text, instance, type) {
     var val_end, val_start;
+
     if (type == 'start') {
       val_start = text;
-      val_end = $(instance.settings.start).val();
+      val_end = $(instance.settings.end).val();
     } else {
       val_end = text;
-      val_start = $(instance.settings.end).val();
+      val_start = $(instance.settings.start).val();
     }
-    
+
     if (val_end && val_start) {
       re = /[^0-9]/g;
       val_end = val_end.replace(re, '');

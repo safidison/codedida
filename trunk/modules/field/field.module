@@ -2318,7 +2318,7 @@ function field_get_cache_term($module, $type) {
  */
 function field_get_cache_term_key($module, $type, $field_key) {
   static $term;
-  $key = 'field_term_key_cache_'.$module.'_'.$type;
+  $key = 'field_term_key_cache_'.$module.'_'.$type . '_' . $field_key;
   if (!isset($term[$key])) {
     $term[$key] = array();
     if ($cache = cache_get($key)) {
