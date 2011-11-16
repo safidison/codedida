@@ -1207,33 +1207,6 @@ function dd_form_inline($form) {
   return '<div class="dd_form_inline">'.$form.'</div>';
 }
 
-function form_time_select($title, $type = 'get') {
-  if ($type == 'get') {
-    $start = $_GET['time_start'];
-    $end = $_GET['time_end'];
-  } else {
-    $start = $_POST['time_start'];
-    $end = $_POST['time_end'];
-  }
-  $time_start = array(
-    '#name' => 'time_start',
-    '#title' => $title,
-    '#value' => $start,
-    '#attributes' => array('class' => 'form_text ui_data_click {dateISO: true}')
-  );
-  $time_end = array(
-    '#name' => 'time_end',
-    '#value' => $end,
-    '#attributes' => array('class' => 'form_text ui_data_click {dateISO: true}')
-  );
-  dd_add_js('misc/form.js');
-  dd_add_js(array('uidata' => array(array('dom' => '.ui_data_click', 'start' => 'input[name="time_start"]', 'end' => 'input[name="time_end"]'))), 'setting');
-  dd_jqui();
-  
-  return dd_form_textfield($time_start) .' -- '. dd_form_textfield($time_end);
-}
-
-
 function dd_label($v, $class = NULL) {
   return '<span class="dd_label'.($class ? ' '. $class :  '').'">'.$v.'</span>';
 }
@@ -1308,10 +1281,12 @@ function dd_get_form_meta($sort = 'desc', $value = array(), $title = array()) {
 
 /**
  * 便捷搜索表单
- * @param (string) $name
+ * @param string $name
  *  关键词字段名称
+ * @param array $form
+ *  可传入自定义字段
  */
-function form_admin_search($name = 'keyword'){
+function form_admin_search($name = 'keyword', $form = array()){
   $form['settings']['#validate'][] = 'form_admin_search_validate';
   
   $form['fields'][$name] = array(
@@ -1339,3 +1314,67 @@ function form_admin_search($name = 'keyword'){
 function form_admin_search_validate(&$form, &$value){
   dd_goto($_GET['q'], dd_query_string_encode($_REQUEST, array_merge(array('q', 'page', 'submit', 'form_id', 'form_token'), array_keys($_COOKIE))));
 }
+
+/**
+ * 获取日期开始和结束字段
+ * @param string $title 
+ *  字段名称
+ * @param string $type 
+ *  表单 method，用于获取默认值
+ * @param string $start
+ *  默认开始日期，如：2010-12-24
+ * @param string $end
+ *  默认结束日期，如：2010-12-27
+ * @param string $return
+ *  需要返回的格式 array|string，前者可用于表单 $form，后者可直接输出到页面
+ * @access public
+ * @return array|string
+ */
+function form_date_start_or_end($title, $type = 'get', $return = 'string', $start = NULL, $end = NULL) {
+
+  $default = $type == 'get' ? $_GET : $_POST;
+  $start = empty($default['date_start']) ? $start : $default['date_start'];
+  $end = empty($default['date_end']) ? $end : $default['date_end'];
+
+  $fields = array(
+    'date_start' => array(
+      '#title' => $title,
+      '#type' => 'textfield',
+      '#default_value' => $start,
+      '#value' => $start,
+      '#attributes' => array('class' => 'form_text ui_data_click {dateISO: true}')
+     ),
+     'date_end' => array(
+      '#type' => 'textfield',
+      '#default_value' => $end,
+      '#value' => $end,
+      '#attributes' => array('class' => 'form_text ui_data_click {dateISO: true}')
+    ),
+  );
+
+  dd_add_js('misc/form.js');
+  
+  dd_add_js(array('uidate' => array(
+    array('dom' => 'input[name="date_start"]', 'start' => 'ok', 'end' => 'input[name="date_end"]'),
+    array('dom' => 'input[name="date_end"]', 'end' => 'ok', 'start' => 'input[name="date_start"]')
+  )), 'setting');
+
+  dd_jqui();
+
+  if ($return == 'string') {
+    
+    $fields['date_start']['#name'] = 'date_start';
+    $fields['date_end']['#name'] = 'date_end';
+
+    return dd_form_textfield($fields['date_start']) .' -- '. dd_form_textfield($fields['date_end']);
+
+  } else {
+
+    $fields['date_start']['#prefix'] = '<div class="form_inline">';
+    $fields['date_end']['#suffix'] = '</div>';
+
+    return $fields;
+  }
+}
+
+
