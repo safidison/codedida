@@ -457,13 +457,17 @@ $(function() {
     if (!$(this).val()) {
       $(this).val($(this).attr('title')).addClass('dida_search_form_field_keyword_default');
     }
-  });
-  
-  $('.dida_search_form_field_keyword').focusin(function(){
+  }).focusin(function(){
     var t = $(this).attr('title');
     if (t && $(this).val() == t) {
       $(this).val("").removeClass('dida_search_form_field_keyword_default');
     }
+  }).parents('form').submit(function() {
+    $(this).find('.dida_search_form_field_keyword').each(function() {
+      if ($(this).val() == $(this).attr('title')) {
+        $(this).val("");
+      }
+    });
   });
   
   $('.dd_form_ajax_field').change(function() {

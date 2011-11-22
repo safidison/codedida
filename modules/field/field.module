@@ -2536,9 +2536,13 @@ function field_get_node_load($module, $type, & $node, $ac = NULL) {
   global $conf;
   
   if (!$conf['field_count'][$module.$type]) return;
-  
+
   if ($cache = cache_get($module.$type.$node->nid, 'cache_field')) {
-    $node->fields = $cache->data;
+    if (!empty($node->fields) && is_array($node->fields) && is_array($cache->data)) {
+      $node->fields += $cache->data;
+    } else {
+      $node->fields = $cache->data;
+    }
     return;
   }
   
