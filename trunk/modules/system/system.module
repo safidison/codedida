@@ -1778,7 +1778,7 @@ function dd_storage_admin($ext_type, $ext_type2 = NULL, $ext_id = NULL, $fetch =
   
   if ($_GET['storage_op'] == 'update' && $_GET['storage_id'] && $v) {
     
-    $output .= '<div id="dd_storage_form_call_'.$ext_type2.'">'.dd_get_form('dd_storage_form', $v).'</div>';
+    $output .= '<div id="dd_storage_form_call_' . $ext_type2 . '">' . dd_get_form('dd_storage_form', $v, $info[$ext_type][$ext_type2]) . '</div>';
     
   } else if ($ext_type2 && $info[$ext_type][$ext_type2] 
   && (!$info[$ext_type][$ext_type2]['limit'] || $limit < $info[$ext_type][$ext_type2]['limit'])) {
@@ -1787,7 +1787,7 @@ function dd_storage_admin($ext_type, $ext_type2 = NULL, $ext_id = NULL, $fetch =
     $v->ext_type2 = $ext_type2;
     $v->ext_id = $ext_id;
     
-    $output .= '<div id="dd_storage_form_call_'.$ext_type2.'">'.dd_get_form('dd_storage_form', $v).'</div>';
+    $output .= '<div id="dd_storage_form_call_' . $ext_type2 . '">' . dd_get_form('dd_storage_form', $v, $info[$ext_type][$ext_type2]) . '</div>';
   }
   
   return $output;
