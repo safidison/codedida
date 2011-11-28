@@ -1809,14 +1809,13 @@ function _system_get_option_name($key, $options = NULL) {
 
 /**
  * 内容表单
- * @param (object) $v
+ * @param object $v
  *  若有值，则为编辑状态
- * @param (array) $default_field
- *  默认字段设置
- * @param (array) $fields
- *  表单附加字段
+ * @param * $info
+ *  其它信息
+ * @return array
  */
-function dd_storage_form($v = NULL) {
+function dd_storage_form($v = NULL, $info = NULL) {
   $form['fields']['data']['title'] = array(
     '#type' => 'textfield',
     '#title' => t('system', '标题'),
@@ -1873,7 +1872,7 @@ function dd_storage_form($v = NULL) {
     '#constant' => 1
   );
   
-  module_alter_all('dd_storage_form', $v, $form);
+  module_alter_all('dd_storage_form', $v, $form, $info);
   
   if (!$form) return false;
   
