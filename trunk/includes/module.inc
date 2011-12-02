@@ -472,6 +472,37 @@ function module_set_enabled($list, $type, $modules = array()) {
 }
 
 /**
+ * 加载指定文件
+ * @param string $file 
+ *  文件名称，可包含相对目录
+ * @param string $module 
+ *  模块名称，若不指定，则为所有模块
+ * @access public
+ * @return void
+ */
+function module_include_file($file, $module = NULL) {
+  global $conf;
+
+  if ($module) {
+
+    // 加载指定模块的文件
+    $filepath = DIDA_ROOT . '/' . dd_get_path('module', $module) . '/' . $file;
+    if (is_file($filepath)) {
+      require_once $filepath;
+    }
+
+  } else if (is_array($conf['modules'])) {
+    // 加载所有模块的文件
+    foreach ($conf['modules'] as $module => $info) {
+      $filepath = DIDA_ROOT . '/' . dd_get_path('module', $module) . '/' . $file;
+      if (is_file($filepath)) {
+        require_once $filepath;
+      }
+    }
+  }
+}
+
+/**
  * 调用指定模块实现的 hook
  * @param (string) $hook
  *  hook 名称
