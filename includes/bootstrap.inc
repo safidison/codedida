@@ -2966,7 +2966,7 @@ function dd_query_string_encode($query = array(), $exclude = array(), $parent = 
     if ($parent) {
       $key = $parent .'['. $key .']';
     }
-    if (in_array($key, $exclude)) {
+    if ($exclude && in_array($key, $exclude)) {
       continue;
     }
     if (is_array($value)) {

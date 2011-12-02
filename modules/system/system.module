@@ -648,6 +648,21 @@ function _system_filter_code_nl2br($mat) {
 }
 
 /**
+ * 清除字符串中不被允许的标签
+ * @param (string) $value
+ *  字符串
+ * @param (array) $tags
+ *  不允许的标签
+ */
+function system_filter_deny_tags($value, array $tags = array('style', 'script', 'link')) {
+  foreach ($tags as $tag) {
+    $pat[] = '/<' . $tag . '(.*?)\/' . $tag . '>/ims';
+  }
+  
+  return preg_replace($pat, '', $value);
+}
+
+/**
  * hook_filter
  * 过滤器接口
  * @param (string) $op
@@ -1142,7 +1157,15 @@ function dd_get_editor($dom, $v = array()) {
       $v['extraPlugins'] .= ',bodybreak';
     }
   }
-  
+
+  $query = '';
+
+  // 主要应用于上传文件保存时（写入 files 表）的扩展参数，如 ext_id，status 等
+  if (!empty($v['save_ext']) && is_array($v['save_ext'])) {
+    $query =  '&' . dd_query_string_encode($v['save_ext']);
+    unset($v['save_ext']);
+  }
+
 	if (strpos($v['extraPlugins'], 'swfupload') !== false) {
 		dd_add_js('misc/swfupload/swfupload.js');
 		dd_add_js('misc/swfupload/jquery.swfupload.js');
@@ -1151,7 +1174,7 @@ function dd_get_editor($dom, $v = array()) {
   		$v['swf_Con'] = array(
   			'des' => t('system', '图片'),
   			'types' => '*.gif;*.png;*.jpg',
-  			'url' => url('files/editor', array('query' => 'op=swfupload&name=Filedata&type=image')),
+  			'url' => url('files/editor', array('query' => 'op=swfupload&name=Filedata&type=image' . $query)),
   			'lists' => url('files/editor', array('query' => 'op=custombrowser&type=image')),
   			'params' => array('__SETPHPSESSID' => $GLOBALS['user']->session, '__SETUID' => $GLOBALS['user']->uid),
   		);
@@ -1162,10 +1185,10 @@ function dd_get_editor($dom, $v = array()) {
 	
 	if ($v['upload_image']) {
 	  if (empty($v['filebrowserImageUploadUrl'])) {
-		  $v['filebrowserImageUploadUrl'] = url('files/editor', array('query' => 'op=ckeditor&name=upload&type=image'));
+		  $v['filebrowserImageUploadUrl'] = url('files/editor', array('query' => 'op=ckeditor&name=upload&type=image' . $query));
 	  }
     if (empty($v['filebrowserBrowseUrl'])) {
-      $v['filebrowserBrowseUrl'] = url('files/editor', array('query' => 'op=ckeditorbrowser&type=image'));
+      $v['filebrowserBrowseUrl'] = url('files/editor', array('query' => 'op=ckeditorbrowser&type=image' . $query));
     }
     $v['filebrowserWindowHeight'] = '100%';
     $v['filebrowserWindowWidth'] = '100%';
